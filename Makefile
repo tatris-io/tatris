@@ -10,24 +10,25 @@ install-tools:
 	@grep '_' toolset/toolset.go | sed 's/"//g' | awk '{print $$2}' | xargs go install
 
 ALL_PKG := github.com/tatris-io/tatris
-PACKAGES := $(shell go list ./... | tail -n +2) 
+PACKAGES := $(shell go list ./...) 
 PACKAGE_DIRECTORIES := $(subst $(ALL_PKG)/,,$(PACKAGES))
+PACKAGES_WITHOUT_TOOLSET := $(shell go list ./... | sed '/^github.com\/tatris-io\/tatris\/toolset/d')
+PACKAGE_DIRECTORIES_WITHOUT_TOOLSET := $(subst $(ALL_PKG)/,,$(PACKAGES_WITHOUT_TOOLSET))
 
 check: install-tools
 	@ echo "check license ..."
 	@ make check-license
 	@ echo "gofmt ..."
-	@ echo "xxx --->"
 	@ echo "$(PACKAGE_DIRECTORIES)"
-	@ gofmt -s -l -d $(PACKAGE_DIRECTORIES) 2>&1 | awk '{ print } END { if (NR > 0) { exit 1 } }'
+	@ gofmt -s -l -w $(PACKAGE_DIRECTORIES)
 	@ echo "golangci-lint ..."
-	@ golangci-lint run $(PACKAGE_DIRECTORIES)
+	@ golangci-lint run $(PACKAGE_DIRECTORIES_WITHOUT_TOOLSET)
 	@ echo "revive ..."
-	@ revive -formatter friendly -config revive.toml $(PACKAGES)
+	@ revive -formatter friendly -config revive.toml $(PACKAGES_WITHOUT_TOOLSET)
 
 test: install-tools
 	@ echo "go test ..."
-	@ go test -timeout 5m -race -cover $(PACKAGES)
+	@ go test -timeout 5m -race -cover $(PACKAGES_WITHOUT_TOOLSET)
 
 check-license:
 	@ sh ./scripts/check-license.sh
