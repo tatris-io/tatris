@@ -2,7 +2,7 @@
 # Check all source files, make sure that they have a license header.
 set -eu
 
-for i in $(git ls-files --exclude-standard | grep "\.go$"); do
+for i in $(find . -type f -not -path '*/\.*' | grep '\.go$'); do
     # first line -> match -> print line -> quit
     matches=$(sed -n "1{/Copyright [0-9]\{4\} Tatris Project Authors. Licensed under Apache-2.0./p;};q;" $i)
     if [ -z "${matches}" ]; then
