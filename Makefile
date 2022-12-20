@@ -33,6 +33,9 @@ test: install-tools
 check-license:
 	@ sh ./scripts/check-license.sh
 
+add-license:
+	@ sh ./scripts/add-license.sh
+
 build: check
 	@ mkdir -p ./bin
 	@ go build -o ./bin/tatris-meta ./cmd/meta/...
