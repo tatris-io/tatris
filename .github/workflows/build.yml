@@ -1,6 +1,6 @@
-# This workflow will build meta cmd
+# This workflow will build all components of tatris
 
-name: Build meta
+name: Build
 
 on:
   push:
@@ -20,8 +20,7 @@ jobs:
       with:
         go-version: 1.19
         cache: true
-    - name: Run some scripts
+
+    - name: Build
       run: |
-        echo hello world
-    - name: Build meta
-      run: go build -v ./cmd/meta
+        make build
