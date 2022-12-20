@@ -1,0 +1,27 @@
+# This workflow will build meta cmd
+
+name: Build meta
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch: {}
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.19
+        cache: true
+    - name: Run some scripts
+      run: |
+        echo hello world
+    - name: Build meta
+      run: go build -v ./cmd/meta
