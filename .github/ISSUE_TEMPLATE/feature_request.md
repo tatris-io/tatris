@@ -7,11 +7,11 @@ assignees: ''
 
 ---
 
-**Describe This Problem**
+## Describe This Problem
 A clear and concise description of what the problem is.
 
-**Proposal**
+## Proposal
 Maybe you have considered some ideas or solutions about this feature.
 
-**Additional Context**
+## Additional Context
 Add any other context about the feature request here.

@@ -7,14 +7,14 @@ assignees: ''
 
 ---
 
-**Describe this problem**
+## Describe this problem
 What this problem is and what happened.
 
-**To Reproduce**
+## To Reproduce
 How to reproduce this problem.
 
-**Expected behavior**
+## Expected behavior
 What is your expected behavior.
 
-**Additional Information**
+## Additional Information
 If possible, please attach other context you think may relate to this problem. Like runtime environment, modified config, error log etc.
