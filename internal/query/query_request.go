@@ -10,7 +10,14 @@ type QueryRequest struct {
 }
 
 type Query struct {
+	// "match_all": {}
 	MatchAll *MatchAll `json:"match_all,omitempty"`
+	// {"term": {"field": {"value": "value"}}}
+	Term map[string]TermVal `json:"term,omitempty"`
 }
 
 type MatchAll struct{}
+
+type TermVal struct {
+	Value interface{} `json:"value"`
+}
