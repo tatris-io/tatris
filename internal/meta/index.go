@@ -9,6 +9,8 @@ type Index struct {
 	Settings *Settings `json:"settings,omitempty"`
 	// index mappings
 	Mappings *Mappings `json:"mappings,omitempty"`
+	// index shards
+	Shards []Shard `json:"shards"`
 }
 
 type Settings struct {
