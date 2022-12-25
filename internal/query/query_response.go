@@ -30,6 +30,6 @@ type Total struct {
 
 type Hit struct {
 	Index  string                 `json:"_index"`
-	Id     string                 `json:"_id"`
+	ID     string                 `json:"_id"`
 	Source map[string]interface{} `json:"_source"`
 }
