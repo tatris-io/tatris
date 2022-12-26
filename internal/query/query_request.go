@@ -5,8 +5,9 @@ package query
 // TODO: too many query type to be defined
 
 type QueryRequest struct {
-	Query Query `json:"query"`
-	Size  int64 `json:"size"`
+	Index string `json:"index"`
+	Query Query  `json:"query"`
+	Size  int64  `json:"size"`
 }
 
 type Query struct {
