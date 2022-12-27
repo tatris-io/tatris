@@ -15,5 +15,8 @@ func main() {
 	meta.SayHello()
 	query.SayHello()
 	service.SayHello()
+
+	service.StartHTTPServer("all")
+
 	println("standalone")
 }

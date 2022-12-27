@@ -3,5 +3,6 @@
 package ingestion
 
 type IngestRequest struct {
+	Index     string                   `json:"index"`
 	Documents []map[string]interface{} `json:"documents"`
 }
