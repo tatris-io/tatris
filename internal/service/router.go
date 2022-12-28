@@ -5,7 +5,7 @@ package service
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/tatris-io/tatris/internal/ingestion"
-	"github.com/tatris-io/tatris/internal/meta"
+	"github.com/tatris-io/tatris/internal/meta/handler"
 	"github.com/tatris-io/tatris/internal/query"
 )
 
@@ -57,5 +57,6 @@ func registerQuery(group *gin.RouterGroup) {
 }
 
 func registerMeta(group *gin.RouterGroup) {
-	group.PUT("/:index", meta.CreateIndexHandler)
+	group.PUT("/:index", handler.CreateIndexHandler)
+	group.GET("/:index", handler.GetIndexHandler)
 }

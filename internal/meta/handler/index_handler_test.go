@@ -1,6 +1,6 @@
 // Copyright 2022 Tatris Project Authors. Licensed under Apache-2.0.
 
-package meta
+package handler
 
 import (
 	"bytes"
@@ -14,7 +14,7 @@ import (
 	"testing"
 )
 
-func TestCreateIndexHandler(t *testing.T) {
+func TestIngestHandler(t *testing.T) {
 
 	t.Run("create_index", func(t *testing.T) {
 		gin.SetMode(gin.ReleaseMode)
