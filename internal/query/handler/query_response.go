@@ -1,6 +1,6 @@
 // Copyright 2022 Tatris Project Authors. Licensed under Apache-2.0.
 
-package query
+package handler
 
 type QueryResponse struct {
 	Took     int64       `json:"took"`

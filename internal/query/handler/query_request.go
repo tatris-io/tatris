@@ -1,6 +1,6 @@
 // Copyright 2022 Tatris Project Authors. Licensed under Apache-2.0.
 
-package query
+package handler
 
 // TODO: too many query type to be defined
 

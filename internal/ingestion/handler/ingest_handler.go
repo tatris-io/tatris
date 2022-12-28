@@ -1,6 +1,6 @@
 // Copyright 2022 Tatris Project Authors. Licensed under Apache-2.0.
 
-package ingestion
+package handler
 
 import (
 	"github.com/gin-gonic/gin"
@@ -11,7 +11,7 @@ func IngestHandler(c *gin.Context) {
 	indexName := c.Param("index")
 	ingestRequest := IngestRequest{}
 	if err := c.ShouldBind(&ingestRequest); err != nil {
-		c.String(http.StatusBadRequest, `invalid request`)
+		c.JSON(http.StatusBadRequest, gin.H{"msg": "invalid request"})
 	}
 	ingestRequest.Index = indexName
 	// TODO do ingestion...
