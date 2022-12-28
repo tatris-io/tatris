@@ -14,7 +14,7 @@ import (
 	"testing"
 )
 
-func TestCreateIndexHandler(t *testing.T) {
+func TestIngestHandler(t *testing.T) {
 
 	t.Run("create_index", func(t *testing.T) {
 		gin.SetMode(gin.ReleaseMode)
