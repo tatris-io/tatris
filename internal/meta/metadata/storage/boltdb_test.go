@@ -9,7 +9,6 @@ import (
 
 func TestBoltMetaStore_Get(t *testing.T) {
 	boltMetaStore, _ := Open()
-	defer Close(boltMetaStore)
 	path := "/tatris/kk"
 	val := "vv"
 	t.Run("prepare", func(t *testing.T) {

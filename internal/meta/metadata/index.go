@@ -1,9 +1,10 @@
 // Copyright 2022 Tatris Project Authors. Licensed under Apache-2.0.
 
+// Package metadata is about the management of metadata (i.e. index)
 package metadata
 
 import (
-	"encoding/json"
+	json "encoding/json"
 	"github.com/tatris-io/tatris/internal/meta"
 	"github.com/tatris-io/tatris/internal/meta/metadata/storage"
 )
@@ -15,11 +16,11 @@ func init() {
 }
 
 func Create(idx *meta.Index) error {
-	if json, err := json.Marshal(idx); err != nil {
+	json, err := json.Marshal(idx)
+	if err != nil {
 		return err
-	} else {
-		return metaStore.Set(fillKey(idx.Name), json)
 	}
+	return metaStore.Set(fillKey(idx.Name), json)
 }
 
 func Get(idxName string) (*meta.Index, error) {
@@ -31,9 +32,8 @@ func Get(idxName string) (*meta.Index, error) {
 		idx := new(meta.Index)
 		if err := json.Unmarshal(b, idx); err != nil {
 			return nil, err
-		} else {
-			return idx, nil
 		}
+		return idx, nil
 	}
 }
 

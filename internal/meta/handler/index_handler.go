@@ -1,5 +1,6 @@
 // Copyright 2022 Tatris Project Authors. Licensed under Apache-2.0.
 
+// Package handler is about how to handle HTTP requests for meta
 package handler
 
 import (
@@ -16,8 +17,11 @@ func CreateIndexHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"msg": "invalid request"})
 	}
 	idx.Name = idxName
-	metadata.Create(&idx)
-	c.JSON(http.StatusOK, idx)
+	if err := metadata.Create(&idx); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"msg": err.Error()})
+	} else {
+		c.JSON(http.StatusOK, idx)
+	}
 }
 
 func GetIndexHandler(c *gin.Context) {
