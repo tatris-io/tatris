@@ -9,4 +9,4 @@ bin
 .vscode
 
 # tatris test outputs
-_meta*
+**/_meta*
