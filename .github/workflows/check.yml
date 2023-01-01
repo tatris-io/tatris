@@ -1,11 +1,15 @@
 name: Check
+
 on:
+  push:
+    branches:
+      - "main"
   pull_request:
     branches:
-      - main
+      - "main"
     paths-ignore:
-      - 'docs/**'
-      - '**.md'
+      - "docs/**"
+      - "**.md"
 
 jobs:
   statics:
