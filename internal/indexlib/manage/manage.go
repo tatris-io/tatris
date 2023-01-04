@@ -1,4 +1,4 @@
-package manege
+package manage
 
 import (
 	"github.com/tatris-io/tatris/internal/indexlib"
