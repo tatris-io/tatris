@@ -7,3 +7,6 @@ bin
 # directories for various IDEs
 .idea
 .vscode
+
+# tatris test outputs
+**/_meta*
