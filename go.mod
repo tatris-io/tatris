@@ -10,7 +10,9 @@ require (
 	github.com/gin-gonic/gin v1.8.2
 	github.com/mgechev/revive v1.2.4
 	github.com/stretchr/testify v1.8.1
+	go.uber.org/zap v1.24.0
 	golang.org/x/tools v0.3.0
+	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gotest.tools/gotestsum v1.8.2
 	gotest.tools/v3 v3.3.0
 )
@@ -60,6 +62,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
+	go.uber.org/atomic v1.7.0 // indirect
+	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/crypto v0.4.0 // indirect
 	golang.org/x/mod v0.7.0 // indirect
 	golang.org/x/net v0.4.0 // indirect
