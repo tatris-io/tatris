@@ -1,0 +1,104 @@
+// Copyright 2022 Tatris Project Authors. Licensed under Apache-2.0.
+
+package bluge
+
+import (
+	"encoding/json"
+	"github.com/blugelabs/bluge"
+	"github.com/blugelabs/bluge/index"
+	segment "github.com/blugelabs/bluge_segment_api"
+	"github.com/tatris-io/tatris/internal/indexlib"
+	"github.com/tatris-io/tatris/internal/indexlib/bluge/config"
+	"time"
+)
+
+type BlugeWriter struct {
+	*indexlib.BaseConfig
+	Writer *bluge.Writer
+}
+
+func NewBlugeWriter(config *indexlib.BaseConfig) *BlugeWriter {
+	return &BlugeWriter{BaseConfig: config}
+}
+
+func (b *BlugeWriter) OpenWriter() error {
+	var cfg bluge.Config
+
+	switch b.StorageType {
+	case indexlib.FSStorageType:
+		cfg = config.GetFSConfig(b.DataPath, b.Index)
+	default:
+		cfg = config.GetFSConfig(b.DataPath, b.Index)
+	}
+
+	writer, err := bluge.OpenWriter(cfg)
+	if err != nil {
+		return err
+	}
+
+	b.Writer = writer
+	return nil
+}
+
+func (b *BlugeWriter) Insert(docID string, doc map[string]interface{}) error {
+	blugeDoc, err := b.generateBlugeDoc(docID, doc)
+	if err != nil {
+		return nil
+	}
+
+	return b.Writer.Insert(blugeDoc)
+}
+
+func (b *BlugeWriter) Batch(docs map[string]map[string]interface{}) error {
+	batch := index.NewBatch()
+	for docID, doc := range docs {
+		blugeDoc, err := b.generateBlugeDoc(docID, doc)
+		if err != nil {
+			return err
+		}
+		batch.Insert(blugeDoc)
+	}
+	return b.Writer.Batch(batch)
+}
+
+func (b *BlugeWriter) Close() {
+	if b.Writer != nil {
+		b.Writer.Close()
+	}
+}
+
+func (b *BlugeWriter) generateBlugeDoc(docID string, doc map[string]interface{}) (segment.Document, error) {
+	bdoc := bluge.NewDocument(docID)
+	for key, value := range doc {
+		if value == nil {
+			continue
+		}
+
+		switch v := value.(type) {
+		case []interface{}:
+			for _, v := range v {
+				b.addField(bdoc, key, v)
+			}
+		default:
+			b.addField(bdoc, key, v)
+		}
+	}
+
+	source, err := json.Marshal(doc)
+	if err != nil {
+		return nil, err
+	}
+
+	bdoc.AddField(bluge.NewStoredOnlyField(indexlib.IDField, []byte(docID)))
+	bdoc.AddField(bluge.NewStoredOnlyField(indexlib.IndexField, []byte(b.Index)))
+	bdoc.AddField(bluge.NewStoredOnlyField(indexlib.SourceField, source))
+	bdoc.AddField(bluge.NewDateTimeField(indexlib.TimestampField, time.Now()).StoreValue().Sortable().Aggregatable())
+
+	return bdoc, nil
+}
+
+func (b *BlugeWriter) addField(bdoc *bluge.Document, key string, value interface{}) {
+	// TODO get index mapping, case field type(text、keyword、bool)
+	field := bluge.NewKeywordField(key, value.(string))
+	bdoc.AddField(field)
+}
