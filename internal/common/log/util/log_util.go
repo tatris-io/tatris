@@ -56,6 +56,7 @@ func GetDefault() *zap.Logger {
 	return defaultConsoleLogger
 }
 
+// CreateFileCore creates a new zapcore instance whose underlying file descriptor is a lumberjack wrapped regular file.
 func CreateFileCore(rootpath string, fileConf *FileConfig, level zapcore.Level, encoder zapcore.Encoder) (zapcore.Core, error) {
 	logFile, err := initLogFile(rootpath, fileConf)
 	if err != nil {
@@ -73,6 +74,7 @@ func CreateFileCore(rootpath string, fileConf *FileConfig, level zapcore.Level, 
 	return zapcore.NewCore(encoder, writeSyncer, levelFunc), nil
 }
 
+// CreateConsoleCore creates a new zapcore instance whose underlying file descriptor is stdout or stderr.
 func CreateConsoleCore(consoleConf *ConsoleConfig, level zapcore.Level, encoder zapcore.Encoder) zapcore.Core {
 	lowercase := strings.ToLower(consoleConf.ConsoleFD)
 	var writeSyncer zapcore.WriteSyncer

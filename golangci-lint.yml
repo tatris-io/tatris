@@ -1,0 +1,7 @@
+run:
+  timeout: 5m
+  tests: false
+  skip-files:
+    - internal/common/log/util/zap_text_core.go
+    - internal/common/log/util/zap_text_encoder.go
+  go: '1.19'

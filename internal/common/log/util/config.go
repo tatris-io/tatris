@@ -1,5 +1,6 @@
 // Copyright 2023 Tatris Project Authors. Licensed under Apache-2.0.
 
+// Package util provides logger config and config validation utilities. Basically, it wraps the well-known logging tools zap and lumberjack.
 package util
 
 import (
@@ -7,6 +8,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -26,16 +28,24 @@ type Config struct {
 	DisableErrorVerbose bool `json:"disable-error-verbose"`
 	// Development puts the logger in development mode, which changes the
 	// behavior of DPanicLevel and takes stacktraces more liberally.
-	Development bool `toml:"development" json:"development"`
+	Development bool `json:"development"`
 
 	// GlobalLogger confs for all common logger
 	GlobalLogger *LoggerConfig `json:"global-logger"`
 
 	_level zapcore.Level
+	_once  sync.Once
 }
 
-// validates all input args and call validate func of inner FileConfig and ConsoleConfig
-func (cfg Config) validate() {
+// Validate wrapps doValidates with a `sync.Once`
+func (cfg *Config) Validate() {
+	cfg._once.Do(func() {
+		cfg.doValidate()
+	})
+}
+
+// doValidates validates all input args and call validate func of inner FileConfig and ConsoleConfig
+func (cfg *Config) doValidate() {
 	finalRootPath, err := calcLogRootPath(cfg.RootPath)
 	if err != nil {
 		panic(fmt.Errorf("calculate root path errors, mostly because of getting pwd %v", err))

@@ -1,5 +1,7 @@
 // Copyright 2023 Tatris Project Authors. Licensed under Apache-2.0.
 
+// Package log provides logger initialize utilities for the whole project. It will create and set proper logger instances according to config.
+// The underlying logging tool is `zap`.  In this package, we config it and also make some extensions for it.
 package log
 
 import (
@@ -14,13 +16,15 @@ import (
 
 var once sync.Once
 
-func SetupLogger(cfg *util.Config) {
+// InitLoggers initializes all logger instances according to user-provided configs
+// Note that this function is protected by a `sync.Once`.
+func InitLoggers(cfg *util.Config) {
 	once.Do(func() {
-		initLoggers(cfg)
+		_initLoggers(cfg)
 	})
 }
 
-func initLoggers(cfg *util.Config) {
+func _initLoggers(cfg *util.Config) {
 	opts := cfg.BuildOpts()
 
 	// init global logger
@@ -46,6 +50,7 @@ func initLoggers(cfg *util.Config) {
 		coreSlice = append(coreSlice, core)
 	}
 
+	// combines multiple zapcore into one
 	globalLoggerCore := zapcore.NewTee(coreSlice...)
 	globalLogger := zap.New(globalLoggerCore, opts...)
 	logger.SetLogger(globalLogger)

@@ -81,12 +81,12 @@ func TestConfigUnmarshal(t *testing.T) {
 	var validConfStruct1 Config
 	err1 := json.Unmarshal([]byte(validConfig1), &validConfStruct1)
 	assert.Empty(t, err1)
-	validConfStruct1.validate()
+	validConfStruct1.Validate()
 
 	var validConfStruct2 Config
 	err2 := json.Unmarshal([]byte(validConfig2), &validConfStruct2)
 	assert.Empty(t, err2)
-	validConfStruct2.validate()
+	validConfStruct2.Validate()
 
 	fileConf0 := validConfStruct2.GlobalLogger.Files[0]
 	fileConf1 := validConfStruct2.GlobalLogger.Files[1]
