@@ -1,7 +1,8 @@
 // Copyright 2023 Tatris Project Authors. Licensed under Apache-2.0.
 
-// Package log provides logger initialize utilities for the whole project. It will create and set proper logger instances according to config.
-// The underlying logging tool is `zap`.  In this package, we config it and also make some extensions for it.
+// Package log provides logger initialize utilities for the whole project. It will create and set
+// proper logger instances according to config. The underlying logging tool is `zap`.  In this
+// package, we config it and also make some extensions for it.
 package log
 
 import (

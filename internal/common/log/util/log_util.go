@@ -14,15 +14,17 @@ import (
 )
 
 // defaultConsoleLogger is the internal logger that uses `stdout` as the output channel.
-// We can use this default logger as an expedient, until the official loggers are initialized with user-provided config.
-// It is highly recommended that the developers initialize all official loggers immediately after the process's startup.
+// We can use this default logger as an expedient, until the official loggers are initialized with
+// user-provided config. It is highly recommended that the developers initialize all official
+// loggers immediately after the process's startup.
 var defaultConsoleLogger *zap.Logger
 
 func init() {
 	initDefaultConsoleLogger()
 }
 
-// initDefaultConsoleLogger initializes the default console logger with a relatively reasonable config.
+// initDefaultConsoleLogger initializes the default console logger with a relatively reasonable
+// config.
 func initDefaultConsoleLogger() {
 	var conf ConsoleConfig
 	conf.LevelMax = "fatal"
@@ -56,13 +58,20 @@ func GetDefault() *zap.Logger {
 	return defaultConsoleLogger
 }
 
-// CreateFileCore creates a new zapcore instance whose underlying file descriptor is a lumberjack wrapped regular file.
-func CreateFileCore(rootpath string, fileConf *FileConfig, level zapcore.Level, encoder zapcore.Encoder) (zapcore.Core, error) {
+// CreateFileCore creates a new zapcore instance whose underlying file descriptor is a lumberjack
+// wrapped regular file.
+func CreateFileCore(
+	rootpath string,
+	fileConf *FileConfig,
+	level zapcore.Level,
+	encoder zapcore.Encoder,
+) (zapcore.Core, error) {
 	logFile, err := initLogFile(rootpath, fileConf)
 	if err != nil {
 		return nil, err
 	}
-	// lumberjack wrapped logger already has an internal lock, so there's no need to call `zapcore.Lock`
+	// lumberjack wrapped logger already has an internal lock, so there's no need to call
+	// `zapcore.Lock`
 	writeSyncer := zapcore.AddSync(logFile)
 	minLevel := level
 	if fileConf._minLevel < minLevel {
@@ -74,8 +83,13 @@ func CreateFileCore(rootpath string, fileConf *FileConfig, level zapcore.Level, 
 	return zapcore.NewCore(encoder, writeSyncer, levelFunc), nil
 }
 
-// CreateConsoleCore creates a new zapcore instance whose underlying file descriptor is stdout or stderr.
-func CreateConsoleCore(consoleConf *ConsoleConfig, level zapcore.Level, encoder zapcore.Encoder) zapcore.Core {
+// CreateConsoleCore creates a new zapcore instance whose underlying file descriptor is stdout or
+// stderr.
+func CreateConsoleCore(
+	consoleConf *ConsoleConfig,
+	level zapcore.Level,
+	encoder zapcore.Encoder,
+) zapcore.Core {
 	lowercase := strings.ToLower(consoleConf.ConsoleFD)
 	var writeSyncer zapcore.WriteSyncer
 	if lowercase == "stdout" {
@@ -93,7 +107,8 @@ func CreateConsoleCore(consoleConf *ConsoleConfig, level zapcore.Level, encoder 
 	return zapcore.NewCore(encoder, writeSyncer, levelFunc)
 }
 
-// initLogFile create an abstract log file managed by lumberjack. `lumberjack` handles everything about file rotation and retention policies.
+// initLogFile create an abstract log file managed by lumberjack. `lumberjack` handles everything
+// about file rotation and retention policies.
 func initLogFile(logRootPath string, cfg *FileConfig) (*lumberjack.Logger, error) {
 	fullPath := path.Join(logRootPath, cfg.FileName)
 	if st, err := os.Stat(cfg.FileName); err == nil {

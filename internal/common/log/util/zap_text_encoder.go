@@ -107,7 +107,11 @@ type textEncoder struct {
 	reflectEnc *json.Encoder
 }
 
-func NewTextEncoder(encoderConfig *zapcore.EncoderConfig, spaced bool, disableErrorVerbose bool) zapcore.Encoder {
+func NewTextEncoder(
+	encoderConfig *zapcore.EncoderConfig,
+	spaced bool,
+	disableErrorVerbose bool,
+) zapcore.Encoder {
 	return &textEncoder{
 		EncoderConfig:       encoderConfig,
 		buf:                 _pool.Get(),
@@ -349,7 +353,10 @@ func (enc *textEncoder) cloned() *textEncoder {
 	return clone
 }
 
-func (enc *textEncoder) EncodeEntry(ent zapcore.Entry, fields []zapcore.Field) (*buffer.Buffer, error) {
+func (enc *textEncoder) EncodeEntry(
+	ent zapcore.Entry,
+	fields []zapcore.Field,
+) (*buffer.Buffer, error) {
 	final := enc.cloned()
 	if final.TimeKey != "" {
 		final.beginQuoteFiled()
@@ -518,7 +525,8 @@ func (enc *textEncoder) safeAddByteString(s []byte) {
 	}
 }
 
-// See [log-fileds](https://github.com/tikv/rfcs/blob/master/text/2018-12-19-unified-log-format.md#log-fields-section).
+// See
+// [log-fileds](https://github.com/tikv/rfcs/blob/master/text/2018-12-19-unified-log-format.md#log-fields-section).
 func (enc *textEncoder) needDoubleQuotes(s string) bool {
 	for i := 0; i < len(s); {
 		b := s[i]

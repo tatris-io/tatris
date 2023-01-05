@@ -1,6 +1,7 @@
 // Copyright 2023 Tatris Project Authors. Licensed under Apache-2.0.
 
-// Package util provides logger config and config validation utilities. Basically, it wraps the well-known logging tools zap and lumberjack.
+// Package util provides logger config and config validation utilities. Basically, it wraps the
+// well-known logging tools zap and lumberjack.
 package util
 
 import (
@@ -102,7 +103,8 @@ type ConsoleConfig struct {
 	_maxLevel zapcore.Level
 }
 
-// Innter validate func for ConsoleConfig. It checks all input config fields and sets default values.
+// Innter validate func for ConsoleConfig. It checks all input config fields and sets default
+// values.
 func (cfg *ConsoleConfig) validate() {
 	lowercase := strings.ToLower(cfg.ConsoleFD)
 	if lowercase != "stderr" && lowercase != "stdout" {
@@ -182,8 +184,10 @@ func (cfg *FileConfig) validate() {
 
 // calcLogRootPath calculates the final log dir for all logs
 // 1. if nothing is specified, log files will locate at the current working dir.
-// 2. if the specified dir is an absolute path, this function does nothing, log files will be printed at the specified dir
-// 3. if the specified dir is a relative path, we will join the specified path with current working dir to avoid potential ambiguity
+// 2. if the specified dir is an absolute path, this function does nothing, log files will be
+// printed at the specified dir.
+// 3. if the specified dir is a relative path, we will join the specified path with current working
+// dir to avoid potential ambiguity
 func calcLogRootPath(specified string) (string, error) {
 	if len(specified) == 0 {
 		return os.Getwd()
