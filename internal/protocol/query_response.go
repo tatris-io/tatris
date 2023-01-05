@@ -3,7 +3,7 @@
 package protocol
 
 type QueryResponse struct {
-	Took     int64       `json:"took"`
+	Took     int64       `json:"took"` // unit: ms
 	TimedOut bool        `json:"timedOut"`
 	Shards   Shards      `json:"_shards"`
 	Hits     Hits        `json:"hits"`

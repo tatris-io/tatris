@@ -8,9 +8,11 @@ import (
 	"github.com/tatris-io/tatris/internal/protocol"
 	"github.com/tatris-io/tatris/internal/query"
 	"net/http"
+	"time"
 )
 
 func QueryHandler(c *gin.Context) {
+	start := time.Now()
 	indexName := c.Param("index")
 	queryRequest := protocol.QueryRequest{Size: 10}
 	if err := c.ShouldBind(&queryRequest); err != nil {
@@ -21,10 +23,9 @@ func QueryHandler(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"msg": err.Error()})
 	} else {
-		result := protocol.QueryResponse{}
-		result.Took = 0
-		result.Hits = *hits
-		c.JSON(http.StatusOK, result)
+		resp := protocol.QueryResponse{}
+		resp.Hits = *hits
+		resp.Took = time.Since(start).Milliseconds()
+		c.JSON(http.StatusOK, resp)
 	}
-
 }
