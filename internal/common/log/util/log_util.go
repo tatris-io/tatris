@@ -102,7 +102,7 @@ func CreateConsoleCore(
 		minLevel = consoleConf._minLevel
 	}
 	levelFunc := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
-		return lvl >= minLevel && lvl < consoleConf._maxLevel
+		return lvl >= minLevel && lvl <= consoleConf._maxLevel
 	})
 	return zapcore.NewCore(encoder, writeSyncer, levelFunc)
 }
