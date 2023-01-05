@@ -8,13 +8,10 @@ import (
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/indexlib/manage"
 	"log"
-	"os"
 )
 
-var wd, _ = os.Getwd()
-
 // TODO: make it configurable
-var dataPath = wd + "/../../../_data"
+var dataPath = "/tmp/tatris/_data"
 
 func IngestDocs(idxName string, docs []map[string]interface{}) error {
 	config := &indexlib.BaseConfig{

@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	BoltMetaPath = "./_meta.bolt"
+	BoltMetaPath = "/tmp/tatris/_meta.bolt"
 )
 
 type BoltMetaStore struct {

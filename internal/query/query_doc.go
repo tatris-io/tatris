@@ -8,13 +8,10 @@ import (
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/indexlib/manage"
 	"github.com/tatris-io/tatris/internal/protocol"
-	"os"
 )
 
-var wd, _ = os.Getwd()
-
 // TODO: make it configurable
-var dataPath = wd + "/../../../_data"
+var dataPath = "/tmp/tatris/_data"
 
 func SearchDocs(request protocol.QueryRequest) (*protocol.Hits, error) {
 	config := &indexlib.BaseConfig{
