@@ -10,20 +10,20 @@ import (
 
 func TestRead(t *testing.T) {
 	config := &indexlib.BaseConfig{
-		Index: "test",
+		Index: "storage_product",
 	}
-	reader := GetReader(config)
-	if reader == nil {
+	reader, err := GetReader(config)
+	if err != nil {
 		t.Log("get reader error!")
 		t.FailNow()
-	}
+	} else {
+		matchQuery := &indexlib.MatchQuery{Match: "tatris", Field: "name"}
+		resp, err := reader.Search(context.Background(), matchQuery, -1)
+		if err != nil {
+			t.Log(err)
+		}
+		t.Log(resp)
 
-	matchQuery := &indexlib.MatchQuery{Match: "tatris", Field: "name"}
-	resp, err := reader.Search(context.Background(), matchQuery, -1)
-	if err != nil {
-		t.Log(err)
+		CloseReader(config)
 	}
-	t.Log(resp)
-
-	CloseReader(config)
 }

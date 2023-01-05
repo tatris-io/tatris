@@ -4,9 +4,9 @@ package service
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/tatris-io/tatris/internal/ingestion"
-	"github.com/tatris-io/tatris/internal/meta/handler"
-	"github.com/tatris-io/tatris/internal/query"
+	handler1 "github.com/tatris-io/tatris/internal/ingestion/handler"
+	handler2 "github.com/tatris-io/tatris/internal/meta/handler"
+	handler3 "github.com/tatris-io/tatris/internal/query/handler"
 )
 
 func StartHTTPServer(roles ...string) {
@@ -49,14 +49,14 @@ func StartHTTPServer(roles ...string) {
 }
 
 func registerIngestion(group *gin.RouterGroup) {
-	group.PUT("/:index/_ingest", ingestion.IngestHandler)
+	group.PUT("/:index/_ingest", handler1.IngestHandler)
 }
 
 func registerQuery(group *gin.RouterGroup) {
-	group.POST("/:index/_search", query.QueryHandler)
+	group.POST("/:index/_search", handler3.QueryHandler)
 }
 
 func registerMeta(group *gin.RouterGroup) {
-	group.PUT("/:index", handler.CreateIndexHandler)
-	group.GET("/:index", handler.GetIndexHandler)
+	group.PUT("/:index", handler2.CreateIndexHandler)
+	group.GET("/:index", handler2.GetIndexHandler)
 }

@@ -5,14 +5,14 @@ package handler
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/tatris-io/tatris/internal/meta"
 	"github.com/tatris-io/tatris/internal/meta/metadata"
+	"github.com/tatris-io/tatris/internal/protocol"
 	"net/http"
 )
 
 func CreateIndexHandler(c *gin.Context) {
 	idxName := c.Param("index")
-	idx := meta.Index{}
+	idx := protocol.Index{}
 	if err := c.ShouldBind(&idx); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"msg": "invalid request"})
 	}

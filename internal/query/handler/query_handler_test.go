@@ -1,6 +1,6 @@
 // Copyright 2022 Tatris Project Authors. Licensed under Apache-2.0.
 
-package query
+package handler
 
 import (
 	"bytes"
@@ -26,7 +26,7 @@ func TestQueryHandler(t *testing.T) {
 		}
 		c.Request = req
 		p := gin.Params{}
-		p = append(p, gin.Param{Key: "index", Value: "index_1"})
+		p = append(p, gin.Param{Key: "index", Value: "storage_product"})
 		c.Params = p
 		c.Request.Header.Set("Content-Type", "application/json;charset=utf-8")
 		c.Request.Body = io.NopCloser(bytes.NewBufferString("{\"query\":{\"match_all\":{}},\"size\":20}"))

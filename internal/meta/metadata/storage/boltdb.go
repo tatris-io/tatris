@@ -11,6 +11,10 @@ import (
 	"github.com/boltdb/bolt"
 )
 
+const (
+	BoltMetaPath = "./_meta.bolt"
+)
+
 type BoltMetaStore struct {
 	db *bolt.DB
 }
@@ -18,7 +22,7 @@ type BoltMetaStore struct {
 func Open() (*BoltMetaStore, error) {
 	// Open the data file in your current directory.
 	// It will be created if it doesn't exist.
-	db, err := bolt.Open("_meta.bolt", 0600, &bolt.Options{Timeout: 1 * time.Second})
+	db, err := bolt.Open(BoltMetaPath, 0600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		return nil, err
 	}

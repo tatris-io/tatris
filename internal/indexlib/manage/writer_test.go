@@ -9,23 +9,21 @@ import (
 
 func TestWrite(t *testing.T) {
 	config := &indexlib.BaseConfig{
-		Index: "test",
+		Index: "storage_product",
 	}
-	writer := GetWriter(config)
-	if writer == nil {
+	if writer, err := GetWriter(config); err != nil {
 		t.Logf("get writer error!")
 		t.FailNow()
+	} else {
+		doc := make(map[string]interface{})
+		doc["name"] = "tatris"
+		doc["desc"] = "Time-aware storage and search system"
+		err := writer.Insert("storage_product", doc)
+		if err != nil {
+			t.Logf("error write index %v", err)
+		}
+		t.Log("Write success!")
+
+		CloseWriter(config)
 	}
-
-	doc := make(map[string]interface{})
-	doc["name"] = "tatris"
-	doc["describe"] = "Time-aware storage and search system"
-
-	err := writer.Insert("test", doc)
-	if err != nil {
-		t.Logf("error write index %v", err)
-	}
-	t.Log("Write success!")
-
-	CloseWriter(config)
 }

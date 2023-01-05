@@ -1,8 +1,7 @@
-// Copyright 2022 Tatris Project Authors. Licensed under Apache-2.0.
+// Copyright 2023 Tatris Project Authors. Licensed under Apache-2.0.
 
-package query
-
-// TODO: too many query type to be defined
+// Package protocol describes the core data structures and calling conventions of Tatris
+package protocol
 
 type QueryRequest struct {
 	Index string `json:"index"`
@@ -10,6 +9,7 @@ type QueryRequest struct {
 	Size  int64  `json:"size"`
 }
 
+// TODO: to be supplemented
 type Query struct {
 	// "match_all": {}
 	MatchAll *MatchAll `json:"match_all,omitempty"`

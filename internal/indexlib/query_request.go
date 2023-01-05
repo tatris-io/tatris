@@ -6,6 +6,12 @@ type QueryRequest interface {
 	searcher()
 }
 
+type MatchAllQuery struct {
+}
+
+func (m *MatchAllQuery) searcher() {
+}
+
 type MatchQuery struct {
 	Match string
 	Field string

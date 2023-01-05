@@ -1,6 +1,6 @@
 // Copyright 2022 Tatris Project Authors. Licensed under Apache-2.0.
 
-package meta
+package protocol
 
 // Shard is a logical split of the index
 type Shard struct {
