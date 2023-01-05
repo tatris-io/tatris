@@ -46,7 +46,7 @@ func (b *BlugeReader) Search(ctx context.Context, query indexlib.QueryRequest, l
 	blugeQuery := b.generateQuery(query)
 	var searchRequest bluge.SearchRequest
 
-	if limit == 0 {
+	if limit == -1 {
 		searchRequest = bluge.NewAllMatches(blugeQuery)
 	} else {
 		searchRequest = bluge.NewTopNSearch(limit, blugeQuery)
@@ -64,19 +64,17 @@ func (b *BlugeReader) Search(ctx context.Context, query indexlib.QueryRequest, l
 func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) bluge.Query {
 	var blugeQuery bluge.Query
 
-	switch query.(type) {
+	switch query := query.(type) {
 	case *indexlib.MatchQuery:
-		matchQuery := query.(*indexlib.MatchQuery)
-		q := bluge.NewMatchQuery(matchQuery.Match)
-		if matchQuery.Field != "" {
-			q.SetField(matchQuery.Field)
+		q := bluge.NewMatchQuery(query.Match)
+		if query.Field != "" {
+			q.SetField(query.Field)
 		}
 		blugeQuery = q
 	case *indexlib.TermQuery:
-		termQuery := query.(*indexlib.TermQuery)
-		q := bluge.NewTermQuery(termQuery.Term)
-		if termQuery.Field != "" {
-			q.SetField(termQuery.Field)
+		q := bluge.NewTermQuery(query.Term)
+		if query.Field != "" {
+			q.SetField(query.Field)
 		}
 		blugeQuery = q
 	}
@@ -104,7 +102,10 @@ func (b *BlugeReader) generateResponse(dmi search.DocumentMatchIterator) *indexl
 			case indexlib.IndexField:
 				index = string(value)
 			case indexlib.SourceField:
-				json.Unmarshal(value, &source)
+				err := json.Unmarshal(value, &source)
+				if err != nil {
+					log.Printf("bluge source unmarshal error: %s", err)
+				}
 			}
 			return true
 		})

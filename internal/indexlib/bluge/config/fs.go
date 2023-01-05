@@ -9,6 +9,6 @@ import (
 	"github.com/blugelabs/bluge"
 )
 
-func GetFSConfig(datePath string, indexName string) bluge.Config {
-	return bluge.DefaultConfig(path.Join(datePath, indexName))
+func GetFSConfig(dataPath string, indexName string) bluge.Config {
+	return bluge.DefaultConfig(path.Join(dataPath, indexName))
 }

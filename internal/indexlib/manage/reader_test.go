@@ -19,7 +19,7 @@ func TestRead(t *testing.T) {
 	}
 
 	matchQuery := &indexlib.MatchQuery{Match: "tatris", Field: "name"}
-	resp, err := reader.Search(context.Background(), matchQuery, 0)
+	resp, err := reader.Search(context.Background(), matchQuery, -1)
 	if err != nil {
 		t.Log(err)
 	}

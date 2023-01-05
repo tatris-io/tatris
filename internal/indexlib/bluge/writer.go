@@ -51,8 +51,8 @@ func (b *BlugeWriter) Insert(docID string, doc map[string]interface{}) error {
 
 func (b *BlugeWriter) Batch(docs map[string]map[string]interface{}) error {
 	batch := index.NewBatch()
-	for docId, doc := range docs {
-		blugeDoc, err := b.generateBlugeDoc(docId, doc)
+	for docID, doc := range docs {
+		blugeDoc, err := b.generateBlugeDoc(docID, doc)
 		if err != nil {
 			return err
 		}
