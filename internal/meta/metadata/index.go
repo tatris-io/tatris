@@ -6,13 +6,14 @@ package metadata
 import (
 	json "encoding/json"
 	"github.com/tatris-io/tatris/internal/meta/metadata/storage"
+	"github.com/tatris-io/tatris/internal/meta/metadata/storage/boltdb"
 	"github.com/tatris-io/tatris/internal/protocol"
 )
 
 var metaStore storage.MetaStore
 
 func init() {
-	metaStore, _ = storage.Open()
+	metaStore, _ = boltdb.Open()
 }
 
 func Create(idx *protocol.Index) error {

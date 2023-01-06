@@ -1,14 +1,14 @@
 // Copyright 2022 Tatris Project Authors. Licensed under Apache-2.0.
 
-// Package storage is about how to implement persistent storage of metadata
-package storage
+// Package boltdb describes an implementation of boltdb-based metadata storage
+package boltdb
 
 import (
 	"bytes"
 	"errors"
+	"github.com/tatris-io/tatris/internal/meta/metadata/storage"
+	"go.etcd.io/bbolt"
 	"time"
-
-	"github.com/boltdb/bolt"
 )
 
 const (
@@ -16,27 +16,27 @@ const (
 )
 
 type BoltMetaStore struct {
-	db *bolt.DB
+	db *bbolt.DB
 }
 
-func Open() (*BoltMetaStore, error) {
-	// Open the data file in your current directory.
+func Open() (storage.MetaStore, error) {
+	// Open the data file.
 	// It will be created if it doesn't exist.
-	db, err := bolt.Open(BoltMetaPath, 0600, &bolt.Options{Timeout: 1 * time.Second})
+	db, err := bbolt.Open(BoltMetaPath, 0600, &bbolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		return nil, err
 	}
 	return &BoltMetaStore{db}, nil
 }
 
-func Close(store *BoltMetaStore) error {
+func (store *BoltMetaStore) Close() error {
 	return store.db.Close()
 }
 
 func (store *BoltMetaStore) Get(path string) ([]byte, error) {
 	var result []byte
 	bkt, key := splitPath(path)
-	err := store.db.View(func(tx *bolt.Tx) error {
+	err := store.db.View(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(bkt)
 		if bucket == nil {
 			return errors.New("bucket not found: " + string(bkt))
@@ -53,7 +53,7 @@ func (store *BoltMetaStore) Get(path string) ([]byte, error) {
 
 func (store *BoltMetaStore) Set(path string, val []byte) error {
 	bkt, key := splitPath(path)
-	return store.db.Update(func(tx *bolt.Tx) error {
+	return store.db.Update(func(tx *bbolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists(bkt)
 		if err != nil {
 			return err
@@ -64,7 +64,7 @@ func (store *BoltMetaStore) Set(path string, val []byte) error {
 
 func (store *BoltMetaStore) Delete(path string) error {
 	bkt, key := splitPath(path)
-	return store.db.Update(func(tx *bolt.Tx) error {
+	return store.db.Update(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(bkt)
 		if bucket != nil {
 			return bucket.Delete(key)

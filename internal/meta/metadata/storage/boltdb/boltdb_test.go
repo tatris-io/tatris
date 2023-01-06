@@ -1,6 +1,6 @@
 // Copyright 2022 Tatris Project Authors. Licensed under Apache-2.0.
 
-package storage
+package boltdb
 
 import (
 	"github.com/stretchr/testify/assert"
