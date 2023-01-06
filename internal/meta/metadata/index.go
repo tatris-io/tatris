@@ -5,8 +5,8 @@ package metadata
 
 import (
 	json "encoding/json"
-	"github.com/tatris-io/tatris/internal/meta"
 	"github.com/tatris-io/tatris/internal/meta/metadata/storage"
+	"github.com/tatris-io/tatris/internal/protocol"
 )
 
 var metaStore storage.MetaStore
@@ -15,7 +15,7 @@ func init() {
 	metaStore, _ = storage.Open()
 }
 
-func Create(idx *meta.Index) error {
+func Create(idx *protocol.Index) error {
 	json, err := json.Marshal(idx)
 	if err != nil {
 		return err
@@ -23,13 +23,13 @@ func Create(idx *meta.Index) error {
 	return metaStore.Set(fillKey(idx.Name), json)
 }
 
-func Get(idxName string) (*meta.Index, error) {
+func Get(idxName string) (*protocol.Index, error) {
 	if b, err := metaStore.Get(fillKey(idxName)); err != nil {
 		return nil, err
 	} else if b == nil {
 		return nil, nil
 	} else {
-		idx := new(meta.Index)
+		idx := new(protocol.Index)
 		if err := json.Unmarshal(b, idx); err != nil {
 			return nil, err
 		}

@@ -65,6 +65,9 @@ func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) bluge.Query {
 	var blugeQuery bluge.Query
 
 	switch query := query.(type) {
+	case *indexlib.MatchAllQuery:
+		q := bluge.NewMatchAllQuery()
+		blugeQuery = q
 	case *indexlib.MatchQuery:
 		q := bluge.NewMatchQuery(query.Match)
 		if query.Field != "" {

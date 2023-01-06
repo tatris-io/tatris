@@ -4,6 +4,7 @@
 package manage
 
 import (
+	"errors"
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/indexlib/bluge"
 	"log"
@@ -18,15 +19,15 @@ func init() {
 	writerPool = make(map[string]indexlib.Writer)
 }
 
-func GetReader(config *indexlib.BaseConfig) indexlib.Reader {
+func GetReader(config *indexlib.BaseConfig) (indexlib.Reader, error) {
 	if config.Index == "" {
-		return nil
+		return nil, errors.New("no index specified")
 	}
 
 	baseConfig := indexlib.NewBaseConfig(config)
 	key := getKey(baseConfig)
 	if reader, found := readerPool[key]; found {
-		return reader
+		return reader, nil
 	}
 
 	switch baseConfig.IndexLibType {
@@ -35,26 +36,24 @@ func GetReader(config *indexlib.BaseConfig) indexlib.Reader {
 		err := blugeReader.OpenReader()
 		if err != nil {
 			log.Printf("bluge open reader error: %s", err)
-			return nil
+			return nil, err
 		}
 		readerPool[key] = blugeReader
-		return blugeReader
+		return blugeReader, nil
 	default:
-		log.Printf("index lib not support")
+		return nil, errors.New("index lib not support")
 	}
-
-	return nil
 }
 
-func GetWriter(config *indexlib.BaseConfig) indexlib.Writer {
+func GetWriter(config *indexlib.BaseConfig) (indexlib.Writer, error) {
 	if config.Index == "" {
-		return nil
+		return nil, errors.New("no index specified")
 	}
 
 	baseConfig := indexlib.NewBaseConfig(config)
 	key := getKey(baseConfig)
 	if writer, found := writerPool[key]; found {
-		return writer
+		return writer, nil
 	}
 
 	switch baseConfig.IndexLibType {
@@ -63,15 +62,14 @@ func GetWriter(config *indexlib.BaseConfig) indexlib.Writer {
 		err := blugeWriter.OpenWriter()
 		if err != nil {
 			log.Printf("bluge open writer error: %s", err)
-			return nil
+			return nil, err
 		}
 		writerPool[key] = blugeWriter
-		return blugeWriter
+		return blugeWriter, nil
 	default:
-		log.Printf("index lib not support")
+		return nil, errors.New("index lib not support")
 	}
 
-	return nil
 }
 
 func CloseReader(config *indexlib.BaseConfig) {

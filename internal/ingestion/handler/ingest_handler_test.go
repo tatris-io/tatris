@@ -1,6 +1,6 @@
 // Copyright 2022 Tatris Project Authors. Licensed under Apache-2.0.
 
-package ingestion
+package handler
 
 import (
 	"bytes"
@@ -26,10 +26,10 @@ func TestIngestHandler(t *testing.T) {
 		}
 		c.Request = req
 		p := gin.Params{}
-		p = append(p, gin.Param{Key: "index", Value: "index_1"})
+		p = append(p, gin.Param{Key: "index", Value: "storage_product"})
 		c.Params = p
 		c.Request.Header.Set("Content-Type", "application/json;charset=utf-8")
-		c.Request.Body = io.NopCloser(bytes.NewBufferString("{\"documents\":[{\"name\":\"Bob\",\"age\":12},{\"name\":\"Peter\",\"age\":20}]}"))
+		c.Request.Body = io.NopCloser(bytes.NewBufferString("{\"documents\":[{\"name\":\"tatris\",\"desc\":\"Time-aware storage and search system\"},{\"name\":\"mysql\",\"desc\":\"Relational database\"}]}"))
 		IngestHandler(c)
 		fmt.Println(w)
 		assert.Equal(t, http.StatusOK, w.Code)

@@ -11,7 +11,7 @@ const (
 	TypeField      = "_type"
 
 	BlugeIndexLibType = "bluge"
-	DefaultDataPath   = "./data"
+	DefaultDataPath   = "./_data"
 	FSStorageType     = "fs"
 )
 
