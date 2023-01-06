@@ -4,13 +4,17 @@
 package metadata
 
 import (
-	json "encoding/json"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"github.com/tatris-io/tatris/internal/meta/metadata/storage"
 	"github.com/tatris-io/tatris/internal/meta/metadata/storage/boltdb"
 	"github.com/tatris-io/tatris/internal/protocol"
+	"strings"
 )
 
 var metaStore storage.MetaStore
+var supportTypes = []string{"integer", "long", "float", "double", "boolean", "date", "keyword", "text"}
 
 func init() {
 	metaStore, _ = boltdb.Open()
@@ -21,7 +25,46 @@ func Create(idx *protocol.Index) error {
 	if err != nil {
 		return err
 	}
+	err = checkParam(idx)
+	if err != nil {
+		return err
+	}
 	return metaStore.Set(fillKey(idx.Name), json)
+}
+
+func checkParam(idx *protocol.Index) error {
+	mappings := idx.Mappings
+	if mappings == nil {
+		return errors.New("mappings can not be empty")
+	}
+	err := checkMapping(mappings)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func checkMapping(mappings *protocol.Mappings) error {
+	properties := mappings.Properties
+	if properties == nil {
+		return errors.New("mappings.properties can not be empty")
+	}
+	for _, property := range properties {
+		err := checkType(property.Type)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func checkType(paramType string) error {
+	for _, supportType := range supportTypes {
+		if strings.EqualFold(paramType, supportType) {
+			return nil
+		}
+	}
+	return fmt.Errorf("the type %s is not supported", paramType)
 }
 
 func Get(idxName string) (*protocol.Index, error) {

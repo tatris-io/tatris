@@ -12,6 +12,7 @@ require (
 	github.com/stretchr/testify v1.8.1
 	golang.org/x/tools v0.3.0
 	gotest.tools/gotestsum v1.8.2
+	gotest.tools/v3 v3.3.0
 )
 
 require (
@@ -40,6 +41,7 @@ require (
 	github.com/go-playground/validator/v10 v10.11.1 // indirect
 	github.com/goccy/go-json v0.10.0 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
+	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.15.2 // indirect
