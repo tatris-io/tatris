@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/tatris-io/tatris/internal/meta/metadata/storage"
+	"github.com/tatris-io/tatris/internal/meta/metadata/storage/boltdb"
 	"github.com/tatris-io/tatris/internal/protocol"
 	"strings"
 )
@@ -16,7 +17,7 @@ var metaStore storage.MetaStore
 var supportTypes = []string{"integer", "long", "float", "double", "boolean", "date", "keyword", "text"}
 
 func init() {
-	metaStore, _ = storage.Open()
+	metaStore, _ = boltdb.Open()
 }
 
 func Create(idx *protocol.Index) error {
