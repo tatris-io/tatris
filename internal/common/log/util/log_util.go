@@ -79,7 +79,7 @@ func CreateFileCore(
 		minLevel = fileConf._minLevel
 	}
 	levelFunc := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
-		return lvl >= minLevel && lvl < fileConf._maxLevel
+		return lvl >= minLevel && lvl <= fileConf._maxLevel
 	})
 	return zapcore.NewCore(encoder, writeSyncer, levelFunc), nil
 }
