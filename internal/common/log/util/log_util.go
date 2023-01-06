@@ -73,8 +73,9 @@ func CreateFileCore(
 	// lumberjack wrapped logger already has an internal lock, so there's no need to call
 	// `zapcore.Lock`
 	writeSyncer := zapcore.AddSync(logFile)
+	// minLevel = Max(level, fileConf._minLevel)
 	minLevel := level
-	if fileConf._minLevel < minLevel {
+	if fileConf._minLevel > minLevel {
 		minLevel = fileConf._minLevel
 	}
 	levelFunc := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
@@ -97,8 +98,9 @@ func CreateConsoleCore(
 	} else if lowercase == "stderr" {
 		writeSyncer = zapcore.Lock(os.Stderr)
 	}
+	// minLevel = Max(level, fileConf._minLevel)
 	minLevel := level
-	if consoleConf._minLevel < minLevel {
+	if consoleConf._minLevel > minLevel {
 		minLevel = consoleConf._minLevel
 	}
 	levelFunc := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
