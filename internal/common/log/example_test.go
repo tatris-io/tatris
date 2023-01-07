@@ -1,3 +1,5 @@
+// Copyright 2023 Tatris Project Authors. Licensed under Apache-2.0.
+
 package log
 
 import (
@@ -65,7 +67,8 @@ func TestLoggingExample(t *testing.T) {
 func _initializeWithConf() {
 	var logConfStruct util.Config
 	if err := json.Unmarshal([]byte(logConfJSON), &logConfStruct); err != nil {
-		// here we can safely use logger API. Before we initialize loggers with the user's config, there is a default underlying console logger.
+		// here we can safely use logger API. Before we initialize loggers with the user's config,
+		// there is a default underlying console logger.
 		logger.Infof("unmarshal logger config errors: %v", err)
 	}
 	// validate all args
@@ -85,13 +88,35 @@ func _printLogs() {
 
 	// log a message with some fields, using zap-style API
 	logger.Debug("debug log", zap.Int32("destination size", 0))
-	logger.Info("info log", zap.Int32("destination size", 2), zap.String("file", destFileLogAll), zap.String("console", destStdout))
-	logger.Error("error log", zap.Int32("destination size", 3), zap.String("file", destFileLogAll), zap.String("file", destFileLogError), zap.String("console", destStdout))
+	logger.Info(
+		"info log",
+		zap.Int32("destination size", 2),
+		zap.String("file", destFileLogAll),
+		zap.String("console", destStdout),
+	)
+	logger.Error(
+		"error log",
+		zap.Int32("destination size", 3),
+		zap.String("file", destFileLogAll),
+		zap.String("file", destFileLogError),
+		zap.String("console", destStdout),
+	)
 
 	// log a message with some fields, using printf-style API
 	logger.Debugf("debug log, destination size: %d", 0)
-	logger.Infof("info log, destination size: %d, file: %s, console: %s", 2, destFileLogAll, destStdout)
-	logger.Errorf("error log, destination size: %d, file: %s, file: %s, console: %s", 3, destFileLogAll, destFileLogError, destStdout)
+	logger.Infof(
+		"info log, destination size: %d, file: %s, console: %s",
+		2,
+		destFileLogAll,
+		destStdout,
+	)
+	logger.Errorf(
+		"error log, destination size: %d, file: %s, file: %s, console: %s",
+		3,
+		destFileLogAll,
+		destFileLogError,
+		destStdout,
+	)
 }
 
 func _cleanup(rootPath string) {
@@ -103,7 +128,8 @@ func _cleanup(rootPath string) {
 	if err := os.Remove(errorDotLog); err != nil {
 		fmt.Printf("remove log file fails, file = [%s], error = [%v]", errorDotLog, err)
 	}
-	// if the path contains other files, path wil not be removed, and other files will not be affected
+	// if the path contains other files, path wil not be removed, and other files will not be
+	// affected
 	if err := os.Remove(rootPath); err != nil {
 		fmt.Printf("remove log root path fails, path = [%s], error = [%v]", rootPath, err)
 	}
