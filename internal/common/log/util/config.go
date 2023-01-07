@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -34,15 +35,22 @@ type Config struct {
 	// GlobalLogger confs for all common logger
 	GlobalLogger *LoggerConfig `json:"global-logger"`
 
-	_level zapcore.Level
-	_once  sync.Once
+	_level  zapcore.Level
+	_once   sync.Once
+	_inited atomic.Bool
 }
 
 // Validate wrapps doValidates with a `sync.Once`
 func (cfg *Config) Validate() {
 	cfg._once.Do(func() {
 		cfg.doValidate()
+		cfg._inited.Store(true)
 	})
+}
+
+// IsValidated checks if this config struct was verified or not
+func (cfg *Config) IsValidated() bool {
+	return cfg._inited.Load()
 }
 
 // doValidates validates all input args and call validate func of inner FileConfig and ConsoleConfig

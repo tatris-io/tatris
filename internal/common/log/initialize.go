@@ -26,6 +26,9 @@ func InitLoggers(cfg *util.Config) {
 }
 
 func _initLoggers(cfg *util.Config) {
+	if !cfg.IsValidated() {
+		panic("logger config was not verified, cannot init loggers with it")
+	}
 	opts := cfg.BuildOpts()
 
 	// init global logger
