@@ -50,7 +50,7 @@ const (
 	}`
 )
 
-func TestLoggingExample(t *testing.T) {
+func TestLoggingExample(_ *testing.T) {
 	pwd, _ := os.Getwd()
 	logRootPath := path.Join(pwd, "_logs")
 	fmt.Println("log root path will be:", logRootPath)
