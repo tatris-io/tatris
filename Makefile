@@ -22,7 +22,7 @@ check: install-tools
 	@ echo "$(PACKAGE_DIRECTORIES)"
 	@ gofmt -s -l -w $(PACKAGE_DIRECTORIES)
 	@ echo "golangci-lint ..."
-	@ golangci-lint run $(PACKAGE_DIRECTORIES_WITHOUT_TOOLSET)
+	@ golangci-lint run -c golangci-lint.yml $(PACKAGE_DIRECTORIES_WITHOUT_TOOLSET)
 	@ echo "revive ..."
 	@ revive -formatter friendly -config revive.toml $(PACKAGES_WITHOUT_TOOLSET)
 
