@@ -30,7 +30,7 @@ func initDefaultConsoleLogger() {
 	conf.LevelMax = "fatal"
 	conf.LevelMin = "info"
 	conf.ConsoleFD = "stdout"
-	conf.validate()
+	conf.verify()
 	cc := &zapcore.EncoderConfig{
 		// Keys can be anything except the empty string.
 		TimeKey:        "time",

@@ -40,21 +40,21 @@ type Config struct {
 	_inited atomic.Bool
 }
 
-// Validate wrapps doValidates with a `sync.Once`
-func (cfg *Config) Validate() {
+// Verify wrapps doVerify with a `sync.Once`
+func (cfg *Config) Verify() {
 	cfg._once.Do(func() {
-		cfg.doValidate()
+		cfg.doVerify()
 		cfg._inited.Store(true)
 	})
 }
 
-// IsValidated checks if this config struct was verified or not
-func (cfg *Config) IsValidated() bool {
+// IsVerified checks if this config struct was verified or not
+func (cfg *Config) IsVerified() bool {
 	return cfg._inited.Load()
 }
 
-// doValidates validates all input args and call validate func of inner FileConfig and ConsoleConfig
-func (cfg *Config) doValidate() {
+// doVerify verifies all input args and call verify func of inner FileConfig and ConsoleConfig
+func (cfg *Config) doVerify() {
 	finalRootPath, err := calcLogRootPath(cfg.RootPath)
 	if err != nil {
 		panic(fmt.Errorf("calculate root path errors, mostly because of getting pwd %v", err))
@@ -67,10 +67,10 @@ func (cfg *Config) doValidate() {
 		return
 	}
 	for _, fileConf := range cfg.GlobalLogger.Files {
-		fileConf.validate()
+		fileConf.verify()
 	}
 	for _, consoleConf := range cfg.GlobalLogger.Consoles {
-		consoleConf.validate()
+		consoleConf.verify()
 	}
 }
 
@@ -111,9 +111,9 @@ type ConsoleConfig struct {
 	_maxLevel zapcore.Level
 }
 
-// Innter validate func for ConsoleConfig. It checks all input config fields and sets default
+// Inner verify func for ConsoleConfig. It checks all input config fields and sets default
 // values.
-func (cfg *ConsoleConfig) validate() {
+func (cfg *ConsoleConfig) verify() {
 	lowercase := strings.ToLower(cfg.ConsoleFD)
 	if lowercase != "stderr" && lowercase != "stdout" {
 		panic("invalid console-fd: " + cfg.ConsoleFD + ", should be stderr or stdout")
@@ -155,8 +155,8 @@ type FileConfig struct {
 	_maxLevel zapcore.Level
 }
 
-// Innter validate func for FileConfig. It checks all input config fields and sets default values.
-func (cfg *FileConfig) validate() {
+// Inner verify func for FileConfig. It checks all input config fields and sets default values.
+func (cfg *FileConfig) verify() {
 	if strings.ContainsRune(cfg.FileName, os.PathSeparator) {
 		panic("filename should not contain path separator")
 	}

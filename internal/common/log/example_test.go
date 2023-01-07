@@ -69,7 +69,7 @@ func _initializeWithConf() {
 		logger.Infof("unmarshal logger config errors: %v", err)
 	}
 	// validate all args
-	logConfStruct.Validate()
+	logConfStruct.Verify()
 	InitLoggers(&logConfStruct)
 }
 

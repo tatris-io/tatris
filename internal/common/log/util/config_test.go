@@ -81,12 +81,12 @@ func TestConfigUnmarshal(t *testing.T) {
 	var validConfStruct1 Config
 	err1 := json.Unmarshal([]byte(validConfig1), &validConfStruct1)
 	assert.Empty(t, err1)
-	validConfStruct1.Validate()
+	validConfStruct1.Verify()
 
 	var validConfStruct2 Config
 	err2 := json.Unmarshal([]byte(validConfig2), &validConfStruct2)
 	assert.Empty(t, err2)
-	validConfStruct2.Validate()
+	validConfStruct2.Verify()
 
 	fileConf0 := validConfStruct2.GlobalLogger.Files[0]
 	fileConf1 := validConfStruct2.GlobalLogger.Files[1]
@@ -95,29 +95,29 @@ func TestConfigUnmarshal(t *testing.T) {
 	// test invalid log level literal
 	fileConf0.LevelMax = "info-x"
 	assert.Panics(t, func() {
-		fileConf0.validate()
+		fileConf0.verify()
 	})
 
 	// test disordered log level
 	fileConf0.LevelMax = "info"
 	fileConf0.LevelMin = "error"
 	assert.Panics(t, func() {
-		fileConf0.validate()
+		fileConf0.verify()
 	})
 
 	// test default level value
-	fileConf1.validate()
+	fileConf1.verify()
 	assert.Equal(t, zapcore.FatalLevel, fileConf1._maxLevel)
 
 	// test file name
 	fileConf1.FileName = "./test/file.log"
 	assert.Panics(t, func() {
-		fileConf1.validate()
+		fileConf1.verify()
 	})
 
 	// test stdout or stderr spelling
 	consoleConf1.ConsoleFD = "stderr-x"
 	assert.Panics(t, func() {
-		consoleConf1.validate()
+		consoleConf1.verify()
 	})
 }
