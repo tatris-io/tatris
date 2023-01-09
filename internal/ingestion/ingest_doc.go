@@ -5,34 +5,39 @@ package ingestion
 import (
 	"crypto/rand"
 	"fmt"
+	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/indexlib/manage"
 	"log"
+	"time"
 )
-
-// TODO: make it configurable
-var dataPath = "/tmp/tatris/_data"
 
 func IngestDocs(idxName string, docs []map[string]interface{}) error {
 	config := &indexlib.BaseConfig{
 		Index:    idxName,
-		DataPath: dataPath,
+		DataPath: consts.DefaultDataPath,
 	}
 	writer, err := manage.GetWriter(config)
 	if err != nil {
 		return err
 	}
-	docsWithID := make(map[string]map[string]interface{})
+	idDocs := make(map[string]map[string]interface{})
 	for _, doc := range docs {
 		docID := ""
-		if id, ok := doc["_id"]; ok && id != nil && id != "" {
+		docTimestamp := time.Now()
+		if id, ok := doc[consts.IDField]; ok && id != nil && id != "" {
 			docID = id.(string)
 		} else {
 			docID = generateID()
 		}
-		docsWithID[docID] = doc
+		if timestamp, ok := doc[consts.TimestampField]; ok && timestamp != nil {
+			docTimestamp = timestamp.(time.Time)
+		}
+		doc[consts.IDField] = docID
+		doc[consts.TimestampField] = docTimestamp
+		idDocs[docID] = doc
 	}
-	return writer.Batch(docsWithID)
+	return writer.Batch(idDocs)
 }
 
 // TODO: distributed ID

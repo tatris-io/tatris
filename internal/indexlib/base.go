@@ -4,12 +4,6 @@
 package indexlib
 
 const (
-	TimestampField = "@timestamp"
-	IDField        = "_id"
-	SourceField    = "_source"
-	IndexField     = "_index"
-	TypeField      = "_type"
-
 	BlugeIndexLibType = "bluge"
 	DefaultDataPath   = "./_data"
 	FSStorageType     = "fs"

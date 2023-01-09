@@ -26,10 +26,10 @@ func TestIngestHandler(t *testing.T) {
 		}
 		c.Request = req
 		p := gin.Params{}
-		p = append(p, gin.Param{Key: "index", Value: "index_1"})
+		p = append(p, gin.Param{Key: "index", Value: "storage_product"})
 		c.Params = p
 		c.Request.Header.Set("Content-Type", "application/json;charset=utf-8")
-		c.Request.Body = io.NopCloser(bytes.NewBufferString("{\"settings\":{\"number_of_shards\":3,\"number_of_replicas\":1},\"mappings\":{\"properties\":{\"name\":{\"type\":\"keyword\"},\"age\":{\"type\":\"integer\"}}}}"))
+		c.Request.Body = io.NopCloser(bytes.NewBufferString("{\"settings\":{\"number_of_shards\":3,\"number_of_replicas\":1},\"mappings\":{\"properties\":{\"name\":{\"type\":\"keyword\"},\"desc\":{\"type\":\"text\"}}}}"))
 		CreateIndexHandler(c)
 		fmt.Println(w)
 		assert.Equal(t, http.StatusOK, w.Code)
