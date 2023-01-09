@@ -98,6 +98,24 @@ func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) bluge.Query {
 				q.AddShould(b.generateQuery(should))
 			}
 		}
+	case *indexlib.TermsQuery:
+		q := bluge.NewBooleanQuery()
+		for k, v := range query.Terms {
+			field := k
+			subBooleanQuery := bluge.NewBooleanQuery()
+			for _, vv := range v.Fields {
+				subq := bluge.NewTermQuery(vv).SetField(field)
+				subBooleanQuery.AddShould(subq)
+			}
+			q.AddMust(subBooleanQuery)
+		}
+		blugeQuery = q
+	case *indexlib.RangeQuery:
+		q, err := RangeQuery(query)
+		if err != nil {
+			log.Printf("bluge range query error: %s", err)
+			return nil
+		}
 		blugeQuery = q
 	}
 
@@ -160,6 +178,9 @@ func (b *BlugeReader) generateResponse(dmi search.DocumentMatchIterator) *indexl
 
 func (b *BlugeReader) Close() {
 	if b.Reader != nil {
-		b.Reader.Close()
+		err := b.Reader.Close()
+		if err != nil {
+			log.Printf("fail to close bluge reader for: %s", err)
+		}
 	}
 }
