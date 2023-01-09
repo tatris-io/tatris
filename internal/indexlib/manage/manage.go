@@ -25,6 +25,15 @@ func GetReader(config *indexlib.BaseConfig) (indexlib.Reader, error) {
 	if reader, found := readerPool.Load(key); found {
 		return reader.(indexlib.Reader), nil
 	}
+	// First get Near-Real-Time reader
+	if writer, found := writerPool.Load(key); found {
+		reader, err := writer.(indexlib.Writer).Reader()
+		if err != nil {
+			return nil, err
+		}
+		readerPool.Store(key, reader)
+		return reader, nil
+	}
 
 	switch baseConfig.IndexLibType {
 	case indexlib.BlugeIndexLibType:

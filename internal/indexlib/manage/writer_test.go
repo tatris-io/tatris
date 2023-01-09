@@ -3,8 +3,6 @@
 package manage
 
 import (
-	"context"
-	"encoding/json"
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"testing"
 )
@@ -26,20 +24,6 @@ func TestWrite(t *testing.T) {
 			t.FailNow()
 		}
 		t.Log("Write success!")
-
-		reader, err := writer.Reader()
-		if err != nil {
-			t.Logf("get near real time reader error %v", err)
-			t.FailNow()
-		}
-
-		matchQuery := &indexlib.MatchQuery{Match: "tatris", Field: "name"}
-		resp, err := reader.Search(context.Background(), matchQuery, -1)
-		if err != nil {
-			t.Log(err)
-		}
-		marshal, _ := json.Marshal(resp)
-		t.Log(string(marshal))
 
 		CloseWriter(config)
 	}
