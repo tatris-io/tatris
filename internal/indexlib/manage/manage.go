@@ -9,15 +9,11 @@ import (
 	"github.com/tatris-io/tatris/internal/indexlib/bluge"
 	"log"
 	"strings"
+	"sync"
 )
 
-var readerPool map[string]indexlib.Reader
-var writerPool map[string]indexlib.Writer
-
-func init() {
-	readerPool = make(map[string]indexlib.Reader)
-	writerPool = make(map[string]indexlib.Writer)
-}
+var readerPool sync.Map
+var writerPool sync.Map
 
 func GetReader(config *indexlib.BaseConfig) (indexlib.Reader, error) {
 	if config.Index == "" {
@@ -26,7 +22,16 @@ func GetReader(config *indexlib.BaseConfig) (indexlib.Reader, error) {
 
 	baseConfig := indexlib.NewBaseConfig(config)
 	key := getKey(baseConfig)
-	if reader, found := readerPool[key]; found {
+	if reader, found := readerPool.Load(key); found {
+		return reader.(indexlib.Reader), nil
+	}
+	// First get Near-Real-Time reader
+	if writer, found := writerPool.Load(key); found {
+		reader, err := writer.(indexlib.Writer).Reader()
+		if err != nil {
+			return nil, err
+		}
+		readerPool.Store(key, reader)
 		return reader, nil
 	}
 
@@ -38,7 +43,7 @@ func GetReader(config *indexlib.BaseConfig) (indexlib.Reader, error) {
 			log.Printf("bluge open reader error: %s", err)
 			return nil, err
 		}
-		readerPool[key] = blugeReader
+		readerPool.Store(key, blugeReader)
 		return blugeReader, nil
 	default:
 		return nil, errors.New("index lib not support")
@@ -52,8 +57,8 @@ func GetWriter(config *indexlib.BaseConfig) (indexlib.Writer, error) {
 
 	baseConfig := indexlib.NewBaseConfig(config)
 	key := getKey(baseConfig)
-	if writer, found := writerPool[key]; found {
-		return writer, nil
+	if writer, found := writerPool.Load(key); found {
+		return writer.(indexlib.Writer), nil
 	}
 
 	switch baseConfig.IndexLibType {
@@ -64,29 +69,28 @@ func GetWriter(config *indexlib.BaseConfig) (indexlib.Writer, error) {
 			log.Printf("bluge open writer error: %s", err)
 			return nil, err
 		}
-		writerPool[key] = blugeWriter
+		writerPool.Store(key, blugeWriter)
 		return blugeWriter, nil
 	default:
 		return nil, errors.New("index lib not support")
 	}
-
 }
 
 func CloseReader(config *indexlib.BaseConfig) {
 	baseConfig := indexlib.NewBaseConfig(config)
 	key := getKey(baseConfig)
-	if reader, found := readerPool[key]; found {
-		reader.Close()
-		delete(readerPool, key)
+	if reader, found := readerPool.Load(key); found {
+		reader.(indexlib.Reader).Close()
+		readerPool.Delete(key)
 	}
 }
 
 func CloseWriter(config *indexlib.BaseConfig) {
 	baseConfig := indexlib.NewBaseConfig(config)
 	key := getKey(baseConfig)
-	if writer, found := writerPool[key]; found {
-		writer.Close()
-		delete(writerPool, key)
+	if writer, found := writerPool.Load(key); found {
+		writer.(indexlib.Writer).Close()
+		writerPool.Delete(key)
 	}
 }
 

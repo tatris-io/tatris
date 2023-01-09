@@ -21,6 +21,7 @@ func TestWrite(t *testing.T) {
 		err := writer.Insert("storage_product", doc)
 		if err != nil {
 			t.Logf("error write index %v", err)
+			t.FailNow()
 		}
 		t.Log("Write success!")
 

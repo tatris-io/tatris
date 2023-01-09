@@ -61,6 +61,14 @@ func (b *BlugeWriter) Batch(docs map[string]map[string]interface{}) error {
 	return b.Writer.Batch(batch)
 }
 
+func (b *BlugeWriter) Reader() (indexlib.Reader, error) {
+	reader, err := b.Writer.Reader()
+	if err != nil {
+		return nil, err
+	}
+	return &BlugeReader{b.BaseConfig, reader}, nil
+}
+
 func (b *BlugeWriter) Close() {
 	if b.Writer != nil {
 		b.Writer.Close()
