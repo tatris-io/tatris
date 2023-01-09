@@ -47,9 +47,9 @@ func (b *BlugeReader) Search(ctx context.Context, query indexlib.QueryRequest, l
 	var searchRequest bluge.SearchRequest
 
 	if limit == -1 {
-		searchRequest = bluge.NewAllMatches(blugeQuery)
+		searchRequest = bluge.NewAllMatches(blugeQuery).WithStandardAggregations()
 	} else {
-		searchRequest = bluge.NewTopNSearch(limit, blugeQuery)
+		searchRequest = bluge.NewTopNSearch(limit, blugeQuery).WithStandardAggregations()
 	}
 
 	dmi, err := b.Reader.Search(ctx, searchRequest)
@@ -88,9 +88,7 @@ func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) bluge.Query {
 func (b *BlugeReader) generateResponse(dmi search.DocumentMatchIterator) *indexlib.QueryResponse {
 	Hits := make([]indexlib.Hit, 0)
 	next, err := dmi.Next()
-	var count int64
 	for err == nil && next != nil {
-		count++
 		var id string
 		var index string
 		var source map[string]interface{}
@@ -99,7 +97,9 @@ func (b *BlugeReader) generateResponse(dmi search.DocumentMatchIterator) *indexl
 		err = next.VisitStoredFields(func(field string, value []byte) bool {
 			switch field {
 			case indexlib.TimestampField:
+				location, _ := time.LoadLocation("Asia/Shanghai")
 				timestamp, _ = bluge.DecodeDateTime(value)
+				timestamp = timestamp.In(location)
 			case indexlib.IDField:
 				id = string(value)
 			case indexlib.IndexField:
@@ -131,7 +131,7 @@ func (b *BlugeReader) generateResponse(dmi search.DocumentMatchIterator) *indexl
 	resp := &indexlib.QueryResponse{
 		Took: dmi.Aggregations().Duration().Milliseconds(),
 		Hits: indexlib.Hits{
-			Total: indexlib.Total{Value: count},
+			Total: indexlib.Total{Value: int64(dmi.Aggregations().Count())},
 			Hits:  Hits,
 		},
 	}

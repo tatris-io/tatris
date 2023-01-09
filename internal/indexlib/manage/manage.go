@@ -9,10 +9,14 @@ import (
 	"github.com/tatris-io/tatris/internal/indexlib/bluge"
 	"log"
 	"strings"
+	"sync"
 )
 
 var readerPool map[string]indexlib.Reader
 var writerPool map[string]indexlib.Writer
+
+var readerLock sync.Mutex
+var writerLock sync.Mutex
 
 func init() {
 	readerPool = make(map[string]indexlib.Reader)
@@ -23,6 +27,9 @@ func GetReader(config *indexlib.BaseConfig) (indexlib.Reader, error) {
 	if config.Index == "" {
 		return nil, errors.New("no index specified")
 	}
+
+	readerLock.Lock()
+	defer readerLock.Unlock()
 
 	baseConfig := indexlib.NewBaseConfig(config)
 	key := getKey(baseConfig)
@@ -50,6 +57,9 @@ func GetWriter(config *indexlib.BaseConfig) (indexlib.Writer, error) {
 		return nil, errors.New("no index specified")
 	}
 
+	writerLock.Lock()
+	defer writerLock.Unlock()
+
 	baseConfig := indexlib.NewBaseConfig(config)
 	key := getKey(baseConfig)
 	if writer, found := writerPool[key]; found {
@@ -69,7 +79,6 @@ func GetWriter(config *indexlib.BaseConfig) (indexlib.Writer, error) {
 	default:
 		return nil, errors.New("index lib not support")
 	}
-
 }
 
 func CloseReader(config *indexlib.BaseConfig) {
