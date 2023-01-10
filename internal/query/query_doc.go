@@ -74,9 +74,7 @@ func transform(request protocol.QueryRequest) (indexlib.QueryRequest, error) {
 			return &indexlib.Terms{}, nil
 		}
 		termsQ := indexlib.Terms{}
-		for _, v := range ids.Values {
-			termsQ.Fields = append(termsQ.Fields, v)
-		}
+		termsQ.Fields = append(termsQ.Fields, ids.Values...)
 		return &termsQ, nil
 	} else if query.Terms != nil {
 		terms := *query.Terms

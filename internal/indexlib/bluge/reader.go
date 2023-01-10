@@ -98,6 +98,7 @@ func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) bluge.Query {
 				q.AddShould(b.generateQuery(should))
 			}
 		}
+		blugeQuery = q
 	case *indexlib.TermsQuery:
 		q := bluge.NewBooleanQuery()
 		for k, v := range query.Terms {

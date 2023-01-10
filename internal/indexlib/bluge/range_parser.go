@@ -1,3 +1,5 @@
+// Copyright 2022 Tatris Project Authors. Licensed under Apache-2.0.
+
 package bluge
 
 import (
@@ -54,9 +56,8 @@ func toFloat64(v interface{}) (float64, error) {
 	case bool:
 		if v {
 			return 1, nil
-		} else {
-			return 0, nil
 		}
+		return 0, nil
 	default:
 		return 0, fmt.Errorf("ToFloat64: unknown supported type %T", v)
 	}

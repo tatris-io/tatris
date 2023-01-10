@@ -2,87 +2,61 @@
 
 package indexlib
 
-type Query struct {
-	Size int `json:"size"`
-}
-
 type QueryRequest interface {
 	searcher()
-	Query() Query
+	Query() *BaseQuery
 }
 
-type baseQuery struct {
+type BaseQuery struct {
 	Boost float64
+	Size  int
 }
 
-func (m *baseQuery) searcher() {
+func (m *BaseQuery) searcher() {
 }
 
-func (m *baseQuery) Query() Query {
-	query := Query{
-		Size: -1,
+func (m *BaseQuery) Query() *BaseQuery {
+	query := &BaseQuery{
+		Size: 10,
 	}
 	return query
 }
 
 type MatchAllQuery struct {
-	*baseQuery
+	*BaseQuery
 }
 
 type MatchQuery struct {
-	*baseQuery
+	*BaseQuery
 	Match string
 	Field string
 }
 
-func (m *MatchQuery) searcher() {
-}
-
 type TermQuery struct {
-	*baseQuery
+	*BaseQuery
 	Term  string
 	Field string
 }
 
-func (m *TermQuery) Query() Query {
-	query := Query{
-		Size: 10,
-	}
-	return query
-}
-
 type TermsQuery struct {
-	*baseQuery
+	*BaseQuery
 	Terms map[string]*Terms `json:"terms,omitempty"`
 }
 
-func (m *TermsQuery) Query() Query {
-	query := Query{
-		Size: 10,
-	}
-	return query
-}
-
 type Terms struct {
-	*baseQuery
+	*BaseQuery
 	Fields []string `json:"fields"`
 }
 
-func (m *Terms) Query() Query {
-	query := Query{
-		Size: 10,
-	}
-	return query
-}
-
 type BooleanQuery struct {
-	*baseQuery
+	*BaseQuery
 	Musts    []QueryRequest
 	Shoulds  []QueryRequest
 	MustNots []QueryRequest
 }
 
 type RangeQuery struct {
+	*BaseQuery
 	Range map[string]*RangeVal `json:"range,omitempty"`
 }
 
@@ -91,14 +65,4 @@ type RangeVal struct {
 	GTE interface{} `json:"gte,omitempty"` // null, float64
 	LT  interface{} `json:"lt,omitempty"`  // null, float64
 	LTE interface{} `json:"lte,omitempty"` // null, float64
-}
-
-func (m *RangeQuery) searcher() {
-}
-
-func (m *RangeQuery) Query() Query {
-	query := Query{
-		Size: 10,
-	}
-	return query
 }
