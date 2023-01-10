@@ -9,21 +9,18 @@ import (
 	"strconv"
 )
 
-func RangeQuery(rangeQuery *indexlib.RangeQuery) (bluge.Query, error) {
+func RangeQueryParse(rangeQuery *indexlib.RangeQuery) (bluge.Query, error) {
 	if len(rangeQuery.Range) <= 0 {
 		return nil, &errors.Error{Type: "parse_exception", Reason: "rangeQuery can not be empty"}
 	}
-	return RangeQueryNumeric(rangeQuery)
-}
-
-func RangeQueryNumeric(query *indexlib.RangeQuery) (bluge.Query, error) {
+	//numeric parse
 	field := ""
 	min := float64(math.MinInt64)
 	max := float64(math.MaxInt64)
 	containsMin := false
 	containsMax := false
 
-	for k, v := range query.Range {
+	for k, v := range rangeQuery.Range {
 		field = k
 		if v.GT != nil {
 			min, _ = toFloat64(v.GT)
