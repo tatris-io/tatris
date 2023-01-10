@@ -81,6 +81,24 @@ func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) bluge.Query {
 			q.SetField(query.Field)
 		}
 		blugeQuery = q
+	case *indexlib.BooleanQuery:
+		q := bluge.NewBooleanQuery()
+		if query.Musts != nil {
+			for _, must := range query.Musts {
+				q.AddMust(b.generateQuery(must))
+			}
+		}
+		if query.MustNots != nil {
+			for _, mustNot := range query.MustNots {
+				q.AddMustNot(b.generateQuery(mustNot))
+			}
+		}
+		if query.Shoulds != nil {
+			for _, should := range query.Shoulds {
+				q.AddShould(b.generateQuery(should))
+			}
+		}
+		blugeQuery = q
 	}
 
 	return blugeQuery

@@ -25,6 +25,6 @@ func TestWrite(t *testing.T) {
 		}
 		t.Log("Write success!")
 
-		CloseWriter(config)
+		writer.Close()
 	}
 }

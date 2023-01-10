@@ -22,13 +22,14 @@ func TestRead(t *testing.T) {
 		t.FailNow()
 	} else {
 		matchQuery := &indexlib.MatchQuery{Match: "tatris", Field: "name"}
-		resp, err := reader.Search(context.Background(), matchQuery, -1)
+		query := &indexlib.BooleanQuery{Musts: []indexlib.QueryRequest{matchQuery}}
+		resp, err := reader.Search(context.Background(), query, -1)
 		if err != nil {
 			t.Log(err)
 		}
 		marshal, _ := json.Marshal(resp)
 		t.Log(string(marshal))
 
-		CloseReader(config)
+		reader.Close()
 	}
 }
