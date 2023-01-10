@@ -21,19 +21,6 @@ func TestRead(t *testing.T) {
 	if err != nil {
 		t.Log("get reader error!")
 		t.FailNow()
-<<<<<<< HEAD
-	} else {
-		matchQuery := &indexlib.MatchQuery{Match: "tatris", Field: "name"}
-		query := &indexlib.BooleanQuery{Musts: []indexlib.QueryRequest{matchQuery}}
-		resp, err := reader.Search(context.Background(), query, -1)
-		if err != nil {
-			t.Log(err)
-		}
-		marshal, _ := json.Marshal(resp)
-		t.Log(string(marshal))
-
-		reader.Close()
-=======
 		return
 	}
 
@@ -51,7 +38,6 @@ func TestRead(t *testing.T) {
 	termResp, termErr := reader.Search(context.Background(), termQuery, termQuery.Query().Size)
 	if termErr != nil {
 		t.Log(termErr)
->>>>>>> 2666684 (feat: term-level queries (#63))
 	}
 	termRespJson, err := json.Marshal(termResp)
 	assert.NoError(t, termErr)
@@ -104,6 +90,6 @@ func TestRead(t *testing.T) {
 	assert.NoError(t, rangeErr)
 	t.Log("range query result:", string(rangeRespJson))
 
-	CloseReader(config)
+	reader.Close()
 
 }

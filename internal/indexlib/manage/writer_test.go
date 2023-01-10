@@ -15,24 +15,10 @@ func TestWrite(t *testing.T) {
 		t.Logf("get writer error!")
 		t.FailNow()
 	} else {
-<<<<<<< HEAD
-		doc := make(map[string]interface{})
-		doc["name"] = "tatris"
-		doc["desc"] = "Time-aware storage and search system"
-		err := writer.Insert("storage_product", doc)
-		if err != nil {
-			t.Logf("error write index %v", err)
-			t.FailNow()
-		}
-		t.Log("Write success!")
-
-		writer.Close()
-=======
 		writeDoc("", writer, t, 10.0)
 		writeDoc("_v1", writer, t, 11.11)
 		writeDoc("_v2", writer, t, 12.0)
-		CloseWriter(config)
->>>>>>> 2666684 (feat: term-level queries (#63))
+		writer.Close()
 	}
 }
 
