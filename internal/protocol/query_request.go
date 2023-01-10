@@ -25,6 +25,8 @@ type Query struct {
 	Terms *Terms `json:"terms,omitempty"`
 	// {"bool": {"must": [{"term": {"field1": "value1"}}, {"term": {"field2": "value2"}}]}}
 	Bool *Bool `json:"bool,omitempty"`
+	// {"range": {"field": {"gt": 10, "lt": 20}}}
+	Range *Range `json:"range,omitempty"`
 }
 
 type MatchAll struct{}

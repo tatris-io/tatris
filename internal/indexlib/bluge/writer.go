@@ -10,6 +10,8 @@ import (
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/indexlib/bluge/config"
+	"log"
+	"strconv"
 	"time"
 )
 
@@ -72,7 +74,10 @@ func (b *BlugeWriter) Reader() (indexlib.Reader, error) {
 
 func (b *BlugeWriter) Close() {
 	if b.Writer != nil {
-		b.Writer.Close()
+		err := b.Writer.Close()
+		if err != nil {
+			log.Printf("fail to close bluge writer for: %s", err)
+		}
 	}
 }
 
@@ -115,7 +120,14 @@ func (b *BlugeWriter) addField(bdoc *bluge.Document, key string, value interface
 	case consts.IDField:
 		bfield = bluge.NewKeywordField(key, value.(string))
 	default:
-		bfield = bluge.NewKeywordField(key, value.(string))
+		switch val := value.(type) {
+		case string:
+			bfield = bluge.NewKeywordField(key, val)
+		case float64:
+			bfield = bluge.NewNumericField(key, val)
+		case bool:
+			bfield = bluge.NewKeywordField(key, strconv.FormatBool(val))
+		}
 	}
 	bdoc.AddField(bfield)
 }

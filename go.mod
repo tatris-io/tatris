@@ -8,10 +8,12 @@ require (
 	github.com/blugelabs/bluge v0.2.2
 	github.com/blugelabs/bluge_segment_api v0.2.0
 	github.com/gin-gonic/gin v1.8.2
+	github.com/goccy/go-json v0.10.0
 	github.com/mgechev/revive v1.2.4
 	github.com/segmentio/golines v0.11.0
 	github.com/stretchr/testify v1.8.1
 	go.etcd.io/bbolt v1.3.6
+	go.uber.org/atomic v1.7.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/tools v0.3.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
@@ -46,7 +48,6 @@ require (
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/go-playground/validator/v10 v10.11.1 // indirect
-	github.com/goccy/go-json v0.10.0 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
@@ -71,7 +72,6 @@ require (
 	github.com/sirupsen/logrus v1.4.2 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2 // indirect
-	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/crypto v0.4.0 // indirect
 	golang.org/x/mod v0.7.0 // indirect
