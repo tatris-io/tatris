@@ -7,6 +7,7 @@ import (
 	"github.com/blugelabs/bluge"
 	"github.com/blugelabs/bluge/index"
 	segment "github.com/blugelabs/bluge_segment_api"
+	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/indexlib/bluge/config"
 	"time"
@@ -97,16 +98,24 @@ func (b *BlugeWriter) generateBlugeDoc(docID string, doc map[string]interface{})
 		return nil, err
 	}
 
-	bdoc.AddField(bluge.NewStoredOnlyField(indexlib.IDField, []byte(docID)))
-	bdoc.AddField(bluge.NewStoredOnlyField(indexlib.IndexField, []byte(b.Index)))
-	bdoc.AddField(bluge.NewStoredOnlyField(indexlib.SourceField, source))
-	bdoc.AddField(bluge.NewDateTimeField(indexlib.TimestampField, time.Now()).StoreValue().Sortable().Aggregatable())
+	bdoc.AddField(bluge.NewStoredOnlyField(consts.IDField, []byte(docID)))
+	bdoc.AddField(bluge.NewStoredOnlyField(consts.IndexField, []byte(b.Index)))
+	bdoc.AddField(bluge.NewStoredOnlyField(consts.SourceField, source))
+	bdoc.AddField(bluge.NewDateTimeField(consts.TimestampField, time.Now()).StoreValue().Sortable().Aggregatable())
 
 	return bdoc, nil
 }
 
 func (b *BlugeWriter) addField(bdoc *bluge.Document, key string, value interface{}) {
 	// TODO get index mapping, case field type(text、keyword、bool)
-	field := bluge.NewKeywordField(key, value.(string))
-	bdoc.AddField(field)
+	var bfield *bluge.TermField
+	switch key {
+	case consts.TimestampField:
+		bfield = bluge.NewDateTimeField(key, value.(time.Time))
+	case consts.IDField:
+		bfield = bluge.NewKeywordField(key, value.(string))
+	default:
+		bfield = bluge.NewKeywordField(key, value.(string))
+	}
+	bdoc.AddField(bfield)
 }

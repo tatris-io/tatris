@@ -17,7 +17,7 @@ func CreateIndexHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"msg": "invalid request"})
 	}
 	idx.Name = idxName
-	if err := metadata.Create(&idx); err != nil {
+	if err := metadata.CreateIndex(&idx); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"msg": err.Error()})
 	} else {
 		c.JSON(http.StatusOK, idx)

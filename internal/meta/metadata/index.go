@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/meta/metadata/storage"
 	"github.com/tatris-io/tatris/internal/meta/metadata/storage/boltdb"
 	"github.com/tatris-io/tatris/internal/protocol"
@@ -20,7 +21,7 @@ func init() {
 	metaStore, _ = boltdb.Open()
 }
 
-func Create(idx *protocol.Index) error {
+func CreateIndex(idx *protocol.Index) error {
 	json, err := json.Marshal(idx)
 	if err != nil {
 		return err
@@ -49,12 +50,30 @@ func checkMapping(mappings *protocol.Mappings) error {
 	if properties == nil {
 		return errors.New("mappings.properties can not be empty")
 	}
+	err := checkReservedField(properties)
+	if err != nil {
+		return err
+	}
 	for _, property := range properties {
-		err := checkType(property.Type)
+		err = checkType(property.Type)
 		if err != nil {
 			return err
 		}
 	}
+	return nil
+}
+
+func checkReservedField(properties map[string]protocol.Property) error {
+	_, exist := properties[consts.IDField]
+	if exist {
+		return errors.New("_id is a built-in field")
+	}
+	properties[consts.IDField] = protocol.Property{Type: "keyword"}
+	_, exist = properties[consts.TimestampField]
+	if exist {
+		return errors.New("_timestamp is a built-in field")
+	}
+	properties[consts.TimestampField] = protocol.Property{Type: "date"}
 	return nil
 }
 

@@ -6,13 +6,10 @@ package boltdb
 import (
 	"bytes"
 	"errors"
+	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/meta/metadata/storage"
 	"go.etcd.io/bbolt"
 	"time"
-)
-
-const (
-	BoltMetaPath = "/tmp/tatris/_meta.bolt"
 )
 
 type BoltMetaStore struct {
@@ -22,7 +19,7 @@ type BoltMetaStore struct {
 func Open() (storage.MetaStore, error) {
 	// Open the data file.
 	// It will be created if it doesn't exist.
-	db, err := bbolt.Open(BoltMetaPath, 0600, &bbolt.Options{Timeout: 1 * time.Second})
+	db, err := bbolt.Open(consts.DefaultMetaPath+".bolt", 0600, &bbolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		return nil, err
 	}

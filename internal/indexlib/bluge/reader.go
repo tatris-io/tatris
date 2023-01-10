@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"github.com/blugelabs/bluge"
 	"github.com/blugelabs/bluge/search"
+	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/indexlib/bluge/config"
 	"log"
@@ -96,15 +97,15 @@ func (b *BlugeReader) generateResponse(dmi search.DocumentMatchIterator) *indexl
 
 		err = next.VisitStoredFields(func(field string, value []byte) bool {
 			switch field {
-			case indexlib.TimestampField:
+			case consts.TimestampField:
 				location, _ := time.LoadLocation("Asia/Shanghai")
 				timestamp, _ = bluge.DecodeDateTime(value)
 				timestamp = timestamp.In(location)
-			case indexlib.IDField:
+			case consts.IDField:
 				id = string(value)
-			case indexlib.IndexField:
+			case consts.IndexField:
 				index = string(value)
-			case indexlib.SourceField:
+			case consts.SourceField:
 				err := json.Unmarshal(value, &source)
 				if err != nil {
 					log.Printf("bluge source unmarshal error: %s", err)
