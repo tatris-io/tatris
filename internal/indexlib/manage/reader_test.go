@@ -29,9 +29,9 @@ func TestRead(t *testing.T) {
 	if matchErr != nil {
 		t.Log(matchErr)
 	}
-	respJson, err := json.Marshal(resp)
+	respJSON, err := json.Marshal(resp)
 	assert.NoError(t, matchErr)
-	t.Log("match query result:", string(respJson))
+	t.Log("match query result:", string(respJSON))
 
 	// test term query
 	termQuery := &indexlib.TermQuery{Term: "tatris_v1", Field: "name"}
@@ -39,9 +39,9 @@ func TestRead(t *testing.T) {
 	if termErr != nil {
 		t.Log(termErr)
 	}
-	termRespJson, err := json.Marshal(termResp)
+	termRespJSON, err := json.Marshal(termResp)
 	assert.NoError(t, termErr)
-	t.Log("term query result:", string(termRespJson))
+	t.Log("term query result:", string(termRespJSON))
 
 	// test terms query
 	termsQuery := &indexlib.TermsQuery{
@@ -55,9 +55,9 @@ func TestRead(t *testing.T) {
 	if termsErr != nil {
 		t.Log(termsErr)
 	}
-	termsRespJson, err := json.Marshal(termsResp)
+	termsRespJSON, err := json.Marshal(termsResp)
 	assert.NoError(t, termsErr)
-	t.Log("terms query result:", string(termsRespJson))
+	t.Log("terms query result:", string(termsRespJSON))
 
 	// test ids query
 	idsQuery := &indexlib.TermsQuery{
@@ -71,9 +71,9 @@ func TestRead(t *testing.T) {
 	if idsErr != nil {
 		t.Log(idsErr)
 	}
-	idsRespJson, err := json.Marshal(idsResp)
+	idsRespJSON, err := json.Marshal(idsResp)
 	assert.NoError(t, idsErr)
-	t.Log("ids query result:", string(idsRespJson))
+	t.Log("ids query result:", string(idsRespJSON))
 
 	//test range query
 	rangeQuery := &indexlib.RangeQuery{Range: map[string]*indexlib.RangeVal{
@@ -86,9 +86,9 @@ func TestRead(t *testing.T) {
 	if rangeErr != nil {
 		t.Log(rangeErr)
 	}
-	rangeRespJson, err := json.Marshal(rangeResp)
+	rangeRespJSON, err := json.Marshal(rangeResp)
 	assert.NoError(t, rangeErr)
-	t.Log("range query result:", string(rangeRespJson))
+	t.Log("range query result:", string(rangeRespJSON))
 
 	reader.Close()
 
