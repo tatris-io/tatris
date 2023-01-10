@@ -8,32 +8,17 @@ import (
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/indexlib/bluge"
 	"log"
-	"strings"
-	"sync"
 )
 
-var readerPool sync.Map
-var writerPool sync.Map
-
+// GetReader The Reader represents a stable snapshot of the index a point in time.
+// This means that changes made to the index after the reader is obtained never affect the results returned by this reader.
+// This also means that this Reader is holding onto resources and MUST be closed when it is no longer needed.
 func GetReader(config *indexlib.BaseConfig) (indexlib.Reader, error) {
 	if config.Index == "" {
 		return nil, errors.New("no index specified")
 	}
 
-	baseConfig := indexlib.NewBaseConfig(config)
-	key := getKey(baseConfig)
-	if reader, found := readerPool.Load(key); found {
-		return reader.(indexlib.Reader), nil
-	}
-	// First get Near-Real-Time reader
-	if writer, found := writerPool.Load(key); found {
-		reader, err := writer.(indexlib.Writer).Reader()
-		if err != nil {
-			return nil, err
-		}
-		readerPool.Store(key, reader)
-		return reader, nil
-	}
+	baseConfig := indexlib.SetDefaultConfig(config)
 
 	switch baseConfig.IndexLibType {
 	case indexlib.BlugeIndexLibType:
@@ -43,23 +28,21 @@ func GetReader(config *indexlib.BaseConfig) (indexlib.Reader, error) {
 			log.Printf("bluge open reader error: %s", err)
 			return nil, err
 		}
-		readerPool.Store(key, blugeReader)
 		return blugeReader, nil
 	default:
 		return nil, errors.New("index lib not support")
 	}
 }
 
+// GetWriter Writer’s hold an exclusive-lock on their underlying directory which prevents other processes from opening a writer while this one is still open.
+// This does not affect Readers that are already open, and it does not prevent new Readers from being opened,
+// but it does mean care care should be taken to close the Writer when you done.
 func GetWriter(config *indexlib.BaseConfig) (indexlib.Writer, error) {
 	if config.Index == "" {
 		return nil, errors.New("no index specified")
 	}
 
-	baseConfig := indexlib.NewBaseConfig(config)
-	key := getKey(baseConfig)
-	if writer, found := writerPool.Load(key); found {
-		return writer.(indexlib.Writer), nil
-	}
+	baseConfig := indexlib.SetDefaultConfig(config)
 
 	switch baseConfig.IndexLibType {
 	case indexlib.BlugeIndexLibType:
@@ -69,31 +52,8 @@ func GetWriter(config *indexlib.BaseConfig) (indexlib.Writer, error) {
 			log.Printf("bluge open writer error: %s", err)
 			return nil, err
 		}
-		writerPool.Store(key, blugeWriter)
 		return blugeWriter, nil
 	default:
 		return nil, errors.New("index lib not support")
 	}
-}
-
-func CloseReader(config *indexlib.BaseConfig) {
-	baseConfig := indexlib.NewBaseConfig(config)
-	key := getKey(baseConfig)
-	if reader, found := readerPool.Load(key); found {
-		reader.(indexlib.Reader).Close()
-		readerPool.Delete(key)
-	}
-}
-
-func CloseWriter(config *indexlib.BaseConfig) {
-	baseConfig := indexlib.NewBaseConfig(config)
-	key := getKey(baseConfig)
-	if writer, found := writerPool.Load(key); found {
-		writer.(indexlib.Writer).Close()
-		writerPool.Delete(key)
-	}
-}
-
-func getKey(config *indexlib.BaseConfig) string {
-	return strings.Join([]string{config.IndexLibType, config.StorageType, config.Index}, "-")
 }

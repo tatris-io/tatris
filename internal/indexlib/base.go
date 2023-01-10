@@ -16,7 +16,7 @@ type BaseConfig struct {
 	IndexLibType string
 }
 
-func NewBaseConfig(config *BaseConfig) *BaseConfig {
+func SetDefaultConfig(config *BaseConfig) *BaseConfig {
 	if config.DataPath == "" {
 		config.DataPath = DefaultDataPath
 	}

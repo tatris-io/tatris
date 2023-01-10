@@ -6,33 +6,32 @@ type QueryRequest interface {
 	searcher()
 }
 
-type MatchAllQuery struct {
+type baseQuery struct {
+	Boost float64
 }
 
-func (m *MatchAllQuery) searcher() {
+func (m *baseQuery) searcher() {
+}
+
+type MatchAllQuery struct {
+	*baseQuery
 }
 
 type MatchQuery struct {
+	*baseQuery
 	Match string
 	Field string
 }
 
-func (m *MatchQuery) searcher() {
-}
-
 type TermQuery struct {
+	*baseQuery
 	Term  string
 	Field string
 }
 
-func (m *TermQuery) searcher() {
-}
-
 type BooleanQuery struct {
-	Musts    *[]QueryRequest
-	Shoulds  *[]QueryRequest
-	MustNots *[]QueryRequest
-}
-
-func (m *BooleanQuery) searcher() {
+	*baseQuery
+	Musts    []QueryRequest
+	Shoulds  []QueryRequest
+	MustNots []QueryRequest
 }
