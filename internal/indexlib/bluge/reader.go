@@ -98,6 +98,14 @@ func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) bluge.Query {
 				q.AddShould(b.generateQuery(should))
 			}
 		}
+		if query.Filters != nil {
+			filter := bluge.NewBooleanQuery().SetBoost(0)
+			for _, must := range query.Filters {
+				filter.AddMust(b.generateQuery(must))
+			}
+			q.AddMust(filter)
+		}
+		q.SetMinShould(query.MinShould)
 		blugeQuery = q
 	case *indexlib.TermsQuery:
 		q := bluge.NewBooleanQuery()

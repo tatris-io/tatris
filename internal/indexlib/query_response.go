@@ -23,5 +23,5 @@ type Hit struct {
 	Index     string                 `json:"_index"`
 	ID        string                 `json:"_id"`
 	Source    map[string]interface{} `json:"_source"`
-	Timestamp time.Time              `json:"@timestamp"`
+	Timestamp time.Time              `json:"_timestamp"`
 }
