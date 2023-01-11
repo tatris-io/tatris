@@ -23,6 +23,7 @@ func SearchDocs(request protocol.QueryRequest) (*protocol.Hits, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer reader.Close()
 	libRequest, err := transform(request.Query)
 	if err != nil {
 		return nil, err
