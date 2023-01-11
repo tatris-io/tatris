@@ -53,9 +53,9 @@ type RangeVal struct {
 }
 
 type Bool struct {
-	Must               []interface{} `json:"must,omitempty"`
-	MustNot            []interface{} `json:"must_not,omitempty"`
-	Should             []interface{} `json:"should,omitempty"`
-	Filter             interface{}   `json:"filter,omitempty"`
-	MinimumShouldMatch string        `json:"minimum_should_match,omitempty"`
+	Must               []*Query `json:"must,omitempty"`
+	MustNot            []*Query `json:"must_not,omitempty"`
+	Should             []*Query `json:"should,omitempty"`
+	Filter             []*Query `json:"filter,omitempty"`
+	MinimumShouldMatch string   `json:"minimum_should_match,omitempty"`
 }

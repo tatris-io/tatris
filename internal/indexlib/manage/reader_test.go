@@ -35,7 +35,7 @@ func TestRead(t *testing.T) {
 
 	// test term query
 	termQuery := &indexlib.TermQuery{Term: "tatris_v1", Field: "name"}
-	termResp, termErr := reader.Search(context.Background(), termQuery, termQuery.Query().Size)
+	termResp, termErr := reader.Search(context.Background(), termQuery, 10)
 	if termErr != nil {
 		t.Log(termErr)
 	}
@@ -51,7 +51,7 @@ func TestRead(t *testing.T) {
 			},
 		},
 	}
-	termsResp, termsErr := reader.Search(context.Background(), termsQuery, termQuery.Query().Size)
+	termsResp, termsErr := reader.Search(context.Background(), termsQuery, 10)
 	if termsErr != nil {
 		t.Log(termsErr)
 	}
@@ -67,7 +67,7 @@ func TestRead(t *testing.T) {
 			},
 		},
 	}
-	idsResp, idsErr := reader.Search(context.Background(), idsQuery, idsQuery.Query().Size)
+	idsResp, idsErr := reader.Search(context.Background(), idsQuery, 10)
 	if idsErr != nil {
 		t.Log(idsErr)
 	}
@@ -82,7 +82,7 @@ func TestRead(t *testing.T) {
 			LT:  12.0,
 		},
 	}}
-	rangeResp, rangeErr := reader.Search(context.Background(), rangeQuery, rangeQuery.Query().Size)
+	rangeResp, rangeErr := reader.Search(context.Background(), rangeQuery, 10)
 	if rangeErr != nil {
 		t.Log(rangeErr)
 	}
@@ -90,6 +90,18 @@ func TestRead(t *testing.T) {
 	assert.NoError(t, rangeErr)
 	t.Log("range query result:", string(rangeRespJSON))
 
-	reader.Close()
+	// test bool query
+	boolQuery := &indexlib.BooleanQuery{
+		Musts:   []indexlib.QueryRequest{termQuery},
+		Filters: []indexlib.QueryRequest{termsQuery},
+	}
+	boolResp, boolErr := reader.Search(context.Background(), boolQuery, 10)
+	if boolErr != nil {
+		t.Log(boolErr)
+	}
+	boolRespJSON, err := json.Marshal(boolResp)
+	assert.NoError(t, boolErr)
+	t.Log("bool query result:", string(boolRespJSON))
 
+	reader.Close()
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/indexlib/manage"
 	"github.com/tatris-io/tatris/internal/protocol"
+	"strconv"
 )
 
 // TODO: make it configurable
@@ -22,12 +23,11 @@ func SearchDocs(request protocol.QueryRequest) (*protocol.Hits, error) {
 	if err != nil {
 		return nil, err
 	}
-	libRequest, err := transform(request)
+	libRequest, err := transform(request.Query)
 	if err != nil {
 		return nil, err
 	}
-	limit := libRequest.Query().Size
-	resp, err := reader.Search(context.Background(), libRequest, limit)
+	resp, err := reader.Search(context.Background(), libRequest, int(request.Size))
 	if err != nil {
 		return nil, err
 	}
@@ -42,8 +42,7 @@ func SearchDocs(request protocol.QueryRequest) (*protocol.Hits, error) {
 	return hits, nil
 }
 
-func transform(request protocol.QueryRequest) (indexlib.QueryRequest, error) {
-	query := request.Query
+func transform(query protocol.Query) (indexlib.QueryRequest, error) {
 	if query.MatchAll != nil {
 		return &indexlib.MatchAllQuery{}, nil
 	} else if query.Match != nil {
@@ -66,6 +65,7 @@ func transform(request protocol.QueryRequest) (indexlib.QueryRequest, error) {
 		for k, v := range term {
 			termQ.Field = k
 			termQ.Term = v.(string)
+			//termQ.Term = v.(map[string]interface{})["value"].(string)
 		}
 		return &termQ, nil
 	} else if query.Ids != nil {
@@ -117,6 +117,57 @@ func transform(request protocol.QueryRequest) (indexlib.QueryRequest, error) {
 			}}
 		}
 		return rangeQ, nil
+	} else if query.Bool != nil {
+		q := &indexlib.BooleanQuery{}
+
+		if query.Bool.Must != nil {
+			q.Musts = make([]indexlib.QueryRequest, 0, len(query.Bool.Must))
+			for _, must := range query.Bool.Must {
+				queryRequest, err := transform(*must)
+				if err != nil {
+					return nil, errors.New("bool query must transform error")
+				}
+				q.Musts = append(q.Musts, queryRequest)
+			}
+		}
+		if query.Bool.MustNot != nil {
+			q.MustNots = make([]indexlib.QueryRequest, 0, len(query.Bool.MustNot))
+			for _, mustNot := range query.Bool.MustNot {
+				queryRequest, err := transform(*mustNot)
+				if err != nil {
+					return nil, errors.New("bool query mustNot transform error")
+				}
+				q.MustNots = append(q.MustNots, queryRequest)
+			}
+		}
+		if query.Bool.Should != nil {
+			q.Shoulds = make([]indexlib.QueryRequest, 0, len(query.Bool.Should))
+			for _, should := range query.Bool.Should {
+				queryRequest, err := transform(*should)
+				if err != nil {
+					return nil, errors.New("bool query should transform error")
+				}
+				q.Shoulds = append(q.Shoulds, queryRequest)
+			}
+		}
+		if query.Bool.Filter != nil {
+			q.Filters = make([]indexlib.QueryRequest, 0, len(query.Bool.Filter))
+			for _, filter := range query.Bool.Filter {
+				queryRequest, err := transform(*filter)
+				if err != nil {
+					return nil, errors.New("bool query filter transform error")
+				}
+				q.Filters = append(q.Filters, queryRequest)
+			}
+		}
+		if query.Bool.MinimumShouldMatch != "" {
+			minShould, err := strconv.Atoi(query.Bool.MinimumShouldMatch)
+			if err != nil {
+				return nil, errors.New("bool query minimumShouldMatch transform error")
+			}
+			q.MinShould = minShould
+		}
+		return q, nil
 	} else {
 		// TODO: need to be supported
 		return nil, errors.New("need to be supported")

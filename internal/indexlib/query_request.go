@@ -4,22 +4,13 @@ package indexlib
 
 type QueryRequest interface {
 	searcher()
-	Query() *BaseQuery
 }
 
 type BaseQuery struct {
 	Boost float64
-	Size  int
 }
 
 func (m *BaseQuery) searcher() {
-}
-
-func (m *BaseQuery) Query() *BaseQuery {
-	query := &BaseQuery{
-		Size: 10,
-	}
-	return query
 }
 
 type MatchAllQuery struct {
@@ -50,9 +41,11 @@ type Terms struct {
 
 type BooleanQuery struct {
 	*BaseQuery
-	Musts    []QueryRequest
-	Shoulds  []QueryRequest
-	MustNots []QueryRequest
+	Musts     []QueryRequest
+	Shoulds   []QueryRequest
+	MustNots  []QueryRequest
+	Filters   []QueryRequest
+	MinShould int
 }
 
 type RangeQuery struct {
