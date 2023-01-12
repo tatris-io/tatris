@@ -29,7 +29,8 @@ func TestQueryHandler(t *testing.T) {
 		p = append(p, gin.Param{Key: "index", Value: "storage_product"})
 		c.Params = p
 		c.Request.Header.Set("Content-Type", "application/json;charset=utf-8")
-		query := "{\"query\":{\"bool\":{\"must\":[{\"match_all\":{}}],\"must_not\":[{\"term\":{\"name\":\"mysql\"}}]}}}"
+		query := "{\"size\":20,\"query\":{\"bool\":{\"must\":[{\"match\":{\"name\":{\"query\":\"tatris\",\"prefix_length\":5,\"fuzziness\":1}}}," +
+			"{\"query_string\":{\"query\":\"name:tatris\"}}],\"must_not\":[{\"term\":{\"name\":{\"value\":\"mysql\"}}}]}}}"
 		c.Request.Body = io.NopCloser(bytes.NewBufferString(query))
 		QueryHandler(c)
 		fmt.Println(w)

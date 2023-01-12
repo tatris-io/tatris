@@ -7,11 +7,15 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/blugelabs/bluge"
+	"github.com/blugelabs/bluge/analysis"
+	"github.com/blugelabs/bluge/analysis/analyzer"
 	"github.com/blugelabs/bluge/search"
+	qs "github.com/blugelabs/query_string"
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/indexlib/bluge/config"
 	"log"
+	"strings"
 	"time"
 )
 
@@ -44,7 +48,10 @@ func (b *BlugeReader) OpenReader() error {
 }
 
 func (b *BlugeReader) Search(ctx context.Context, query indexlib.QueryRequest, limit int) (*indexlib.QueryResponse, error) {
-	blugeQuery := b.generateQuery(query)
+	blugeQuery, err := b.generateQuery(query)
+	if err != nil {
+		return nil, err
+	}
 	var searchRequest bluge.SearchRequest
 
 	if limit == -1 {
@@ -62,7 +69,7 @@ func (b *BlugeReader) Search(ctx context.Context, query indexlib.QueryRequest, l
 	return b.generateResponse(dmi), nil
 }
 
-func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) bluge.Query {
+func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) (bluge.Query, error) {
 	var blugeQuery bluge.Query
 
 	switch query := query.(type) {
@@ -70,9 +77,21 @@ func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) bluge.Query {
 		q := bluge.NewMatchAllQuery()
 		blugeQuery = q
 	case *indexlib.MatchQuery:
-		q := bluge.NewMatchQuery(query.Match)
-		if query.Field != "" {
-			q.SetField(query.Field)
+		q, err := b.generateMatchQuery(query)
+		if err != nil {
+			return nil, err
+		}
+		blugeQuery = q
+	case *indexlib.MatchPhraseQuery:
+		q, err := b.generateMatchPhraseQuery(query)
+		if err != nil {
+			return nil, err
+		}
+		blugeQuery = q
+	case *indexlib.QueryString:
+		q, err := b.generateQueryString(query)
+		if err != nil {
+			return nil, err
 		}
 		blugeQuery = q
 	case *indexlib.TermQuery:
@@ -82,30 +101,10 @@ func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) bluge.Query {
 		}
 		blugeQuery = q
 	case *indexlib.BooleanQuery:
-		q := bluge.NewBooleanQuery()
-		if query.Musts != nil {
-			for _, must := range query.Musts {
-				q.AddMust(b.generateQuery(must))
-			}
+		q, err := b.generateBoolQuery(query)
+		if err != nil {
+			return nil, err
 		}
-		if query.MustNots != nil {
-			for _, mustNot := range query.MustNots {
-				q.AddMustNot(b.generateQuery(mustNot))
-			}
-		}
-		if query.Shoulds != nil {
-			for _, should := range query.Shoulds {
-				q.AddShould(b.generateQuery(should))
-			}
-		}
-		if query.Filters != nil {
-			filter := bluge.NewBooleanQuery().SetBoost(0)
-			for _, must := range query.Filters {
-				filter.AddMust(b.generateQuery(must))
-			}
-			q.AddMust(filter)
-		}
-		q.SetMinShould(query.MinShould)
 		blugeQuery = q
 	case *indexlib.TermsQuery:
 		q := bluge.NewBooleanQuery()
@@ -122,13 +121,12 @@ func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) bluge.Query {
 	case *indexlib.RangeQuery:
 		q, err := RangeQueryParse(query)
 		if err != nil {
-			log.Printf("bluge range query error: %s", err)
-			return nil
+			return nil, err
 		}
 		blugeQuery = q
 	}
 
-	return blugeQuery
+	return blugeQuery, nil
 }
 
 func (b *BlugeReader) generateResponse(dmi search.DocumentMatchIterator) *indexlib.QueryResponse {
@@ -183,6 +181,117 @@ func (b *BlugeReader) generateResponse(dmi search.DocumentMatchIterator) *indexl
 	}
 
 	return resp
+}
+
+func (b *BlugeReader) generateMatchQuery(query *indexlib.MatchQuery) (bluge.Query, error) {
+	q := bluge.NewMatchQuery(query.Match)
+	if query.Field != "" {
+		q.SetField(query.Field)
+	}
+	if query.Prefix != 0 {
+		q.SetPrefix(query.Prefix)
+	}
+	if query.Fuzziness != 0 {
+		q.SetFuzziness(query.Fuzziness)
+	}
+	if query.Operator != "" {
+		switch strings.ToUpper(query.Operator) {
+		case "OR":
+			q.SetOperator(bluge.MatchQueryOperatorOr)
+		case "AND":
+			q.SetOperator(bluge.MatchQueryOperatorAnd)
+		}
+	}
+	analyzer := b.generateAnalyzer(query.Analyzer)
+	if analyzer != nil {
+		q.SetAnalyzer(analyzer)
+	}
+
+	return q, nil
+}
+
+func (b *BlugeReader) generateMatchPhraseQuery(query *indexlib.MatchPhraseQuery) (bluge.Query, error) {
+	q := bluge.NewMatchPhraseQuery(query.MatchPhrase)
+	if query.Field != "" {
+		q.SetField(query.Field)
+	}
+	if query.Slop != 0 {
+		q.SetSlop(query.Slop)
+	}
+
+	return q, nil
+}
+
+func (b *BlugeReader) generateQueryString(query *indexlib.QueryString) (bluge.Query, error) {
+	options := qs.DefaultOptions()
+	analyzer := b.generateAnalyzer(query.Analyzer)
+	if analyzer != nil {
+		options.WithDefaultAnalyzer(analyzer)
+	}
+
+	return qs.ParseQueryString(query.Query, options)
+}
+
+func (b *BlugeReader) generateAnalyzer(analyzerStr string) *analysis.Analyzer {
+	if analyzerStr != "" {
+		switch strings.ToUpper(analyzerStr) {
+		case "KEYWORD":
+			return analyzer.NewKeywordAnalyzer()
+		case "SIMPLE":
+			return analyzer.NewSimpleAnalyzer()
+		case "STANDARD":
+			return analyzer.NewStandardAnalyzer()
+		case "WEB":
+			return analyzer.NewWebAnalyzer()
+		default:
+			return analyzer.NewStandardAnalyzer()
+		}
+	}
+	return nil
+}
+
+func (b *BlugeReader) generateBoolQuery(query *indexlib.BooleanQuery) (bluge.Query, error) {
+	q := bluge.NewBooleanQuery()
+	if query.Musts != nil {
+		for _, must := range query.Musts {
+			tmpQuery, err := b.generateQuery(must)
+			if err != nil {
+				return nil, err
+			}
+			q.AddMust(tmpQuery)
+		}
+	}
+	if query.MustNots != nil {
+		for _, mustNot := range query.MustNots {
+			tmpQuery, err := b.generateQuery(mustNot)
+			if err != nil {
+				return nil, err
+			}
+			q.AddMustNot(tmpQuery)
+		}
+	}
+	if query.Shoulds != nil {
+		for _, should := range query.Shoulds {
+			tmpQuery, err := b.generateQuery(should)
+			if err != nil {
+				return nil, err
+			}
+			q.AddShould(tmpQuery)
+		}
+	}
+	if query.Filters != nil {
+		filter := bluge.NewBooleanQuery().SetBoost(0)
+		for _, fliter := range query.Filters {
+			tmpQuery, err := b.generateQuery(fliter)
+			if err != nil {
+				return nil, err
+			}
+			filter.AddMust(tmpQuery)
+		}
+		q.AddMust(filter)
+	}
+	q.SetMinShould(query.MinShould)
+	return q, nil
 }
 
 func (b *BlugeReader) Close() {

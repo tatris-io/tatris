@@ -7,6 +7,7 @@ require (
 	github.com/axw/gocov v1.1.0
 	github.com/blugelabs/bluge v0.2.2
 	github.com/blugelabs/bluge_segment_api v0.2.0
+	github.com/blugelabs/query_string v0.3.0
 	github.com/gin-gonic/gin v1.8.2
 	github.com/goccy/go-json v0.10.0
 	github.com/mgechev/revive v1.2.4
