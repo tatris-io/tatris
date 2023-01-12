@@ -19,8 +19,26 @@ type MatchAllQuery struct {
 
 type MatchQuery struct {
 	*BaseQuery
-	Match string
-	Field string
+	Match     string
+	Field     string
+	Analyzer  string // STANDARD(default), KEYWORD, SIMPLE, WEB
+	Prefix    int    // Defaults to 0
+	Fuzziness int
+	Operator  string // OR, AND
+}
+
+type MatchPhraseQuery struct {
+	*BaseQuery
+	MatchPhrase string
+	Field       string
+	Analyzer    string
+	Slop        int // Defaults to 0
+}
+
+type QueryString struct {
+	*BaseQuery
+	Query    string
+	Analyzer string
 }
 
 type TermQuery struct {
@@ -31,12 +49,12 @@ type TermQuery struct {
 
 type TermsQuery struct {
 	*BaseQuery
-	Terms map[string]*Terms `json:"terms,omitempty"`
+	Terms map[string]*Terms
 }
 
 type Terms struct {
 	*BaseQuery
-	Fields []string `json:"fields"`
+	Fields []string
 }
 
 type BooleanQuery struct {
@@ -50,12 +68,12 @@ type BooleanQuery struct {
 
 type RangeQuery struct {
 	*BaseQuery
-	Range map[string]*RangeVal `json:"range,omitempty"`
+	Range map[string]*RangeVal
 }
 
 type RangeVal struct {
-	GT  interface{} `json:"gt,omitempty"`  // null, float64
-	GTE interface{} `json:"gte,omitempty"` // null, float64
-	LT  interface{} `json:"lt,omitempty"`  // null, float64
-	LTE interface{} `json:"lte,omitempty"` // null, float64
+	GT  interface{}
+	GTE interface{}
+	LT  interface{}
+	LTE interface{}
 }

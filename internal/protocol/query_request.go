@@ -17,6 +17,8 @@ type Query struct {
 	Match *Match `json:"match,omitempty"`
 	// {"match_phrase": {"field": "value"}}
 	MatchPhrase *MatchPhrase `json:"match_phrase,omitempty"`
+	// {"query_string": {"query": "field:value"}}
+	QueryString *QueryString `json:"query_string,omitempty"`
 	// {"ids": {"values": ["id1", "id2"]}}
 	Ids *Ids `json:"ids,omitempty"`
 	// {"term": {"field": "value"}}
@@ -34,6 +36,8 @@ type MatchAll struct{}
 type Match map[string]interface{}
 
 type MatchPhrase map[string]interface{}
+
+type QueryString map[string]interface{}
 
 type Ids struct {
 	Values []string `json:"values"`
