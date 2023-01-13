@@ -3,10 +3,6 @@
 package core
 
 import (
-	"fmt"
-	"github.com/tatris-io/tatris/internal/common/consts"
-	"github.com/tatris-io/tatris/internal/indexlib"
-	"github.com/tatris-io/tatris/internal/indexlib/manage"
 	"sync"
 )
 
@@ -36,28 +32,6 @@ func (shard *Shard) GetLatestSegment() *Segment {
 		return nil
 	}
 	return shard.Segments[num-1]
-}
-
-func (shard *Shard) CreateSegment() error {
-	shard.lock.Lock()
-	defer shard.lock.Unlock()
-	segmentNum := shard.GetSegmentNum()
-	segment := Segment{Shard: shard, SegmentID: segmentNum}
-	shard.Segments = append(shard.Segments, &segment)
-	// create writer for new segment
-	indexName := shard.Index.Name
-	shardID := shard.ShardID
-	segmentID := segment.SegmentID
-	config := &indexlib.BaseConfig{
-		Index:    fmt.Sprintf("%s/%d/%d", indexName, shardID, segmentID),
-		DataPath: consts.DefaultDataPath,
-	}
-	writer, err := manage.GetWriter(config)
-	if err != nil {
-		return err
-	}
-	segment.writer = writer
-	return nil
 }
 
 func (shard *Shard) CheckSegments() {
