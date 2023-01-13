@@ -40,6 +40,7 @@ func (shard *Shard) GetLatestSegment() *Segment {
 
 func (shard *Shard) CreateSegment() error {
 	shard.lock.Lock()
+	defer shard.lock.Unlock()
 	segmentNum := shard.GetSegmentNum()
 	segment := Segment{Shard: shard, SegmentID: segmentNum}
 	shard.Segments = append(shard.Segments, &segment)
@@ -56,7 +57,6 @@ func (shard *Shard) CreateSegment() error {
 		return err
 	}
 	segment.writer = writer
-	shard.lock.Unlock()
 	return nil
 }
 
