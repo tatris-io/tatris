@@ -38,11 +38,11 @@ func (shard *Shard) CheckSegments() {
 	lastedSegment := shard.GetLatestSegment()
 	if lastedSegment == nil || lastedSegment.IsMature() {
 		shard.lock.Lock()
+		defer shard.lock.Unlock()
 		lastedSegment = shard.GetLatestSegment()
 		if lastedSegment == nil || lastedSegment.IsMature() {
 			shard.addSegment(shard.GetSegmentNum())
 		}
-		shard.lock.Unlock()
 	}
 }
 
