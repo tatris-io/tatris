@@ -21,6 +21,8 @@ check: install-tools
 	@ echo "gofmt ..."
 	@ echo "$(PACKAGE_DIRECTORIES)"
 	@ gofmt -s -l -w $(PACKAGE_DIRECTORIES)
+	@ echo "golines ..."
+	@ golines --max-len=100 --shorten-comments -w internal cmd
 	@ echo "golangci-lint ..."
 	@ golangci-lint run -c golangci-lint.yml $(PACKAGE_DIRECTORIES_WITHOUT_TOOLSET)
 	@ echo "revive ..."
