@@ -14,21 +14,21 @@ type Query struct {
 	// "match_all": {}
 	MatchAll *MatchAll `json:"match_all,omitempty"`
 	// {"match": {"field": "value"}}
-	Match *Match `json:"match,omitempty"`
+	Match Match `json:"match,omitempty"`
 	// {"match_phrase": {"field": "value"}}
-	MatchPhrase *MatchPhrase `json:"match_phrase,omitempty"`
+	MatchPhrase MatchPhrase `json:"match_phrase,omitempty"`
 	// {"query_string": {"query": "field:value"}}
-	QueryString *QueryString `json:"query_string,omitempty"`
+	QueryString QueryString `json:"query_string,omitempty"`
 	// {"ids": {"values": ["id1", "id2"]}}
 	Ids *Ids `json:"ids,omitempty"`
 	// {"term": {"field": "value"}}
-	Term *Term `json:"term,omitempty"`
+	Term Term `json:"term,omitempty"`
 	// {"terms": {"field": ["value1", "value2"]}}
-	Terms *Terms `json:"terms,omitempty"`
+	Terms Terms `json:"terms,omitempty"`
 	// {"bool": {"must": [{"term": {"field1": "value1"}}, {"term": {"field2": "value2"}}]}}
 	Bool *Bool `json:"bool,omitempty"`
 	// {"range": {"field": {"gt": 10, "lt": 20}}}
-	Range *Range `json:"range,omitempty"`
+	Range Range `json:"range,omitempty"`
 }
 
 type MatchAll struct{}

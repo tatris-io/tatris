@@ -9,9 +9,9 @@ import (
 
 func TestBoltMetaStore_Get(t *testing.T) {
 	boltMetaStore, _ := Open()
-	path := "/tatris/kk"
+	path := "/tmp/tatris/kk"
 	val := "vv"
-	t.Run("prepare", func(t *testing.T) {
+	t.Run("set", func(t *testing.T) {
 		err := boltMetaStore.Set(path, []byte("vv"))
 		assert.NoError(t, err)
 	})
@@ -20,6 +20,10 @@ func TestBoltMetaStore_Get(t *testing.T) {
 		println(string(result))
 		assert.NoError(t, err)
 		assert.Equal(t, string(result), val)
+	})
+	t.Run("delete", func(t *testing.T) {
+		err := boltMetaStore.Delete(path)
+		assert.NoError(t, err)
 	})
 
 }

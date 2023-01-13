@@ -5,42 +5,82 @@ package query
 import (
 	"context"
 	"errors"
+	"github.com/tatris-io/tatris/internal/common/consts"
+	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/indexlib"
-	"github.com/tatris-io/tatris/internal/indexlib/manage"
+	"github.com/tatris-io/tatris/internal/meta/metadata"
 	"github.com/tatris-io/tatris/internal/protocol"
+	"go.uber.org/zap"
 	"strconv"
+	"time"
 )
 
-// TODO: make it configurable
-var dataPath = "/tmp/tatris/_data"
-
 func SearchDocs(request protocol.QueryRequest) (*protocol.Hits, error) {
-	config := &indexlib.BaseConfig{
-		Index:    request.Index,
-		DataPath: dataPath,
-	}
-	reader, err := manage.GetReader(config)
+	indexName := request.Index
+	index, err := metadata.GetIndex(indexName)
 	if err != nil {
 		return nil, err
 	}
-	defer reader.Close()
+
+	readers, err := index.GetReadersByTime(timeRange(request.Query))
+	if err != nil {
+		return nil, err
+	}
+	hits := &protocol.Hits{
+		Total: protocol.Total{Value: 0, Relation: "eq"},
+	}
+	if len(readers) == 0 {
+		return nil, nil
+	}
 	libRequest, err := transform(request.Query)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := reader.Search(context.Background(), libRequest, int(request.Size))
-	if err != nil {
-		return nil, err
+	hits.Hits = make([]protocol.Hit, 0)
+	var totalValue int64
+	totalRelation := "eq"
+	for _, reader := range readers {
+		resp, err := reader.Search(context.Background(), libRequest, int(request.Size))
+		if err != nil {
+			return nil, err
+		}
+		respHits := resp.Hits
+		totalValue += respHits.Total.Value
+		totalRelation = respHits.Total.Relation
+		for _, respHit := range respHits.Hits {
+			hits.Hits = append(hits.Hits, protocol.Hit{Index: respHit.Index, ID: respHit.ID, Source: respHit.Source})
+		}
+		reader.Close()
 	}
-	respHits := resp.Hits
-	hits := &protocol.Hits{
-		Total: protocol.Total{Value: respHits.Total.Value, Relation: respHits.Total.Relation},
-	}
-	hits.Hits = make([]protocol.Hit, len(respHits.Hits))
-	for i, respHit := range respHits.Hits {
-		hits.Hits[i] = protocol.Hit{Index: respHit.Index, ID: respHit.ID, Source: respHit.Source}
-	}
+	hits.Total.Value = totalValue
+	hits.Total.Relation = totalRelation
 	return hits, nil
+}
+
+func timeRange(query protocol.Query) (int64, int64) {
+	// default range: last 3 days
+	start, end := time.Now().UnixMilli()-60000*60*24*3, time.Now().UnixMilli()
+	if query.Range != nil {
+		timeRange, ok := query.Range[consts.TimestampField]
+		if ok {
+			if timeRange.Gt != nil {
+				start = timeRange.Gt.(time.Time).UnixMilli() + 1
+			}
+			if timeRange.Gte != nil {
+				start = timeRange.Gte.(time.Time).UnixMilli()
+			}
+			if timeRange.Lt != nil {
+				end = timeRange.Lt.(time.Time).UnixMilli() - 1
+			}
+			if timeRange.Lte != nil {
+				end = timeRange.Lte.(time.Time).UnixMilli()
+			}
+		}
+	} else if query.Bool != nil {
+		// TODO
+		logger.Warn("unsupported: extract timeRange from bool query", zap.String("role", "query"))
+	}
+	return start, end
 }
 
 func transform(query protocol.Query) (indexlib.QueryRequest, error) {
@@ -69,7 +109,7 @@ func transform(query protocol.Query) (indexlib.QueryRequest, error) {
 }
 
 func transformMatch(query protocol.Query) (indexlib.QueryRequest, error) {
-	matches := *query.Match
+	matches := query.Match
 	if len(matches) <= 0 {
 		return nil, errors.New("invalid match query")
 	}
@@ -99,7 +139,7 @@ func transformMatch(query protocol.Query) (indexlib.QueryRequest, error) {
 }
 
 func transformMatchPhrase(query protocol.Query) (indexlib.QueryRequest, error) {
-	matches := *query.MatchPhrase
+	matches := query.MatchPhrase
 	if len(matches) <= 0 {
 		return nil, errors.New("invalid match phrase query")
 	}
@@ -123,7 +163,7 @@ func transformMatchPhrase(query protocol.Query) (indexlib.QueryRequest, error) {
 }
 
 func transformQueryString(query protocol.Query) (indexlib.QueryRequest, error) {
-	querys := *query.QueryString
+	querys := query.QueryString
 	if len(querys) <= 0 {
 		return nil, errors.New("invalid query string query")
 	}
@@ -137,7 +177,7 @@ func transformQueryString(query protocol.Query) (indexlib.QueryRequest, error) {
 }
 
 func transformTerm(query protocol.Query) (indexlib.QueryRequest, error) {
-	term := *query.Term
+	term := query.Term
 	if len(term) <= 0 {
 		return &indexlib.TermQuery{}, nil
 	}
@@ -165,7 +205,7 @@ func transformIds(query protocol.Query) (indexlib.QueryRequest, error) {
 }
 
 func transformTerms(query protocol.Query) (indexlib.QueryRequest, error) {
-	terms := *query.Terms
+	terms := query.Terms
 	if len(terms) <= 0 {
 		return &indexlib.TermsQuery{}, nil
 	}
@@ -190,7 +230,7 @@ func transformTerms(query protocol.Query) (indexlib.QueryRequest, error) {
 }
 
 func transformRange(query protocol.Query) (indexlib.QueryRequest, error) {
-	rangeQuery := *query.Range
+	rangeQuery := query.Range
 	if len(rangeQuery) <= 0 {
 		return &indexlib.RangeQuery{}, nil
 	}

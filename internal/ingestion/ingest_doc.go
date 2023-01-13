@@ -4,23 +4,45 @@ package ingestion
 
 import (
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"github.com/tatris-io/tatris/internal/common/consts"
-	"github.com/tatris-io/tatris/internal/indexlib"
-	"github.com/tatris-io/tatris/internal/indexlib/manage"
+	"github.com/tatris-io/tatris/internal/meta/metadata"
 	"log"
 	"time"
 )
 
-func IngestDocs(idxName string, docs []map[string]interface{}) error {
-	config := &indexlib.BaseConfig{
-		Index:    idxName,
-		DataPath: consts.DefaultDataPath,
-	}
-	writer, err := manage.GetWriter(config)
+func IngestDocs(indexName string, docs []map[string]interface{}) error {
+	index, err := metadata.GetIndex(indexName)
 	if err != nil {
 		return err
 	}
+	idDocs := buildDocs(docs)
+	shard := index.GetShardByRouting()
+	if shard == nil {
+		return errors.New("shard not found")
+	}
+	shard.CheckSegments()
+	segment := shard.GetLatestSegment()
+	if segment == nil {
+		return errors.New("segment not found")
+	}
+	writer, err := segment.GetWriter()
+	if err != nil {
+		return err
+	}
+	for docID, doc := range idDocs {
+		err := writer.Insert(docID, doc)
+		if err != nil {
+			return err
+		}
+		timestamp := doc[consts.TimestampField]
+		segment.UpdateStat(timestamp.(time.Time))
+	}
+	return metadata.SaveIndex(index)
+}
+
+func buildDocs(docs []map[string]interface{}) map[string]map[string]interface{} {
 	idDocs := make(map[string]map[string]interface{})
 	for _, doc := range docs {
 		docID := ""
@@ -37,7 +59,7 @@ func IngestDocs(idxName string, docs []map[string]interface{}) error {
 		doc[consts.TimestampField] = docTimestamp
 		idDocs[docID] = doc
 	}
-	return writer.Batch(idDocs)
+	return idDocs
 }
 
 // TODO: distributed ID
