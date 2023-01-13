@@ -34,11 +34,11 @@ func (index *Index) GetShardByRouting() *Shard {
 	return nil
 }
 
-func (index *Index) GetReadersByTime(minTime, maxTime int64) ([]indexlib.Reader, error) {
+func (index *Index) GetReadersByTime(start, end int64) ([]indexlib.Reader, error) {
 	readers := make([]indexlib.Reader, 0)
 	for _, shard := range index.Shards {
 		for _, segment := range shard.Segments {
-			if segment.MatchTime(minTime, maxTime) {
+			if segment.MatchTime(start, end) {
 				reader, err := segment.GetReader()
 				if err != nil {
 					return nil, err

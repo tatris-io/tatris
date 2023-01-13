@@ -5,6 +5,7 @@ package query
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/indexlib"
@@ -21,8 +22,11 @@ func SearchDocs(request protocol.QueryRequest) (*protocol.Hits, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	readers, err := index.GetReadersByTime(timeRange(request.Query))
+	start, end, err := timeRange(request.Query)
+	if err != nil {
+		return nil, err
+	}
+	readers, err := index.GetReadersByTime(start, end)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +61,7 @@ func SearchDocs(request protocol.QueryRequest) (*protocol.Hits, error) {
 	return hits, nil
 }
 
-func timeRange(query protocol.Query) (int64, int64) {
+func timeRange(query protocol.Query) (int64, int64, error) {
 	// default range: last 3 days
 	start, end := time.Now().UnixMilli()-60000*60*24*3, time.Now().UnixMilli()
 	if query.Range != nil {
@@ -80,7 +84,10 @@ func timeRange(query protocol.Query) (int64, int64) {
 		// TODO
 		logger.Warn("unsupported: extract timeRange from bool query", zap.String("role", "query"))
 	}
-	return start, end
+	if start > end {
+		return start, end, fmt.Errorf("invalid time range: %d, %d", start, end)
+	}
+	return start, end, nil
 }
 
 func transform(query protocol.Query) (indexlib.QueryRequest, error) {

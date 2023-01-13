@@ -55,8 +55,8 @@ func (segment *Segment) IsMature() bool {
 	return segment.Stat.DocNum > 5
 }
 
-func (segment *Segment) MatchTime(minTime, maxTime int64) bool {
-	return minTime <= segment.Stat.MaxTime && maxTime >= segment.Stat.MinTime
+func (segment *Segment) MatchTime(start, end int64) bool {
+	return start <= segment.Stat.MaxTime && end >= segment.Stat.MinTime
 }
 
 func (segment *Segment) UpdateStat(timestamp time.Time) {
