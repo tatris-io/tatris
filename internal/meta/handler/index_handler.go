@@ -4,33 +4,50 @@
 package handler
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/tatris-io/tatris/internal/core"
 	"github.com/tatris-io/tatris/internal/meta/metadata"
 	"github.com/tatris-io/tatris/internal/protocol"
 	"net/http"
 )
 
 func CreateIndexHandler(c *gin.Context) {
-	idxName := c.Param("index")
-	idx := protocol.Index{}
-	if err := c.ShouldBind(&idx); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"msg": "invalid request"})
-	}
-	idx.Name = idxName
-	if err := metadata.CreateIndex(&idx); err != nil {
+	indexName := c.Param("index")
+	if exist, err := metadata.GetIndex(indexName); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"msg": err.Error()})
+	} else if exist != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"msg": fmt.Sprintf("index already exists: %s", indexName)})
 	} else {
-		c.JSON(http.StatusOK, idx)
+		index := protocol.Index{}
+		if err := c.ShouldBind(&index); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"msg": "invalid request"})
+		}
+		index.Name = indexName
+		if err := metadata.CreateIndex(&core.Index{Index: &index}); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"msg": err.Error()})
+		} else {
+			c.JSON(http.StatusOK, index)
+		}
 	}
 }
 
 func GetIndexHandler(c *gin.Context) {
-	idxName := c.Param("index")
-	if idx, err := metadata.Get(idxName); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"msg": "get index fail: " + idxName + ", " + err.Error()})
-	} else if idx == nil {
-		c.JSON(http.StatusNotFound, gin.H{"msg": "index not found: " + idxName})
+	indexName := c.Param("index")
+	if index, err := metadata.GetIndex(indexName); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"msg": "get index fail: " + indexName + ", " + err.Error()})
+	} else if index == nil {
+		c.JSON(http.StatusNotFound, gin.H{"msg": fmt.Sprintf("index not found: %s", indexName)})
 	} else {
-		c.JSON(http.StatusOK, idx)
+		c.JSON(http.StatusOK, index)
+	}
+}
+
+func DeleteIndexHandler(c *gin.Context) {
+	indexName := c.Param("index")
+	if err := metadata.DeleteIndex(indexName); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"msg": err.Error()})
+	} else {
+		c.JSON(http.StatusOK, nil)
 	}
 }

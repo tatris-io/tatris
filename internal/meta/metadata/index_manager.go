@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/tatris-io/tatris/internal/common/consts"
+	"github.com/tatris-io/tatris/internal/core"
 	"github.com/tatris-io/tatris/internal/meta/metadata/storage"
 	"github.com/tatris-io/tatris/internal/meta/metadata/storage/boltdb"
 	"github.com/tatris-io/tatris/internal/protocol"
@@ -18,23 +19,73 @@ var metaStore storage.MetaStore
 var supportTypes = []string{"integer", "long", "float", "double", "boolean", "date", "keyword", "text"}
 
 func init() {
-	metaStore, _ = boltdb.Open()
+	var err error
+	metaStore, err = boltdb.Open()
+	if err != nil {
+		panic("init metastore fail: " + err.Error())
+	}
 }
 
-func CreateIndex(idx *protocol.Index) error {
-	json, err := json.Marshal(idx)
+func CreateIndex(index *core.Index) error {
+	err := checkParam(index.Index)
+	buildIndex(index)
 	if err != nil {
 		return err
 	}
-	err = checkParam(idx)
+	return SaveIndex(index)
+}
+
+func SaveIndex(index *core.Index) error {
+	json, err := json.Marshal(index)
 	if err != nil {
 		return err
 	}
-	return metaStore.Set(fillKey(idx.Name), json)
+	return metaStore.Set(fillKey(index.Name), json)
 }
 
-func checkParam(idx *protocol.Index) error {
-	mappings := idx.Mappings
+func GetIndex(indexName string) (*core.Index, error) {
+	if b, err := metaStore.Get(fillKey(indexName)); err != nil {
+		return nil, err
+	} else if b == nil {
+		return nil, nil
+	} else {
+		index := &core.Index{}
+		if err := json.Unmarshal(b, index); err != nil {
+			return nil, err
+		}
+		shards := index.Shards
+		if len(shards) > 0 {
+			for _, shard := range shards {
+				shard.Index = index
+				segments := shard.Segments
+				if len(segments) > 0 {
+					for _, segment := range segments {
+						segment.Shard = shard
+					}
+				}
+			}
+		}
+		return index, nil
+	}
+}
+
+func DeleteIndex(indexName string) error {
+	return metaStore.Delete(fillKey(indexName))
+}
+
+func buildIndex(index *core.Index) {
+	numberOfShards := index.Settings.NumberOfShards
+	shards := make([]*core.Shard, numberOfShards)
+	for i := 0; i < numberOfShards; i++ {
+		shards[i] = &core.Shard{}
+		shards[i].ShardID = i
+		shards[i].Index = index
+	}
+	index.Shards = shards
+}
+
+func checkParam(index *protocol.Index) error {
+	mappings := index.Mappings
 	if mappings == nil {
 		return errors.New("mappings can not be empty")
 	}
@@ -84,20 +135,6 @@ func checkType(paramType string) error {
 		}
 	}
 	return fmt.Errorf("the type %s is not supported", paramType)
-}
-
-func Get(idxName string) (*protocol.Index, error) {
-	if b, err := metaStore.Get(fillKey(idxName)); err != nil {
-		return nil, err
-	} else if b == nil {
-		return nil, nil
-	} else {
-		idx := new(protocol.Index)
-		if err := json.Unmarshal(b, idx); err != nil {
-			return nil, err
-		}
-		return idx, nil
-	}
 }
 
 func fillKey(name string) string {

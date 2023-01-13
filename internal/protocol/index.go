@@ -9,15 +9,13 @@ type Index struct {
 	Settings *Settings `json:"settings,omitempty"`
 	// index mappings
 	Mappings *Mappings `json:"mappings,omitempty"`
-	// index shards
-	Shards []Shard `json:"shards"`
 }
 
 type Settings struct {
 	// number of shards, default is 1
-	NumberOfShards int32 `json:"number_of_shards,omitempty"`
+	NumberOfShards int `json:"number_of_shards,omitempty"`
 	// number of replicas, default is 1 (ie one replica for each primary shard)
-	NumberOfReplicas int32 `json:"number_of_replicas,omitempty"`
+	NumberOfReplicas int `json:"number_of_replicas,omitempty"`
 }
 
 // Mappings Mapping is the process of defining how a document, and the fields it contains, are stored and indexed.

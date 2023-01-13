@@ -5,10 +5,11 @@ package boltdb
 
 import (
 	"bytes"
-	"errors"
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/meta/metadata/storage"
 	"go.etcd.io/bbolt"
+	"os"
+	"path"
 	"time"
 )
 
@@ -17,9 +18,18 @@ type BoltMetaStore struct {
 }
 
 func Open() (storage.MetaStore, error) {
+	p := consts.DefaultMetaPath + ".bolt"
+
+	d := path.Dir(p)
+	// mkdir
+	err := os.MkdirAll(d, 0755)
+	if err != nil {
+		return nil, err
+	}
 	// Open the data file.
 	// It will be created if it doesn't exist.
-	db, err := bbolt.Open(consts.DefaultMetaPath+".bolt", 0600, &bbolt.Options{Timeout: 1 * time.Second})
+	var db *bbolt.DB
+	db, err = bbolt.Open(p, 0644, &bbolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +46,7 @@ func (store *BoltMetaStore) Get(path string) ([]byte, error) {
 	err := store.db.View(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(bkt)
 		if bucket == nil {
-			return errors.New("bucket not found: " + string(bkt))
+			return nil
 		}
 		val := bucket.Get(key)
 		if val != nil {
