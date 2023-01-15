@@ -58,12 +58,12 @@ func TestIndexLib(t *testing.T) {
 			json.Unmarshal(jsonData, &docs)
 
 			for _, doc := range docs {
-				docID := utils.GenerateID()
-				if docID, ok := doc[consts.IDField]; !ok {
-					docID = ""
-					doc[consts.IDField] = docID
+				ID := ""
+				if docID, ok := doc[consts.IDField]; !ok || docID == "" {
+					ID = utils.GenerateID()
+					doc[consts.IDField] = ID
 				}
-				err = writer.Insert(docID, doc)
+				err = writer.Insert(ID, doc)
 				if err != nil {
 					t.Fatalf("write fail: %s", err.Error())
 				}
