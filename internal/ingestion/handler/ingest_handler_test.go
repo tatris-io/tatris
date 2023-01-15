@@ -7,17 +7,43 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	"github.com/tatris-io/tatris/internal/meta/handler"
+	"github.com/tatris-io/tatris/internal/common/consts"
+	"github.com/tatris-io/tatris/test/prepare"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"testing"
+	"time"
+)
+
+const (
+	indexPath     = "../../../test/materials/index.json"
+	ingestReqPath = "../../../test/materials/ingest_request.json"
 )
 
 func TestIngestHandler(t *testing.T) {
+	// prepare
+	start := time.Now()
+	version := start.Format(consts.VersionTimeFmt)
+	index, err := prepare.PrepareIndex(indexPath, version)
+	if err != nil {
+		t.Fatalf("prepare index fail: %s", err.Error())
+	}
 
-	t.Run("delete_index", func(t *testing.T) {
+	// test
+	t.Run("test_ingest_handler", func(t *testing.T) {
+
+		jsonFile, err := os.Open(ingestReqPath)
+		if err != nil {
+			t.Fatalf("open json file fail: %s", err.Error())
+		}
+		defer jsonFile.Close()
+		jsonData, err := io.ReadAll(jsonFile)
+		if err != nil {
+			t.Fatalf("read json file fail: %s", err.Error())
+		}
 		gin.SetMode(gin.ReleaseMode)
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -27,47 +53,10 @@ func TestIngestHandler(t *testing.T) {
 		}
 		c.Request = req
 		p := gin.Params{}
-		p = append(p, gin.Param{Key: "index", Value: "storage_product"})
+		p = append(p, gin.Param{Key: "index", Value: index.Name})
 		c.Params = p
 		c.Request.Header.Set("Content-Type", "application/json;charset=utf-8")
-		handler.DeleteIndexHandler(c)
-		fmt.Println(w)
-		assert.Equal(t, http.StatusOK, w.Code)
-	})
-
-	t.Run("create_index", func(t *testing.T) {
-		gin.SetMode(gin.ReleaseMode)
-		w := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(w)
-		req := &http.Request{
-			URL:    &url.URL{},
-			Header: make(http.Header),
-		}
-		c.Request = req
-		p := gin.Params{}
-		p = append(p, gin.Param{Key: "index", Value: "storage_product"})
-		c.Params = p
-		c.Request.Header.Set("Content-Type", "application/json;charset=utf-8")
-		c.Request.Body = io.NopCloser(bytes.NewBufferString("{\"settings\":{\"number_of_shards\":1,\"number_of_replicas\":1},\"mappings\":{\"properties\":{\"name\":{\"type\":\"keyword\"},\"desc\":{\"type\":\"text\"}}}}"))
-		handler.CreateIndexHandler(c)
-		fmt.Println(w)
-		assert.Equal(t, http.StatusOK, w.Code)
-	})
-
-	t.Run("ingest", func(t *testing.T) {
-		gin.SetMode(gin.ReleaseMode)
-		w := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(w)
-		req := &http.Request{
-			URL:    &url.URL{},
-			Header: make(http.Header),
-		}
-		c.Request = req
-		p := gin.Params{}
-		p = append(p, gin.Param{Key: "index", Value: "storage_product"})
-		c.Params = p
-		c.Request.Header.Set("Content-Type", "application/json;charset=utf-8")
-		c.Request.Body = io.NopCloser(bytes.NewBufferString("{\"documents\":[{\"name\":\"tatris\",\"desc\":\"Time-aware storage and search system\"},{\"name\":\"mysql\",\"desc\":\"Relational database\"},{\"name\":\"elasticsearch\",\"desc\":\"Distributed, RESTful search and analytics engine\"},{\"name\":\"mongodb\",\"desc\":\"Source-available cross-platform document-oriented database program\"},{\"name\":\"redis\",\"desc\":\"Open source (BSD licensed), in-memory data structure store\"},{\"name\":\"hbase\",\"desc\":\"Distributed, scalable, big data store\"}]}"))
+		c.Request.Body = io.NopCloser(bytes.NewBufferString(string(jsonData)))
 		IngestHandler(c)
 		fmt.Println(w)
 		assert.Equal(t, http.StatusOK, w.Code)
