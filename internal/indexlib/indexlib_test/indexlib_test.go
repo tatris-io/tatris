@@ -37,7 +37,6 @@ func TestIndexLib(t *testing.T) {
 
 	// test
 	t.Run("test_write", func(t *testing.T) {
-		logger.Infof("test writer, %s", time.Now().Format(consts.VersionTimeFmt))
 		config := &indexlib.BaseConfig{
 			Index: path.Join(consts.DefaultDataPath, index.Name),
 		}
@@ -73,7 +72,6 @@ func TestIndexLib(t *testing.T) {
 	})
 
 	t.Run("test_read", func(t *testing.T) {
-		logger.Infof("test reader, %s", time.Now().Format(consts.VersionTimeFmt))
 		config := &indexlib.BaseConfig{
 			Index: path.Join(consts.DefaultDataPath, index.Name),
 		}
