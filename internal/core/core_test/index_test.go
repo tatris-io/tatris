@@ -8,26 +8,16 @@ import (
 	"github.com/tatris-io/tatris/internal/meta/metadata"
 	"github.com/tatris-io/tatris/internal/protocol"
 	"github.com/tatris-io/tatris/internal/query"
-	"github.com/tatris-io/tatris/test/prepare"
+	prepare2 "github.com/tatris-io/tatris/internal/ut/prepare"
 	"testing"
 	"time"
-)
-
-const (
-	indexPath = "../../../test/materials/index.json"
-	docsPath  = "../../../test/materials/docs.json"
 )
 
 func TestIndex(t *testing.T) {
 
 	// prepare
 	start := time.Now()
-	version := start.Format(consts.VersionTimeFmt)
-	index, err := prepare.PrepareIndex(indexPath, version)
-	if err != nil {
-		t.Fatalf("prepare index fail: %s", err.Error())
-	}
-	docs, err := prepare.PrepareDocs(index.Name, docsPath)
+	index, docs, err := prepare2.CreateIndexAndDocs(start.Format(consts.VersionTimeFmt))
 	if err != nil {
 		t.Fatalf("prepare docs fail: %s", err.Error())
 	}

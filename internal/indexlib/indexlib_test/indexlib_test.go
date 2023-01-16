@@ -11,29 +11,22 @@ import (
 	"github.com/tatris-io/tatris/internal/common/utils"
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/indexlib/manage"
-	"github.com/tatris-io/tatris/test/prepare"
-	"io"
-	"os"
+	"github.com/tatris-io/tatris/internal/ut/prepare"
 	"path"
 	"testing"
 	"time"
 )
 
-const (
-	indexPath = "../../../test/materials/index.json"
-	docsPath  = "../../../test/materials/docs.json"
-)
-
 func TestIndexLib(t *testing.T) {
 	// prepare
-	start := time.Now()
-	version := start.Format(consts.VersionTimeFmt)
-	index, err := prepare.PrepareIndex(indexPath, version)
+	index, err := prepare.CreateIndex(time.Now().Format(consts.VersionTimeFmt))
 	if err != nil {
 		t.Fatalf("prepare index fail: %s", err.Error())
 	}
-
-	docs := make([]map[string]interface{}, 0)
+	docs, err := prepare.GetDocs()
+	if err != nil {
+		t.Fatalf("get docs fail: %s", err.Error())
+	}
 
 	// test
 	t.Run("test_write", func(t *testing.T) {
@@ -44,18 +37,6 @@ func TestIndexLib(t *testing.T) {
 			t.Fatalf("get writer error: %s", err.Error())
 		} else {
 			defer writer.Close()
-			// prepare docs
-			jsonFile, err := os.Open(docsPath)
-			if err != nil {
-				t.Fatalf("open json file fail: %s", err.Error())
-			}
-			defer jsonFile.Close()
-			jsonData, err := io.ReadAll(jsonFile)
-			if err != nil {
-				t.Fatalf("read json file fail: %s", err.Error())
-			}
-			json.Unmarshal(jsonData, &docs)
-
 			for _, doc := range docs {
 				ID := ""
 				if docID, ok := doc[consts.IDField]; !ok || docID == "" {

@@ -10,34 +10,21 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/protocol"
+	"github.com/tatris-io/tatris/internal/ut/prepare"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"testing"
 	"time"
 )
 
-const (
-	indexPath = "../../../test/materials/index.json"
-)
-
 func TestIndexHandler(t *testing.T) {
 
-	jsonFile, err := os.Open(indexPath)
+	index, err := prepare.GetIndex(time.Now().Format(consts.VersionTimeFmt))
 	if err != nil {
-		t.Fatalf("open json file fail: %s", err.Error())
+		t.Fatalf("prepare index and docs fail: %s", err.Error())
 	}
-	defer jsonFile.Close()
-	jsonData, err := io.ReadAll(jsonFile)
-	if err != nil {
-		t.Fatalf("read json file fail: %s", err.Error())
-	}
-	index := &protocol.Index{}
-	version := time.Now().Format(consts.VersionTimeFmt)
-	index.Name = fmt.Sprintf("%s_%s", index.Name, version)
-	json.Unmarshal(jsonData, &index)
 
 	t.Run("create_index", func(t *testing.T) {
 		gin.SetMode(gin.ReleaseMode)
@@ -52,7 +39,11 @@ func TestIndexHandler(t *testing.T) {
 		p = append(p, gin.Param{Key: "index", Value: index.Name})
 		c.Params = p
 		c.Request.Header.Set("Content-Type", "application/json;charset=utf-8")
-		c.Request.Body = io.NopCloser(bytes.NewBufferString(string(jsonData)))
+		indexBytes, err := json.Marshal(index)
+		if err != nil {
+			t.Fatalf("parse index fail: %s", err.Error())
+		}
+		c.Request.Body = io.NopCloser(bytes.NewBufferString(string(indexBytes)))
 		CreateIndexHandler(c)
 		fmt.Println(w)
 		assert.Equal(t, http.StatusOK, w.Code)
