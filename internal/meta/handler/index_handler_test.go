@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/protocol"
-	"github.com/tatris-io/tatris/internal/ut/prepare"
+	"github.com/tatris-io/tatris/test/ut/prepare"
 	"io"
 	"net/http"
 	"net/http/httptest"

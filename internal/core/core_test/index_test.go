@@ -8,7 +8,7 @@ import (
 	"github.com/tatris-io/tatris/internal/meta/metadata"
 	"github.com/tatris-io/tatris/internal/protocol"
 	"github.com/tatris-io/tatris/internal/query"
-	prepare2 "github.com/tatris-io/tatris/internal/ut/prepare"
+	"github.com/tatris-io/tatris/test/ut/prepare"
 	"testing"
 	"time"
 )
@@ -17,7 +17,7 @@ func TestIndex(t *testing.T) {
 
 	// prepare
 	start := time.Now()
-	index, docs, err := prepare2.CreateIndexAndDocs(start.Format(consts.VersionTimeFmt))
+	index, docs, err := prepare.CreateIndexAndDocs(start.Format(consts.VersionTimeFmt))
 	if err != nil {
 		t.Fatalf("prepare docs fail: %s", err.Error())
 	}

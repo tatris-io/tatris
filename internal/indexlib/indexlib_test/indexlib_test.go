@@ -11,7 +11,7 @@ import (
 	"github.com/tatris-io/tatris/internal/common/utils"
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/indexlib/manage"
-	"github.com/tatris-io/tatris/internal/ut/prepare"
+	"github.com/tatris-io/tatris/test/ut/prepare"
 	"path"
 	"testing"
 	"time"
