@@ -5,12 +5,13 @@ package boltdb
 
 import (
 	"bytes"
+	"os"
+	"path"
+
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/meta/metadata/storage"
 	"go.etcd.io/bbolt"
-	"os"
-	"path"
 )
 
 type BoltMetaStore struct {

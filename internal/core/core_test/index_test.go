@@ -3,14 +3,15 @@
 package core_test
 
 import (
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/meta/metadata"
 	"github.com/tatris-io/tatris/internal/protocol"
 	"github.com/tatris-io/tatris/internal/query"
 	"github.com/tatris-io/tatris/test/ut/prepare"
-	"testing"
-	"time"
 )
 
 func TestIndex(t *testing.T) {
@@ -37,7 +38,13 @@ func TestIndex(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, len(docs)/10, len(readers))
 
-		hits, err := query.SearchDocs(protocol.QueryRequest{Index: index.Name, Query: protocol.Query{Term: protocol.Term{"name": "elasticsearch"}}, Size: 20})
+		hits, err := query.SearchDocs(
+			protocol.QueryRequest{
+				Index: index.Name,
+				Query: protocol.Query{Term: protocol.Term{"name": "elasticsearch"}},
+				Size:  20,
+			},
+		)
 		assert.NoError(t, err)
 		assert.Equal(t, 1, len(hits.Hits))
 	})

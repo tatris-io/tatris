@@ -5,6 +5,10 @@ package indexlib_test
 import (
 	"context"
 	"encoding/json"
+	"path"
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
@@ -12,9 +16,6 @@ import (
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/indexlib/manage"
 	"github.com/tatris-io/tatris/test/ut/prepare"
-	"path"
-	"testing"
-	"time"
 )
 
 func TestIndexLib(t *testing.T) {

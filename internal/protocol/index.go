@@ -18,7 +18,8 @@ type Settings struct {
 	NumberOfReplicas int `json:"number_of_replicas,omitempty"`
 }
 
-// Mappings Mapping is the process of defining how a document, and the fields it contains, are stored and indexed.
+// Mappings Mapping is the process of defining how a document, and the fields it contains, are
+// stored and indexed.
 type Mappings struct {
 	// Type mappings, object fields and nested fields contain sub-fields, called properties.
 	Properties map[string]Property `json:"properties,omitempty"`

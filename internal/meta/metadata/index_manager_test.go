@@ -5,9 +5,10 @@ package metadata
 
 import (
 	"encoding/json"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/tatris-io/tatris/internal/protocol"
-	"testing"
 )
 
 type testItem struct {

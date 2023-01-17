@@ -4,15 +4,16 @@ package bluge
 
 import (
 	"encoding/json"
+	"log"
+	"strconv"
+	"time"
+
 	"github.com/blugelabs/bluge"
 	"github.com/blugelabs/bluge/index"
 	segment "github.com/blugelabs/bluge_segment_api"
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/indexlib/bluge/config"
-	"log"
-	"strconv"
-	"time"
 )
 
 type BlugeWriter struct {
@@ -81,7 +82,10 @@ func (b *BlugeWriter) Close() {
 	}
 }
 
-func (b *BlugeWriter) generateBlugeDoc(docID string, doc map[string]interface{}) (segment.Document, error) {
+func (b *BlugeWriter) generateBlugeDoc(
+	docID string,
+	doc map[string]interface{},
+) (segment.Document, error) {
 	bdoc := bluge.NewDocument(docID)
 	for key, value := range doc {
 		if value == nil {
@@ -106,7 +110,12 @@ func (b *BlugeWriter) generateBlugeDoc(docID string, doc map[string]interface{})
 	bdoc.AddField(bluge.NewStoredOnlyField(consts.IDField, []byte(docID)))
 	bdoc.AddField(bluge.NewStoredOnlyField(consts.IndexField, []byte(b.Index)))
 	bdoc.AddField(bluge.NewStoredOnlyField(consts.SourceField, source))
-	bdoc.AddField(bluge.NewDateTimeField(consts.TimestampField, time.Now()).StoreValue().Sortable().Aggregatable())
+	bdoc.AddField(
+		bluge.NewDateTimeField(consts.TimestampField, time.Now()).
+			StoreValue().
+			Sortable().
+			Aggregatable(),
+	)
 
 	return bdoc, nil
 }

@@ -4,10 +4,11 @@ package ingestion
 
 import (
 	"errors"
+	"time"
+
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/common/utils"
 	"github.com/tatris-io/tatris/internal/meta/metadata"
-	"time"
 )
 
 func IngestDocs(indexName string, docs []map[string]interface{}) error {

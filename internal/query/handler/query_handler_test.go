@@ -5,16 +5,17 @@ package handler
 import (
 	"bytes"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/assert"
-	"github.com/tatris-io/tatris/internal/common/consts"
-	"github.com/tatris-io/tatris/test/ut/prepare"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
+	"github.com/tatris-io/tatris/internal/common/consts"
+	"github.com/tatris-io/tatris/test/ut/prepare"
 )
 
 func TestQueryHandler(t *testing.T) {

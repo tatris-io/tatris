@@ -4,11 +4,12 @@ package bluge
 
 import (
 	"fmt"
+	"math"
+	"strconv"
+
 	"github.com/blugelabs/bluge"
 	"github.com/tatris-io/tatris/internal/common/errors"
 	"github.com/tatris-io/tatris/internal/indexlib"
-	"math"
-	"strconv"
 )
 
 func RangeQueryParse(rangeQuery *indexlib.RangeQuery) (bluge.Query, error) {

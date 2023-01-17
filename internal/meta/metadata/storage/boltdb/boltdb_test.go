@@ -3,8 +3,9 @@
 package boltdb
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBoltMetaStore_Get(t *testing.T) {
