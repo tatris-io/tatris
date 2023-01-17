@@ -6,14 +6,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/meta/metadata"
 	"github.com/tatris-io/tatris/internal/protocol"
 	"go.uber.org/zap"
-	"strconv"
-	"time"
 )
 
 func SearchDocs(request protocol.QueryRequest) (*protocol.Hits, error) {
@@ -52,7 +53,10 @@ func SearchDocs(request protocol.QueryRequest) (*protocol.Hits, error) {
 		totalValue += respHits.Total.Value
 		totalRelation = respHits.Total.Relation
 		for _, respHit := range respHits.Hits {
-			hits.Hits = append(hits.Hits, protocol.Hit{Index: respHit.Index, ID: respHit.ID, Source: respHit.Source})
+			hits.Hits = append(
+				hits.Hits,
+				protocol.Hit{Index: respHit.Index, ID: respHit.ID, Source: respHit.Source},
+			)
 		}
 		reader.Close()
 	}

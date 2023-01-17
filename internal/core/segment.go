@@ -4,11 +4,12 @@ package core
 
 import (
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/indexlib/manage"
-	"sync"
-	"time"
 )
 
 // Segment is a physical split of the index under a shard

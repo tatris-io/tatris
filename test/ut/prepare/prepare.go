@@ -6,14 +6,15 @@ package prepare
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/tatris-io/tatris/internal/common/log/logger"
-	"github.com/tatris-io/tatris/internal/core"
-	"github.com/tatris-io/tatris/internal/ingestion"
-	"github.com/tatris-io/tatris/internal/meta/metadata"
 	"io"
 	"os"
 	"path"
 	"runtime"
+
+	"github.com/tatris-io/tatris/internal/common/log/logger"
+	"github.com/tatris-io/tatris/internal/core"
+	"github.com/tatris-io/tatris/internal/ingestion"
+	"github.com/tatris-io/tatris/internal/meta/metadata"
 )
 
 func GetIndex(version string) (*core.Index, error) {

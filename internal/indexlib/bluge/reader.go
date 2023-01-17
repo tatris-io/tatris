@@ -6,6 +6,10 @@ package bluge
 import (
 	"context"
 	"encoding/json"
+	"log"
+	"strings"
+	"time"
+
 	"github.com/blugelabs/bluge"
 	"github.com/blugelabs/bluge/analysis"
 	"github.com/blugelabs/bluge/analysis/analyzer"
@@ -14,9 +18,6 @@ import (
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/indexlib/bluge/config"
-	"log"
-	"strings"
-	"time"
 )
 
 type BlugeReader struct {
@@ -47,7 +48,11 @@ func (b *BlugeReader) OpenReader() error {
 	return nil
 }
 
-func (b *BlugeReader) Search(ctx context.Context, query indexlib.QueryRequest, limit int) (*indexlib.QueryResponse, error) {
+func (b *BlugeReader) Search(
+	ctx context.Context,
+	query indexlib.QueryRequest,
+	limit int,
+) (*indexlib.QueryResponse, error) {
 	blugeQuery, err := b.generateQuery(query)
 	if err != nil {
 		return nil, err
@@ -210,7 +215,9 @@ func (b *BlugeReader) generateMatchQuery(query *indexlib.MatchQuery) (bluge.Quer
 	return q, nil
 }
 
-func (b *BlugeReader) generateMatchPhraseQuery(query *indexlib.MatchPhraseQuery) (bluge.Query, error) {
+func (b *BlugeReader) generateMatchPhraseQuery(
+	query *indexlib.MatchPhraseQuery,
+) (bluge.Query, error) {
 	q := bluge.NewMatchPhraseQuery(query.MatchPhrase)
 	if query.Field != "" {
 		q.SetField(query.Field)

@@ -6,6 +6,7 @@ package utils
 import (
 	"crypto/rand"
 	"fmt"
+
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 )
 

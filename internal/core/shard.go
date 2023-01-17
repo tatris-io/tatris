@@ -3,9 +3,10 @@
 package core
 
 import (
+	"sync"
+
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"go.uber.org/zap"
-	"sync"
 )
 
 // Shard is a logical split of the index

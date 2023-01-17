@@ -6,17 +6,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/assert"
-	"github.com/tatris-io/tatris/internal/common/consts"
-	"github.com/tatris-io/tatris/internal/protocol"
-	"github.com/tatris-io/tatris/test/ut/prepare"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
+	"github.com/tatris-io/tatris/internal/common/consts"
+	"github.com/tatris-io/tatris/internal/protocol"
+	"github.com/tatris-io/tatris/test/ut/prepare"
 )
 
 func TestIndexHandler(t *testing.T) {

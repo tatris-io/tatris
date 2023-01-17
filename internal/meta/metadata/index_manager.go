@@ -7,16 +7,27 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/core"
 	"github.com/tatris-io/tatris/internal/meta/metadata/storage"
 	"github.com/tatris-io/tatris/internal/meta/metadata/storage/boltdb"
 	"github.com/tatris-io/tatris/internal/protocol"
-	"strings"
 )
 
 var metaStore storage.MetaStore
-var supportTypes = []string{"integer", "long", "float", "double", "boolean", "date", "keyword", "text"}
+
+var supportTypes = []string{
+	"integer",
+	"long",
+	"float",
+	"double",
+	"boolean",
+	"date",
+	"keyword",
+	"text",
+}
 
 func init() {
 	var err error

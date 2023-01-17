@@ -4,11 +4,12 @@
 package handler
 
 import (
+	"net/http"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/tatris-io/tatris/internal/protocol"
 	"github.com/tatris-io/tatris/internal/query"
-	"net/http"
-	"time"
 )
 
 func QueryHandler(c *gin.Context) {
