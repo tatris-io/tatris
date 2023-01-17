@@ -1,0 +1,27 @@
+{
+  "name": "search-engine",
+  "settings": {
+    "number_of_shards": 3,
+    "number_of_replicas": 1
+  },
+  "mappings": {
+    "properties": {
+      "name": {
+        "Type": "keyword"
+      },
+      "desc": {
+        "Type": "text"
+      },
+      "lang": {
+        "Type": "keyword"
+      },
+      "stars": {
+        "Type": "integer"
+      },
+      "forks": {
+        "Type": "integer"
+      }
+    }
+  },
+  "shards": []
+}

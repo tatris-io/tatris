@@ -3,12 +3,10 @@
 package ingestion
 
 import (
-	"crypto/rand"
 	"errors"
-	"fmt"
 	"github.com/tatris-io/tatris/internal/common/consts"
+	"github.com/tatris-io/tatris/internal/common/utils"
 	"github.com/tatris-io/tatris/internal/meta/metadata"
-	"log"
 	"time"
 )
 
@@ -50,7 +48,7 @@ func buildDocs(docs []map[string]interface{}) map[string]map[string]interface{} 
 		if id, ok := doc[consts.IDField]; ok && id != nil && id != "" {
 			docID = id.(string)
 		} else {
-			docID = generateID()
+			docID = utils.GenerateID()
 		}
 		if timestamp, ok := doc[consts.TimestampField]; ok && timestamp != nil {
 			docTimestamp = timestamp.(time.Time)
@@ -60,15 +58,4 @@ func buildDocs(docs []map[string]interface{}) map[string]map[string]interface{} 
 		idDocs[docID] = doc
 	}
 	return idDocs
-}
-
-// TODO: distributed ID
-func generateID() string {
-	b := make([]byte, 16)
-	_, err := rand.Read(b)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return fmt.Sprintf("%x-%x-%x-%x-%x",
-		b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
 }

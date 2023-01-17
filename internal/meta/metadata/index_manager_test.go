@@ -5,8 +5,8 @@ package metadata
 
 import (
 	"encoding/json"
+	"github.com/stretchr/testify/assert"
 	"github.com/tatris-io/tatris/internal/protocol"
-	"gotest.tools/v3/assert"
 	"testing"
 )
 
@@ -15,8 +15,9 @@ type testItem struct {
 	Res   bool
 }
 
-func TestCheckParam(t *testing.T) {
-	params := `[
+func TestManager(t *testing.T) {
+	t.Run("check_param", func(t *testing.T) {
+		params := `[
 		{"Res":true ,"Index":{"settings":{"number_of_shards":3,"number_of_replicas":1},"mappings":{"properties":{"name":{"type":"keyword"}}}}},
 		{"Res":true ,"Index":{"settings":{"number_of_shards":3,"number_of_replicas":1},"mappings":{"properties":{"name":{"type":"text"}}}}},
 		{"Res":true ,"Index":{"settings":{"number_of_shards":3,"number_of_replicas":1},"mappings":{"properties":{"name":{"type":"INTEGER"}}}}},
@@ -31,19 +32,20 @@ func TestCheckParam(t *testing.T) {
 		{"Res":false ,"Index":{"settings":{"number_of_shards":3,"number_of_replicas":1},"mappings":{"properties":{"name":{"type":"keyword"},"age":{"type":"string"}}}}},
 		{"Res":false ,"Index":{"settings":{"number_of_shards":3,"number_of_replicas":1},"mappings":{"properties":{"name":{"type":"bool"},"age":{"type":"int"}}}}}
 	]`
-	var items []testItem
-	err := json.Unmarshal([]byte(params), &items)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	for i, item := range items {
-		err := checkParam(&item.Index)
-		comparison := err == nil
-		if !comparison {
-			t.Logf("item %d error : %s", i, err)
+		var items []testItem
+		err := json.Unmarshal([]byte(params), &items)
+		if err != nil {
+			t.Error(err)
+			return
 		}
-		assert.Equal(t, comparison, item.Res)
-	}
+		for i, item := range items {
+			err := checkParam(&item.Index)
+			comparison := err == nil
+			if !comparison {
+				t.Logf("item %d error : %s", i, err)
+			}
+			assert.Equal(t, comparison, item.Res)
+		}
+	})
 
 }
