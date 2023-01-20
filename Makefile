@@ -5,7 +5,7 @@ PATH := $(GO_TOOLS_BIN_PATH):$(PATH)
 SHELL := env PATH='$(PATH)' GOBIN='$(GO_TOOLS_BIN_PATH)' $(shell which bash)
 
 install-tools:
-	@ echo "make install-tools ..."
+	@ echo "install-tools ..."
 	@mkdir -p $(GO_TOOLS_BIN_PATH)
 	@(which golangci-lint && golangci-lint version | grep '1.49') >/dev/null 2>&1 || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GO_TOOLS_BIN_PATH) v1.49.0
 	@grep '_' toolset/toolset.go | sed 's/"//g' | awk '{print $$2}' | xargs go install
@@ -17,7 +17,7 @@ PACKAGES_WITHOUT_TOOLSET := $(shell go list ./... | sed '/^github.com\/tatris-io
 PACKAGE_DIRECTORIES_WITHOUT_TOOLSET := $(subst $(ALL_PKG)/,,$(PACKAGES_WITHOUT_TOOLSET))
 
 check: install-tools
-	@ echo "make check ..."
+	@ echo "do checks ..."
 	@ make check-license
 	@ echo "gofmt ..."
 	@ echo "$(PACKAGE_DIRECTORIES)"
@@ -30,24 +30,24 @@ check: install-tools
 	@ revive -formatter friendly -config revive.toml $(PACKAGES_WITHOUT_TOOLSET)
 
 test: install-tools
-	@ echo "make test ..."
+	@ echo "unit test ..."
 	@ go test -timeout 5m -race -cover $(PACKAGES_WITHOUT_TOOLSET)
 
 check-license:
-	@ echo "make check-license ..."
+	@ echo "check-license ..."
 	@ sh ./scripts/check-license.sh
 
 add-license:
-	@ echo "make add-license ..."
+	@ echo "add-license ..."
 	@ sh ./scripts/add-license.sh
 
 build: check
-	@ echo "make build ..."
+	@ echo "building ..."
 	@ mkdir -p ./bin
 	@ go build -o ./bin/tatris-meta ./cmd/meta/...
 	@ go build -o ./bin/tatris-server ./cmd/server/...
 
 clean:
-	@ echo "make clean ..."
+	@ echo "clean ..."
 	@ rm -f ./bin/tatris-meta
 	@ rm -f ./bin/tatris-server
