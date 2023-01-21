@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -e
 
-/home/admin/bin/tatris-server
+/home/tatris/bin/tatris-server

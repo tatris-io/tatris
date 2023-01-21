@@ -41,8 +41,10 @@ add-license:
 	@ echo "add-license ..."
 	@ sh ./scripts/add-license.sh
 
-build: check
-	@ echo "building ..."
+build: check fast-build
+
+fast-build:
+	@ echo "fast build ..."
 	@ mkdir -p ./bin
 	@ go build -o ./bin/tatris-meta ./cmd/meta/...
 	@ go build -o ./bin/tatris-server ./cmd/server/...
