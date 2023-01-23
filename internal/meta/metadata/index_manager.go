@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/tatris-io/tatris/internal/common/log/logger"
+
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/core"
 	"github.com/tatris-io/tatris/internal/meta/metadata/storage"
@@ -51,6 +53,7 @@ func SaveIndex(index *core.Index) error {
 	if err != nil {
 		return err
 	}
+	logger.Infof("save index: %s", json)
 	return metaStore.Set(fillKey(index.Name), json)
 }
 

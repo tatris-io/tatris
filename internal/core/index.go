@@ -4,6 +4,9 @@
 package core
 
 import (
+	"fmt"
+
+	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/protocol"
 )
@@ -35,6 +38,7 @@ func (index *Index) GetShardByRouting() *Shard {
 }
 
 func (index *Index) GetReadersByTime(start, end int64) ([]indexlib.Reader, error) {
+	splits := make([]string, 0)
 	readers := make([]indexlib.Reader, 0)
 	for _, shard := range index.Shards {
 		for _, segment := range shard.Segments {
@@ -43,9 +47,18 @@ func (index *Index) GetReadersByTime(start, end int64) ([]indexlib.Reader, error
 				if err != nil {
 					return nil, err
 				}
+				splits = append(splits, fmt.Sprintf("%d/%d", shard.ShardID, segment.SegmentID))
 				readers = append(readers, reader)
 			}
 		}
 	}
+	logger.Infof(
+		"find %d readers of %s with time range [%d,%d]: %v",
+		len(readers),
+		index.Name,
+		start,
+		end,
+		splits,
+	)
 	return readers, nil
 }

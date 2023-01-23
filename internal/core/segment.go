@@ -53,7 +53,7 @@ func (segment *Segment) GetReader() (indexlib.Reader, error) {
 
 func (segment *Segment) IsMature() bool {
 	// TODO to be configurable
-	return segment.Stat.DocNum > 5
+	return segment.Stat.DocNum > 500
 }
 
 func (segment *Segment) MatchTime(start, end int64) bool {

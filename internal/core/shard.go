@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/tatris-io/tatris/internal/common/log/logger"
-	"go.uber.org/zap"
 )
 
 // Shard is a logical split of the index
@@ -46,13 +45,7 @@ func (shard *Shard) CheckSegments() {
 		if lastedSegment == nil || lastedSegment.IsMature() {
 			newID := shard.GetSegmentNum()
 			shard.addSegment(newID)
-			logger.Info(
-				"add segment",
-				zap.String("role", "ingest"),
-				zap.String("index", shard.Index.Name),
-				zap.Int("shard", shard.ShardID),
-				zap.Int("segment", newID),
-			)
+			logger.Infof("add segment: %s/%d/%d", shard.Index.Name, shard.ShardID, newID)
 		}
 	}
 }

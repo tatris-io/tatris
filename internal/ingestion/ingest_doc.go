@@ -6,6 +6,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/tatris-io/tatris/internal/common/log/logger"
+
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/common/utils"
 	"github.com/tatris-io/tatris/internal/meta/metadata"
@@ -30,6 +32,13 @@ func IngestDocs(indexName string, docs []map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
+	logger.Infof(
+		"ready to ingest %d docs into %s/%d/%d",
+		len(idDocs),
+		indexName,
+		shard.ShardID,
+		segment.SegmentID,
+	)
 	for docID, doc := range idDocs {
 		err := writer.Insert(docID, doc)
 		if err != nil {
