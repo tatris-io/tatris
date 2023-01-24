@@ -47,7 +47,7 @@ func (b *BlugeWriter) OpenWriter() error {
 }
 
 func (b *BlugeWriter) Insert(docID string, doc map[string]interface{}) error {
-	defer utils.Tracef("bluge insert doc finish, index:%s, ID:%s", b.Index, docID)()
+	defer utils.Timerf("bluge insert doc finish, index:%s, ID:%s", b.Index, docID)()
 	blugeDoc, err := b.generateBlugeDoc(docID, doc)
 	if err != nil {
 		return nil
@@ -56,7 +56,7 @@ func (b *BlugeWriter) Insert(docID string, doc map[string]interface{}) error {
 }
 
 func (b *BlugeWriter) Batch(docs map[string]map[string]interface{}) error {
-	defer utils.Tracef("bluge batch insert %d docs finish, index:%s", len(docs), b.Index)()
+	defer utils.Timerf("bluge batch insert %d docs finish, index:%s", len(docs), b.Index)()
 	batch := index.NewBatch()
 	for docID, doc := range docs {
 		blugeDoc, err := b.generateBlugeDoc(docID, doc)

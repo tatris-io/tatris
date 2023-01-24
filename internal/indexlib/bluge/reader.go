@@ -55,7 +55,7 @@ func (b *BlugeReader) Search(
 	query indexlib.QueryRequest,
 	limit int,
 ) (*indexlib.QueryResponse, error) {
-	defer utils.Tracef(
+	defer utils.Timerf(
 		"bluge search docs finish, index:%s, query:%+v, limit:%d",
 		b.Index,
 		query,

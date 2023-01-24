@@ -44,7 +44,7 @@ func (store *BoltMetaStore) Close() error {
 }
 
 func (store *BoltMetaStore) Get(path string) ([]byte, error) {
-	defer utils.Tracef("boltdb get finish, path:%s", path)()
+	defer utils.Timerf("boltdb get finish, path:%s", path)()
 	var result []byte
 	bkt, key := splitPath(path)
 	err := store.db.View(func(tx *bbolt.Tx) error {
@@ -63,7 +63,7 @@ func (store *BoltMetaStore) Get(path string) ([]byte, error) {
 }
 
 func (store *BoltMetaStore) Set(path string, val []byte) error {
-	defer utils.Tracef("boltdb set finish, path:%s", path)()
+	defer utils.Timerf("boltdb set finish, path:%s", path)()
 	bkt, key := splitPath(path)
 	return store.db.Update(func(tx *bbolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists(bkt)
@@ -75,7 +75,7 @@ func (store *BoltMetaStore) Set(path string, val []byte) error {
 }
 
 func (store *BoltMetaStore) Delete(path string) error {
-	defer utils.Tracef("boltdb delete finish, path:%s", path)()
+	defer utils.Timerf("boltdb delete finish, path:%s", path)()
 	bkt, key := splitPath(path)
 	return store.db.Update(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(bkt)
