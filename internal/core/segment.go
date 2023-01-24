@@ -7,6 +7,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/tatris-io/tatris/internal/common/log/logger"
+	"go.uber.org/zap"
+
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/indexlib/manage"
@@ -73,4 +76,10 @@ func (segment *Segment) UpdateStat(timestamp time.Time) {
 	} else if segment.Stat.MaxTime < t {
 		segment.Stat.MaxTime = t
 	}
+	logger.Info(
+		"update segment stat",
+		zap.Int64("minTime", segment.Stat.MinTime),
+		zap.Int64("maxTime", segment.Stat.MaxTime),
+		zap.Int64("docNum", segment.Stat.DocNum),
+	)
 }

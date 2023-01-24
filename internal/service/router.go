@@ -5,6 +5,8 @@ package service
 import (
 	"fmt"
 
+	"go.uber.org/zap"
+
 	"github.com/gin-gonic/gin"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	handler1 "github.com/tatris-io/tatris/internal/ingestion/handler"
@@ -52,7 +54,11 @@ func StartHTTPServer(roles ...string) {
 	}
 
 	if err := router.Run(":8080"); err != nil {
-		logger.Errorf("Tatris HTTP server start failed, roles=%s, err=%s", roles, err.Error())
+		logger.Error(
+			"Tatris HTTP server start failed",
+			zap.Any("roles", roles),
+			zap.String("msg", err.Error()),
+		)
 	}
 }
 

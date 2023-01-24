@@ -6,14 +6,11 @@ import (
 	"bytes"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/gin-gonic/gin"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 )
-
-// [log_time] [log_level] $REMOTE_IP,$METHOD,$URL,$HTTP_PROTO,$STATUS,$BODY_LENGTH,$COST,$USER_AGENT
-// e.g. [2023/01/23 14:33:12.603 +08:00] [INFO]
-// [127.0.0.1,GET,/v1/search-engine,HTTP/1.1,200,1598,0ms,PostmanRuntime/7.29.2]
-const accessLogFmt = "%s,%s,%s,%s,%d,%d,%dms,%s"
 
 type AccessLogWriter struct {
 	gin.ResponseWriter
@@ -36,16 +33,16 @@ func AccessLog() gin.HandlerFunc {
 		c.Next()
 		end := time.Now().UnixMilli()
 
-		logger.Infof(
-			accessLogFmt,
-			c.RemoteIP(),
-			c.Request.Method,
-			c.Request.RequestURI,
-			c.Request.Proto,
-			bodyWriter.Status(),
-			bodyWriter.body.Len(),
-			end-start,
-			c.Request.Header.Get("User-Agent"),
+		logger.Info(
+			"access recorded",
+			zap.String("remote", c.RemoteIP()),
+			zap.String("method", c.Request.Method),
+			zap.String("url", c.Request.RequestURI),
+			zap.String("proto", c.Request.Proto),
+			zap.Int("status", bodyWriter.Status()),
+			zap.Int("length", bodyWriter.body.Len()),
+			zap.Int64("cost", end-start),
+			zap.String("user-agent", c.Request.Header.Get("User-Agent")),
 		)
 	}
 }

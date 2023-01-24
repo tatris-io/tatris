@@ -9,6 +9,7 @@ import (
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/protocol"
+	"go.uber.org/zap"
 )
 
 type Index struct {
@@ -52,13 +53,13 @@ func (index *Index) GetReadersByTime(start, end int64) ([]indexlib.Reader, error
 			}
 		}
 	}
-	logger.Infof(
-		"find %d readers of %s with time range [%d,%d]: %v",
-		len(readers),
-		index.Name,
-		start,
-		end,
-		splits,
+	logger.Info(
+		"find readers",
+		zap.String("index", index.Name),
+		zap.Int64("start", start),
+		zap.Int64("end", end),
+		zap.Int("size", len(readers)),
+		zap.Any("splits", splits),
 	)
 	return readers, nil
 }

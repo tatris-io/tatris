@@ -5,6 +5,8 @@ package core
 import (
 	"sync"
 
+	"go.uber.org/zap"
+
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 )
 
@@ -45,7 +47,12 @@ func (shard *Shard) CheckSegments() {
 		if lastedSegment == nil || lastedSegment.IsMature() {
 			newID := shard.GetSegmentNum()
 			shard.addSegment(newID)
-			logger.Infof("add segment: %s/%d/%d", shard.Index.Name, shard.ShardID, newID)
+			logger.Info(
+				"add segment",
+				zap.String("index", shard.Index.Name),
+				zap.Int("shard", shard.ShardID),
+				zap.Int("segment", newID),
+			)
 		}
 	}
 }

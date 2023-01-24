@@ -6,6 +6,8 @@ import (
 	"errors"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 
 	"github.com/tatris-io/tatris/internal/common/consts"
@@ -32,12 +34,11 @@ func IngestDocs(indexName string, docs []map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	logger.Infof(
-		"ready to ingest %d docs into %s/%d/%d",
-		len(idDocs),
-		indexName,
-		shard.ShardID,
-		segment.SegmentID,
+	logger.Info(
+		"ready to ingest docs",
+		zap.String("index", shard.Index.Name),
+		zap.Int("shard", shard.ShardID),
+		zap.Int("size", len(idDocs)),
 	)
 	for docID, doc := range idDocs {
 		err := writer.Insert(docID, doc)
