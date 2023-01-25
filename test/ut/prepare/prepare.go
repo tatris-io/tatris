@@ -11,6 +11,8 @@ import (
 	"path"
 	"runtime"
 
+	"go.uber.org/zap"
+
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/core"
 	"github.com/tatris-io/tatris/internal/ingestion"
@@ -22,19 +24,19 @@ func GetIndex(version string) (*core.Index, error) {
 	indexFilePath := path.Join(path.Dir(path.Dir(filename)), "resources/index.json")
 	jsonFile, err := os.Open(indexFilePath)
 	if err != nil {
-		logger.Errorf("open json file fail: %s", err.Error())
+		logger.Error("open json file failed", zap.String("msg", err.Error()))
 		return nil, err
 	}
 	defer jsonFile.Close()
 	jsonData, err := io.ReadAll(jsonFile)
 	if err != nil {
-		logger.Errorf("read json file fail: %s", err.Error())
+		logger.Error("read json file failed", zap.String("msg", err.Error()))
 		return nil, err
 	}
 	index := &core.Index{}
 	err = json.Unmarshal(jsonData, &index)
 	if err != nil {
-		logger.Errorf("parse json fail: %s", err.Error())
+		logger.Error("parse json failed", zap.String("msg", err.Error()))
 		return nil, err
 	}
 	index.Name = fmt.Sprintf("%s_%s", index.Name, version)
@@ -48,10 +50,10 @@ func CreateIndex(version string) (*core.Index, error) {
 	}
 	err = metadata.CreateIndex(index)
 	if err != nil {
-		logger.Errorf("create index fail: ", err.Error())
+		logger.Error("create index failed", zap.String("msg", err.Error()))
 		return nil, err
 	}
-	logger.Infof("create index: %v", index)
+	logger.Info("create index", zap.Any("index", index))
 	return index, nil
 }
 
@@ -60,18 +62,18 @@ func GetDocs() ([]map[string]interface{}, error) {
 	docsFilePath := path.Join(path.Dir(path.Dir(filename)), "resources/docs.json")
 	jsonFile, err := os.Open(docsFilePath)
 	if err != nil {
-		logger.Errorf("open json file fail: %s", err.Error())
+		logger.Error("open json file failed", zap.String("msg", err.Error()))
 	}
 	defer jsonFile.Close()
 	jsonData, err := io.ReadAll(jsonFile)
 	if err != nil {
-		logger.Errorf("read json file fail: %s", err.Error())
+		logger.Error("read json file failed", zap.String("msg", err.Error()))
 		return nil, err
 	}
 	docs := make([]map[string]interface{}, 0)
 	err = json.Unmarshal(jsonData, &docs)
 	if err != nil {
-		logger.Errorf("parse json fail: %s", err.Error())
+		logger.Error("parse json failed", zap.String("msg", err.Error()))
 		return nil, err
 	}
 	return docs, nil
@@ -92,18 +94,18 @@ func CreateIndexAndDocs(version string) (*core.Index, []map[string]interface{}, 
 		if len(batchDocs) == 10 {
 			err = ingestion.IngestDocs(index.Name, batchDocs)
 			if err != nil {
-				logger.Errorf("ingest docs fail: %s", err.Error())
+				logger.Error("ingest docs failed", zap.String("msg", err.Error()))
 				return index, nil, err
 			}
-			logger.Infof("ingest docs: %d", len(batchDocs))
+			logger.Info("ingest docs", zap.Int("size", len(batchDocs)))
 			batchDocs = make([]map[string]interface{}, 0)
 		}
 	}
 
 	if err != nil {
-		logger.Errorf("ingest docs fail: ", err.Error())
+		logger.Error("ingest docs failed ", zap.String("msg", err.Error()))
 		return index, nil, err
 	}
-	logger.Infof("ingest docs: %d", len(docs))
+	logger.Info("ingest docs", zap.Int("size", len(docs)))
 	return index, docs, nil
 }

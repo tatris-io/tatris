@@ -9,6 +9,10 @@ import (
 	"fmt"
 	"strings"
 
+	"go.uber.org/zap"
+
+	"github.com/tatris-io/tatris/internal/common/log/logger"
+
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/core"
 	"github.com/tatris-io/tatris/internal/meta/metadata/storage"
@@ -43,6 +47,7 @@ func CreateIndex(index *core.Index) error {
 	if err != nil {
 		return err
 	}
+	logger.Info("create index", zap.Any("index", index))
 	return SaveIndex(index)
 }
 

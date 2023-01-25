@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/tatris-io/tatris/internal/common/utils"
+
 	"github.com/blugelabs/bluge"
 	"github.com/blugelabs/bluge/index"
 	segment "github.com/blugelabs/bluge_segment_api"
@@ -45,15 +47,16 @@ func (b *BlugeWriter) OpenWriter() error {
 }
 
 func (b *BlugeWriter) Insert(docID string, doc map[string]interface{}) error {
+	defer utils.Timerf("bluge insert doc finish, index:%s, ID:%s", b.Index, docID)()
 	blugeDoc, err := b.generateBlugeDoc(docID, doc)
 	if err != nil {
 		return nil
 	}
-
 	return b.Writer.Insert(blugeDoc)
 }
 
 func (b *BlugeWriter) Batch(docs map[string]map[string]interface{}) error {
+	defer utils.Timerf("bluge batch insert %d docs finish, index:%s", len(docs), b.Index)()
 	batch := index.NewBatch()
 	for docID, doc := range docs {
 		blugeDoc, err := b.generateBlugeDoc(docID, doc)

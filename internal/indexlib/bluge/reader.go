@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tatris-io/tatris/internal/common/utils"
+
 	"github.com/blugelabs/bluge"
 	"github.com/blugelabs/bluge/analysis"
 	"github.com/blugelabs/bluge/analysis/analyzer"
@@ -53,6 +55,12 @@ func (b *BlugeReader) Search(
 	query indexlib.QueryRequest,
 	limit int,
 ) (*indexlib.QueryResponse, error) {
+	defer utils.Timerf(
+		"bluge search docs finish, index:%s, query:%+v, limit:%d",
+		b.Index,
+		query,
+		limit,
+	)()
 	blugeQuery, err := b.generateQuery(query)
 	if err != nil {
 		return nil, err
