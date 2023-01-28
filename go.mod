@@ -4,12 +4,12 @@ go 1.18
 
 require (
 	github.com/AlekSi/gocov-xml v1.1.0
+	github.com/alecthomas/kong v0.7.1
 	github.com/axw/gocov v1.1.0
 	github.com/blugelabs/bluge v0.2.2
 	github.com/blugelabs/bluge_segment_api v0.2.0
 	github.com/blugelabs/query_string v0.3.0
 	github.com/gin-gonic/gin v1.8.2
-	github.com/goccy/go-json v0.10.0
 	github.com/mgechev/revive v1.2.4
 	github.com/segmentio/golines v0.11.0
 	github.com/stretchr/testify v1.8.1
@@ -19,7 +19,6 @@ require (
 	golang.org/x/tools v0.3.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gotest.tools/gotestsum v1.8.2
-	gotest.tools/v3 v3.3.0
 )
 
 require (
@@ -49,8 +48,8 @@ require (
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/go-playground/validator/v10 v10.11.1 // indirect
+	github.com/goccy/go-json v0.10.0 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
-	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/hpcloud/tail v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect

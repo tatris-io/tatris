@@ -1,5 +1,6 @@
 // Copyright 2023 Tatris Project Authors. Licensed under Apache-2.0.
 
+// Package query organizes codes on the query routine
 package query
 
 import (
