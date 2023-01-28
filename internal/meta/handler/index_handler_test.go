@@ -50,6 +50,24 @@ func TestIndexHandler(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
+	t.Run("index_exist_Y", func(t *testing.T) {
+		gin.SetMode(gin.ReleaseMode)
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		req := &http.Request{
+			URL:    &url.URL{},
+			Header: make(http.Header),
+		}
+		c.Request = req
+		p := gin.Params{}
+		p = append(p, gin.Param{Key: "index", Value: index.Name})
+		c.Params = p
+		IndexExistHandler(c)
+		getIndex := protocol.Index{}
+		json.Unmarshal(w.Body.Bytes(), &getIndex)
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+
 	t.Run("get_index", func(t *testing.T) {
 		gin.SetMode(gin.ReleaseMode)
 		w := httptest.NewRecorder()
@@ -91,5 +109,23 @@ func TestIndexHandler(t *testing.T) {
 		DeleteIndexHandler(c)
 		fmt.Println(w)
 		assert.Equal(t, http.StatusOK, w.Code)
+	})
+
+	t.Run("index_exist_N", func(t *testing.T) {
+		gin.SetMode(gin.ReleaseMode)
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		req := &http.Request{
+			URL:    &url.URL{},
+			Header: make(http.Header),
+		}
+		c.Request = req
+		p := gin.Params{}
+		p = append(p, gin.Param{Key: "index", Value: index.Name})
+		c.Params = p
+		IndexExistHandler(c)
+		getIndex := protocol.Index{}
+		json.Unmarshal(w.Body.Bytes(), &getIndex)
+		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
 }
