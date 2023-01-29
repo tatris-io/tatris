@@ -4,8 +4,9 @@ package utils
 
 import (
 	"fmt"
-	"go.uber.org/zap"
 	"time"
+
+	"go.uber.org/zap"
 
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 )

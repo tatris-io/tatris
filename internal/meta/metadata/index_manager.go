@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/patrickmn/go-cache"
 	"strings"
 
 	"go.uber.org/zap"
@@ -21,6 +22,7 @@ import (
 )
 
 var metaStore storage.MetaStore
+var metaCache *cache.Cache
 
 var supportTypes = []string{
 	"integer",
@@ -39,6 +41,7 @@ func init() {
 	if err != nil {
 		panic("init metastore fail: " + err.Error())
 	}
+	metaCache = cache.New(cache.NoExpiration, cache.NoExpiration)
 }
 
 func CreateIndex(index *core.Index) error {
@@ -56,10 +59,18 @@ func SaveIndex(index *core.Index) error {
 	if err != nil {
 		return err
 	}
+	metaCache.Set(index.Name, index, cache.NoExpiration)
 	return metaStore.Set(fillKey(index.Name), json)
 }
 
 func GetIndex(indexName string) (*core.Index, error) {
+	var index *core.Index
+	cachedIndex, found := metaCache.Get(indexName)
+	if found {
+		index = cachedIndex.(*core.Index)
+		return index, nil
+	}
+	// load
 	if b, err := metaStore.Get(fillKey(indexName)); err != nil {
 		return nil, err
 	} else if b == nil {
@@ -86,6 +97,7 @@ func GetIndex(indexName string) (*core.Index, error) {
 }
 
 func DeleteIndex(indexName string) error {
+	metaCache.Delete(indexName)
 	return metaStore.Delete(fillKey(indexName))
 }
 
