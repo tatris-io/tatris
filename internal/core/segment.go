@@ -15,6 +15,8 @@ import (
 	"github.com/tatris-io/tatris/internal/indexlib/manage"
 )
 
+const SegmentMatureThreshold = 500
+
 // Segment is a physical split of the index under a shard
 type Segment struct {
 	Shard     *Shard `json:"-"`
@@ -56,7 +58,7 @@ func (segment *Segment) GetReader() (indexlib.Reader, error) {
 
 func (segment *Segment) IsMature() bool {
 	// TODO to be configurable
-	return segment.Stat.DocNum > 500
+	return segment.Stat.DocNum > SegmentMatureThreshold
 }
 
 func (segment *Segment) MatchTime(start, end int64) bool {
