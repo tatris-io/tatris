@@ -71,7 +71,7 @@ func (index *Index) GetReadersByTime(start, end int64) ([]indexlib.Reader, error
 
 func (index *Index) CheckMapping(docID string, doc map[string]interface{}) error {
 	if err := index.tryCheckDataFieldType(doc); err != nil {
-		return errors.New(fmt.Sprintf("illegal doc %s for %s", docID, err.Error()))
+		return fmt.Errorf("illegal doc %s for %s", docID, err.Error())
 	}
 	return nil
 }
@@ -104,16 +104,19 @@ func (index *Index) tryCheckDataFieldType(doc map[string]interface{}) error {
 		if err != nil {
 			if err := handleByPolicy(policy, k, doc); err != nil {
 				return err
-			} else {
-				continue
 			}
+			continue
 		}
 		if p, ok := properties[k]; ok {
 			if strings.EqualFold(p.Type, fieldType) {
 				continue
-			} else {
-				return errors.New(fmt.Sprintf("inconsistent field type of %s, current: %s original: %s", k, fieldType, p.Type))
 			}
+			return fmt.Errorf(
+				"inconsistent field type of %s, current: %s original: %s",
+				k,
+				fieldType,
+				p.Type,
+			)
 		} else if dynamic {
 			// try to add the field type dynamically
 			p = protocol.Property{Type: fieldType}
@@ -136,20 +139,24 @@ func handleByPolicy(policy string, k string, doc map[string]interface{}) error {
 	case "abort":
 		return errors.New("reject doc for abort policy")
 	default:
-		return errors.New(fmt.Sprintf("unknown policy %s", policy))
+		return fmt.Errorf("unknown policy %s", policy)
 	}
 	return nil
 }
 
-func checkFieldType(dynamic bool, properties map[string]protocol.Property, key string, value interface{}) (string, error) {
+func checkFieldType(
+	dynamic bool,
+	properties map[string]protocol.Property,
+	key string,
+	value interface{},
+) (string, error) {
 	if dynamic {
 		switch v := value.(type) {
 		case string:
 			if isDateType(v) {
 				return "date", nil
-			} else {
-				return "text", nil
 			}
+			return "text", nil
 		case bool:
 			return "boolean", nil
 		case int, int64:
@@ -157,7 +164,7 @@ func checkFieldType(dynamic bool, properties map[string]protocol.Property, key s
 		case float32, float64:
 			return "double", nil
 		default:
-			return "other", errors.New(fmt.Sprintf("unknown field type of %s", v))
+			return "other", fmt.Errorf("unknown field type of %s", v)
 		}
 	} else {
 		typeOf := reflect.TypeOf(value)
@@ -194,7 +201,7 @@ func checkFieldType(dynamic bool, properties map[string]protocol.Property, key s
 				}
 			}
 		}
-		return "other", errors.New(fmt.Sprintf("unknown field type of %s", typeName))
+		return "other", fmt.Errorf("unknown field type of %s", typeName)
 	}
 }
 
@@ -220,5 +227,5 @@ func detectTimeLayout(value string) (string, error) {
 	} else if len(value) == 29 && strings.Index(value, "T") == 10 && strings.Index(value, ".") == 19 {
 		return "2006-01-02T15:04:05.999Z07:00", nil
 	}
-	return "", errors.New(fmt.Sprintf("unsupported time layout of %s", value))
+	return "", fmt.Errorf("unsupported time layout of %s", value)
 }
