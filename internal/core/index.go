@@ -6,13 +6,13 @@ package core
 import (
 	"errors"
 	"fmt"
+	"reflect"
 
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/protocol"
 	"go.uber.org/zap"
 
-	"reflect"
 	"strings"
 	"time"
 )
