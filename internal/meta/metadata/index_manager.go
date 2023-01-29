@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/patrickmn/go-cache"
 
@@ -43,7 +42,7 @@ func init() {
 	if err != nil {
 		panic("init metastore fail: " + err.Error())
 	}
-	metaCache = cache.New(5*time.Minute, 10*time.Minute)
+	metaCache = cache.New(cache.NoExpiration, cache.NoExpiration)
 }
 
 func CreateIndex(index *core.Index) error {
@@ -61,7 +60,7 @@ func SaveIndex(index *core.Index) error {
 	if err != nil {
 		return err
 	}
-	metaCache.Set(index.Name, index, 0)
+	metaCache.Set(index.Name, index, cache.NoExpiration)
 	return metaStore.Set(fillKey(index.Name), json)
 }
 
