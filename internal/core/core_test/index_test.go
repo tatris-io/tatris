@@ -3,10 +3,11 @@
 package core_test
 
 import (
-	"github.com/tatris-io/tatris/internal/core"
 	"math"
 	"testing"
 	"time"
+
+	"github.com/tatris-io/tatris/internal/core"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tatris-io/tatris/internal/common/consts"
@@ -38,7 +39,11 @@ func TestIndex(t *testing.T) {
 		assert.NotNil(t, index.GetShardByRouting())
 		readers, err := index.GetReadersByTime(start.Unix(), time.Now().UnixMilli())
 		assert.NoError(t, err)
-		assert.Equal(t, (int)(math.Ceil((float64(len(docs)))/core.SegmentMatureThreshold)), len(readers))
+		assert.Equal(
+			t,
+			(int)(math.Ceil((float64(len(docs)))/core.SegmentMatureThreshold)),
+			len(readers),
+		)
 
 		hits, err := query.SearchDocs(
 			protocol.QueryRequest{
