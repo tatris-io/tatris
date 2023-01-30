@@ -5,6 +5,7 @@
 package util
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path"
@@ -209,4 +210,9 @@ func calcLogRootPath(specified string) (string, error) {
 		return "", err
 	}
 	return path.Join(pwd, specified), nil
+}
+
+func (cfg *Config) String() string {
+	js, _ := json.Marshal(cfg)
+	return string(js)
 }

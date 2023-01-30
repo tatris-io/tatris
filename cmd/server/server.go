@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"os"
 
+	"github.com/tatris-io/tatris/internal/core/config"
+
 	"github.com/alecthomas/kong"
 	"github.com/gin-gonic/gin"
 	"github.com/tatris-io/tatris/internal/common/log"
@@ -39,6 +41,24 @@ func initLoggers(confPath string) {
 	// validate all confs
 	logConf.Verify()
 	log.InitLoggers(&logConf)
+	logger.Info("logger initialized successfully", zap.String("config", logConf.String()))
+}
+
+func initServer(confPath string) {
+	serverConf := config.DefaultConfig()
+	content, err := os.ReadFile(confPath)
+	if err != nil {
+		logger.Panic("fail to open server conf, use the default settings instead", zap.Error(err))
+		return
+	}
+	if err := json.Unmarshal(content, serverConf); err != nil {
+		logger.Panic("fail to init server, use the default settings instead", zap.Error(err))
+		return
+	}
+	// validate all confs
+	serverConf.Verify()
+	config.Cfg = serverConf
+	logger.Info("server initialized successfully", zap.String("config", serverConf.String()))
 }
 
 func main() {
@@ -46,6 +66,10 @@ func main() {
 
 	if len(cli.Conf.Logging) != 0 {
 		initLoggers(cli.Conf.Logging)
+	}
+
+	if len(cli.Conf.Server) != 0 {
+		initServer(cli.Conf.Server)
 	}
 
 	if cli.Debug {
