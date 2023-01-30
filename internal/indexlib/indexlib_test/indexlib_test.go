@@ -9,8 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tatris-io/tatris/internal/protocol"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
@@ -46,7 +44,7 @@ func TestIndexLib(t *testing.T) {
 					ID = utils.GenerateID()
 					doc[consts.IDField] = ID
 				}
-				err = writer.Insert(ID, doc, &protocol.Mappings{})
+				err = writer.Insert(ID, doc, index.Mappings)
 				if err != nil {
 					t.Fatalf("write fail: %s", err.Error())
 				}

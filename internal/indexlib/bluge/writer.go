@@ -4,7 +4,7 @@ package bluge
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -181,36 +181,44 @@ func (b *BlugeWriter) addFieldByMappingType(
 		case consts.NumericMappingType:
 			numericValue, ok := value.(float64)
 			if !ok {
-				return nil, errors.New("numeric value is not numerical type")
+				return nil, fmt.Errorf("numeric value: %s is not numerical type", value)
 			}
 			bfield = bluge.NewNumericField(key, numericValue)
 		case consts.KeywordMappingType:
 			keywordValue, ok := value.(string)
 			if !ok {
-				return nil, errors.New("keyword value is not string")
+				return nil, fmt.Errorf("keyword value: %s is not string", value)
 			}
 			bfield = bluge.NewKeywordField(key, keywordValue)
 		case consts.BoolMappingType:
 			boolValue, ok := value.(bool)
 			if !ok {
-				return nil, errors.New("bool value is not bool")
+				return nil, fmt.Errorf("bool value: %s is not bool", value)
 			}
 			bfield = bluge.NewKeywordField(key, strconv.FormatBool(boolValue))
 		case consts.TextMappingType:
 			textValue, ok := value.(string)
 			if !ok {
-				return nil, errors.New("text value is not string")
+				return nil, fmt.Errorf("text value: %s is not string", value)
 			}
 			bfield = bluge.NewTextField(key, textValue)
 		case consts.DateMappingType:
-			dateValue, ok := value.(string)
-			if !ok {
-				return nil, errors.New("date value is not string")
+			var date time.Time
+
+			switch v := value.(type) {
+			case float64:
+				date = time.Unix(int64(v), 0)
+			case int64:
+				date = time.Unix(v, 0)
+			case string:
+				date, err = time.Parse(time.RFC3339, v)
+				if err != nil {
+					return nil, err
+				}
+			default:
+				return nil, fmt.Errorf("date value: %s is not string/float64/int64", value)
 			}
-			date, err := time.Parse(time.RFC3339, dateValue)
-			if err != nil {
-				return nil, err
-			}
+
 			bfield = bluge.NewDateTimeField(key, date)
 		}
 	}
@@ -226,6 +234,8 @@ func (b *BlugeWriter) addFieldByValueType(key string, value interface{}) *bluge.
 		bfield = bluge.NewNumericField(key, val)
 	case bool:
 		bfield = bluge.NewKeywordField(key, strconv.FormatBool(val))
+	default:
+		bfield = bluge.NewTextField(key, value.(string))
 	}
 	return bfield
 }
