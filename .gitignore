@@ -11,3 +11,5 @@ bin
 # tatris test outputs
 **/_meta*
 **/_data*
+**/_logs*
+**/*.log

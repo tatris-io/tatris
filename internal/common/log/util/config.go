@@ -5,6 +5,7 @@
 package util
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path"
@@ -209,4 +210,12 @@ func calcLogRootPath(specified string) (string, error) {
 		return "", err
 	}
 	return path.Join(pwd, specified), nil
+}
+
+func (cfg *Config) String() string {
+	js, err := json.Marshal(cfg)
+	if err != nil {
+		return fmt.Sprintf("error serializing config to json: %v", err)
+	}
+	return string(js)
 }

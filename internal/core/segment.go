@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/tatris-io/tatris/internal/core/config"
+
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"go.uber.org/zap"
 
@@ -14,8 +16,6 @@ import (
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/indexlib/manage"
 )
-
-const SegmentMatureThreshold = 500
 
 // Segment is a physical split of the index under a shard
 type Segment struct {
@@ -57,8 +57,7 @@ func (segment *Segment) GetReader() (indexlib.Reader, error) {
 }
 
 func (segment *Segment) IsMature() bool {
-	// TODO to be configurable
-	return segment.Stat.DocNum > SegmentMatureThreshold
+	return segment.Stat.DocNum > config.Cfg.Segment.MatureThreshold
 }
 
 func (segment *Segment) MatchTime(start, end int64) bool {

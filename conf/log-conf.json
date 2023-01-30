@@ -1,0 +1,33 @@
+{
+  "level": "info",
+  "root-path": "./_logs",
+  "disable-error-verbose": true,
+  "development": false,
+  "global-logger": {
+    "file-confs": [
+      {
+        "file-name": "global-error.log",
+        "max-size": 300,
+        "max-days": 5,
+        "max-backups": 5,
+        "level-max": "error",
+        "level-min": "error"
+      },
+      {
+        "file-name": "global-all.log",
+        "max-size": 300,
+        "max-days": 5,
+        "max-backups": 5,
+        "level-min": "info",
+        "level-max": "fatal"
+      }
+    ],
+    "console-confs": [
+      {
+        "console-fd": "stdout",
+        "level-min": "info",
+        "level-max": "fatal"
+      }
+    ]
+  }
+}
