@@ -66,7 +66,7 @@ func TestMapping(t *testing.T) {
 		index *core.Index
 	}{
 		{
-			name: "valid_empty_index",
+			name: "invalid_empty_index",
 			docs: []map[string]interface{}{
 				{
 					"string_key": "string_value",
@@ -90,8 +90,8 @@ func TestMapping(t *testing.T) {
 			index: &core.Index{
 				Index: &protocol.Index{
 					Mappings: &protocol.Mappings{
-						Dynamic:        true,
-						RejectedPolicy: "ignore",
+						Dynamic:    "true",
+						Properties: map[string]protocol.Property{},
 					},
 				},
 			},
@@ -107,8 +107,7 @@ func TestMapping(t *testing.T) {
 			index: &core.Index{
 				Index: &protocol.Index{
 					Mappings: &protocol.Mappings{
-						Dynamic:        false,
-						RejectedPolicy: "ignore",
+						Dynamic: "false",
 						Properties: map[string]protocol.Property{
 							"string_key": {Type: "text"},
 							"date_key":   {Type: "date"},
@@ -132,8 +131,7 @@ func TestMapping(t *testing.T) {
 			index: &core.Index{
 				Index: &protocol.Index{
 					Mappings: &protocol.Mappings{
-						Dynamic:        false,
-						RejectedPolicy: "ignore",
+						Dynamic: "false",
 						Properties: map[string]protocol.Property{
 							"string_key": {Type: "text"},
 							"date_key":   {Type: "keyword"},
@@ -157,8 +155,7 @@ func TestMapping(t *testing.T) {
 			index: &core.Index{
 				Index: &protocol.Index{
 					Mappings: &protocol.Mappings{
-						Dynamic:        false,
-						RejectedPolicy: "ignore",
+						Dynamic: "false",
 						Properties: map[string]protocol.Property{
 							"string_key": {Type: "text"},
 							"date_key":   {Type: "date"},
@@ -182,8 +179,7 @@ func TestMapping(t *testing.T) {
 			index: &core.Index{
 				Index: &protocol.Index{
 					Mappings: &protocol.Mappings{
-						Dynamic:        false,
-						RejectedPolicy: "abort",
+						Dynamic: "strict",
 						Properties: map[string]protocol.Property{
 							"string_key": {Type: "text"},
 							"date_key":   {Type: "date"},
@@ -205,8 +201,8 @@ func TestMapping(t *testing.T) {
 			index: &core.Index{
 				Index: &protocol.Index{
 					Mappings: &protocol.Mappings{
-						Dynamic:        true,
-						RejectedPolicy: "abort",
+						Dynamic:    "true",
+						Properties: map[string]protocol.Property{},
 					},
 				},
 			},
@@ -224,7 +220,7 @@ func TestMapping(t *testing.T) {
 			index: &core.Index{
 				Index: &protocol.Index{
 					Mappings: &protocol.Mappings{
-						Dynamic: false,
+						Dynamic: "strict",
 						Properties: map[string]protocol.Property{
 							"long_key":    {Type: "long"},
 							"integer_key": {Type: "integer"},
