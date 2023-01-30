@@ -160,8 +160,6 @@ func (b *BlugeWriter) addField(
 				return err
 			}
 			bfield = field
-		} else {
-			bfield = b.addFieldByValueType(key, value)
 		}
 	}
 
@@ -223,19 +221,4 @@ func (b *BlugeWriter) addFieldByMappingType(
 		}
 	}
 	return bfield, err
-}
-
-func (b *BlugeWriter) addFieldByValueType(key string, value interface{}) *bluge.TermField {
-	var bfield *bluge.TermField
-	switch val := value.(type) {
-	case string:
-		bfield = bluge.NewKeywordField(key, val)
-	case float64:
-		bfield = bluge.NewNumericField(key, val)
-	case bool:
-		bfield = bluge.NewKeywordField(key, strconv.FormatBool(val))
-	default:
-		bfield = bluge.NewTextField(key, value.(string))
-	}
-	return bfield
 }
