@@ -5,7 +5,7 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 
 	"github.com/alecthomas/kong"
 	"github.com/gin-gonic/gin"
@@ -26,7 +26,7 @@ var cli struct {
 
 // if init failure occurs, the program will use the default logger
 func initLoggers(confPath string) {
-	content, err := ioutil.ReadFile(confPath)
+	content, err := os.ReadFile(confPath)
 	if err != nil {
 		logger.Panic("fail to init loggers, use the default console logger instead", zap.Error(err))
 		return
