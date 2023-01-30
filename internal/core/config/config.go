@@ -12,10 +12,12 @@ import (
 
 var Cfg *Config
 
-var defaultCfg = Config{
-	Segment: segment{
-		MatureThreshold: 500,
-	},
+func init() {
+	Cfg = &Config{
+		Segment: segment{
+			MatureThreshold: 500,
+		},
+	}
 }
 
 type Config struct {
@@ -51,11 +53,6 @@ func (s *segment) verify() {
 // doVerify verifies the control parameters of all modules
 func (cfg *Config) doVerify() {
 	cfg.Segment.verify()
-}
-
-// DefaultConfig return a default configuration
-func DefaultConfig() *Config {
-	return &defaultCfg
 }
 
 func (cfg *Config) String() string {

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tatris-io/tatris/internal/core"
+	"github.com/tatris-io/tatris/internal/core/config"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tatris-io/tatris/internal/common/consts"
@@ -41,7 +41,7 @@ func TestIndex(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(
 			t,
-			(int)(math.Ceil((float64(len(docs)))/core.SegmentMatureThreshold)),
+			(int)(math.Ceil((float64(len(docs)))/(float64(config.Cfg.Segment.MatureThreshold)))),
 			len(readers),
 		)
 
