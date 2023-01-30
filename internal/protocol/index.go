@@ -21,12 +21,15 @@ type Settings struct {
 // Mappings Mapping is the process of defining how a document, and the fields it contains, are
 // stored and indexed.
 type Mappings struct {
-	// Mapping mode, true means Tatris will define the field type dynamically, otherwise user
-	// need to specify the field type in index. It is true by default.
-	Dynamic bool `json:"dynamic mappings,omitempty"`
-	// The default value `ignore` by default means that when the field check fails, we simply
-	// ignore the field, and `abort` means the doc is rejected.
-	RejectedPolicy string `json:"rejected policy,omitempty"`
+	// Mapping mode:
+	// `true` means Tatris will define the field type dynamically, new fields are added to the
+	// mapping (default).
+	// `false` means new fields are ignored. These fields will not be indexed or
+	// searchable, but will still appear in the _source field of returned hits. These fields will
+	// not be added to the mapping, and new fields must be added explicitly.
+	// `strict` means if new fields are detected, an exception is thrown and the document is
+	// rejected. New fields must be explicitly added to the mapping.
+	Dynamic string `json:"dynamic,omitempty"`
 	// Type mappings, object fields and nested fields contain sub-fields, called properties.
 	Properties map[string]Property `json:"properties,omitempty"`
 }

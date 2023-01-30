@@ -78,31 +78,17 @@ func (index *Index) CheckMapping(docID string, doc map[string]interface{}) error
 
 func (index *Index) tryCheckDataFieldType(doc map[string]interface{}) error {
 
-	if index.Index == nil {
-		index.Index = &protocol.Index{
-			Mappings: &protocol.Mappings{
-				Dynamic:        true,
-				RejectedPolicy: "ignore",
-			},
-		}
+	if index.Index == nil || index.Mappings == nil || index.Mappings.Properties == nil {
+		return errors.New("mapping can not be nil")
 	}
-	if index.Mappings == nil {
-		index.Mappings = &protocol.Mappings{
-			Dynamic:        true,
-			RejectedPolicy: "ignore",
-		}
-	}
-	if index.Mappings.Properties == nil {
-		index.Mappings.Properties = make(map[string]protocol.Property, 0)
-	}
+
 	properties := index.Mappings.Properties
 	dynamic := index.Mappings.Dynamic
-	policy := index.Mappings.RejectedPolicy
 
 	for k, v := range doc {
 		fieldType, err := checkFieldType(dynamic, properties, k, v)
 		if err != nil {
-			if err := handleByPolicy(policy, k, doc); err != nil {
+			if err := handleByPolicy(dynamic); err != nil {
 				return err
 			}
 			continue
@@ -117,13 +103,13 @@ func (index *Index) tryCheckDataFieldType(doc map[string]interface{}) error {
 				fieldType,
 				p.Type,
 			)
-		} else if dynamic {
+		} else if strings.EqualFold(dynamic, "true") {
 			// try to add the field type dynamically
 			p = protocol.Property{Type: fieldType}
 			properties[k] = p
 		} else {
 			// explicit mapping check
-			if err := handleByPolicy(policy, k, doc); err != nil {
+			if err := handleByPolicy(dynamic); err != nil {
 				return err
 			}
 		}
@@ -132,25 +118,20 @@ func (index *Index) tryCheckDataFieldType(doc map[string]interface{}) error {
 	return nil
 }
 
-func handleByPolicy(policy string, k string, doc map[string]interface{}) error {
-	switch policy {
-	case "ignore":
-		delete(doc, k)
-	case "abort":
-		return errors.New("reject doc for abort policy")
-	default:
-		return fmt.Errorf("unknown policy %s", policy)
+func handleByPolicy(dynamic string) error {
+	if strings.EqualFold(dynamic, "strict") {
+		return errors.New("reject doc for strict mode")
 	}
 	return nil
 }
 
 func checkFieldType(
-	dynamic bool,
+	dynamic string,
 	properties map[string]protocol.Property,
 	key string,
 	value interface{},
 ) (string, error) {
-	if dynamic {
+	if strings.EqualFold(dynamic, "true") {
 		switch v := value.(type) {
 		case string:
 			if isDateType(v) {

@@ -115,15 +115,23 @@ func checkParam(index *protocol.Index) error {
 }
 
 func checkMapping(mappings *protocol.Mappings) error {
-	properties := mappings.Properties
-	if properties == nil {
-		return errors.New("mappings.properties can not be empty")
+	if mappings.Dynamic == "" {
+		mappings.Dynamic = "true"
 	}
-	err := checkReservedField(properties)
+	dynamic := strings.EqualFold(mappings.Dynamic, "true")
+	properties := &mappings.Properties
+	if *properties == nil {
+		if dynamic {
+			mappings.Properties = make(map[string]protocol.Property, 0)
+		} else {
+			return fmt.Errorf("mappings.properties can not be empty for dynamic: %s", mappings.Dynamic)
+		}
+	}
+	err := checkReservedField(*properties)
 	if err != nil {
 		return err
 	}
-	for _, property := range properties {
+	for _, property := range *properties {
 		err = checkType(property.Type)
 		if err != nil {
 			return err
