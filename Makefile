@@ -44,7 +44,7 @@ add-license:
 build: check fast-build
 
 fast-build:
-	@ echo "fast build ..."
+	@ echo "building ..."
 	@ mkdir -p ./bin
 	@ go build -o ./bin/tatris-meta ./cmd/meta/...
 	@ go build -o ./bin/tatris-server ./cmd/server/...
