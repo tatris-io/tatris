@@ -47,6 +47,20 @@ func GetIndexHandler(c *gin.Context) {
 	}
 }
 
+func IndexExistHandler(c *gin.Context) {
+	indexName := c.Param("index")
+	if index, err := metadata.GetIndex(indexName); err != nil {
+		c.JSON(
+			http.StatusInternalServerError,
+			gin.H{"msg": "get index fail: " + indexName + ", " + err.Error()},
+		)
+	} else if index == nil {
+		c.JSON(http.StatusNotFound, gin.H{"msg": fmt.Sprintf("index not found: %s", indexName)})
+	} else {
+		c.JSON(http.StatusOK, nil)
+	}
+}
+
 func DeleteIndexHandler(c *gin.Context) {
 	indexName := c.Param("index")
 	if err := metadata.DeleteIndex(indexName); err != nil {
