@@ -5,19 +5,18 @@ package config
 
 import (
 	"encoding/json"
-	"fmt"
-	"io"
-	"os"
-	"path"
-	"runtime"
 	"sync"
 
 	"go.uber.org/atomic"
 )
 
-const defaultConfPath = "/conf/server-conf.json"
+var Cfg *Config
 
-var Cfg = defaultConfig()
+var defaultCfg = Config{
+	Segment: segment{
+		MatureThreshold: 500,
+	},
+}
 
 type Config struct {
 	Segment segment
@@ -54,31 +53,12 @@ func (cfg *Config) doVerify() {
 	cfg.Segment.verify()
 }
 
-// defaultConfig return a default configuration
-func defaultConfig() *Config {
-	_, filename, _, _ := runtime.Caller(0)
-	confFilePath := path.Join(path.Dir(path.Dir(path.Dir(path.Dir(filename)))), defaultConfPath)
-	jsonFile, err := os.Open(confFilePath)
-	if err != nil {
-		panic(fmt.Errorf("open config file from %s failed: %v", confFilePath, err))
-	}
-	defer jsonFile.Close()
-	jsonData, err := io.ReadAll(jsonFile)
-	if err != nil {
-		panic(fmt.Errorf("read json file failed: %v", err))
-	}
-	var cfg Config
-	err = json.Unmarshal(jsonData, &cfg)
-	if err != nil {
-		panic(fmt.Errorf("unmarshal json failed: %v", err))
-	}
-	return &cfg
+// DefaultConfig return a default configuration
+func DefaultConfig() *Config {
+	return &defaultCfg
 }
 
 func (cfg *Config) String() string {
-	js, err := json.Marshal(cfg)
-	if err != nil {
-		return fmt.Sprintf("error serializing config to json: %v", err)
-	}
+	js, _ := json.Marshal(cfg)
 	return string(js)
 }

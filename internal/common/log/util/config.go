@@ -213,9 +213,6 @@ func calcLogRootPath(specified string) (string, error) {
 }
 
 func (cfg *Config) String() string {
-	js, err := json.Marshal(cfg)
-	if err != nil {
-		return fmt.Sprintf("error serializing config to json: %v", err)
-	}
+	js, _ := json.Marshal(cfg)
 	return string(js)
 }
