@@ -4,9 +4,12 @@ package bluge
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"strconv"
 	"time"
+
+	"github.com/tatris-io/tatris/internal/protocol"
 
 	"github.com/tatris-io/tatris/internal/common/utils"
 
@@ -46,20 +49,27 @@ func (b *BlugeWriter) OpenWriter() error {
 	return nil
 }
 
-func (b *BlugeWriter) Insert(docID string, doc map[string]interface{}) error {
+func (b *BlugeWriter) Insert(
+	docID string,
+	doc map[string]interface{},
+	mappings *protocol.Mappings,
+) error {
 	defer utils.Timerf("bluge insert doc finish, index:%s, ID:%s", b.Index, docID)()
-	blugeDoc, err := b.generateBlugeDoc(docID, doc)
+	blugeDoc, err := b.generateBlugeDoc(docID, doc, mappings)
 	if err != nil {
-		return nil
+		return err
 	}
 	return b.Writer.Insert(blugeDoc)
 }
 
-func (b *BlugeWriter) Batch(docs map[string]map[string]interface{}) error {
+func (b *BlugeWriter) Batch(
+	docs map[string]map[string]interface{},
+	mappings *protocol.Mappings,
+) error {
 	defer utils.Timerf("bluge batch insert %d docs finish, index:%s", len(docs), b.Index)()
 	batch := index.NewBatch()
 	for docID, doc := range docs {
-		blugeDoc, err := b.generateBlugeDoc(docID, doc)
+		blugeDoc, err := b.generateBlugeDoc(docID, doc, mappings)
 		if err != nil {
 			return err
 		}
@@ -88,6 +98,7 @@ func (b *BlugeWriter) Close() {
 func (b *BlugeWriter) generateBlugeDoc(
 	docID string,
 	doc map[string]interface{},
+	mappings *protocol.Mappings,
 ) (segment.Document, error) {
 	bdoc := bluge.NewDocument(docID)
 	for key, value := range doc {
@@ -98,10 +109,16 @@ func (b *BlugeWriter) generateBlugeDoc(
 		switch v := value.(type) {
 		case []interface{}:
 			for _, v := range v {
-				b.addField(bdoc, key, v)
+				err := b.addField(bdoc, key, v, mappings)
+				if err != nil {
+					return nil, err
+				}
 			}
 		default:
-			b.addField(bdoc, key, v)
+			err := b.addField(bdoc, key, v, mappings)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -123,7 +140,12 @@ func (b *BlugeWriter) generateBlugeDoc(
 	return bdoc, nil
 }
 
-func (b *BlugeWriter) addField(bdoc *bluge.Document, key string, value interface{}) {
+func (b *BlugeWriter) addField(
+	bdoc *bluge.Document,
+	key string,
+	value interface{},
+	mappings *protocol.Mappings,
+) error {
 	// TODO get index mapping, case field type(text、keyword、bool)
 	var bfield *bluge.TermField
 	switch key {
@@ -132,14 +154,71 @@ func (b *BlugeWriter) addField(bdoc *bluge.Document, key string, value interface
 	case consts.IDField:
 		bfield = bluge.NewKeywordField(key, value.(string))
 	default:
-		switch val := value.(type) {
-		case string:
-			bfield = bluge.NewKeywordField(key, val)
-		case float64:
-			bfield = bluge.NewNumericField(key, val)
-		case bool:
-			bfield = bluge.NewKeywordField(key, strconv.FormatBool(val))
+		if p, ok := mappings.Properties[key]; ok {
+			field, err := b.addFieldByMappingType(p.Type, key, value)
+			if err != nil {
+				return err
+			}
+			bfield = field
 		}
 	}
+
 	bdoc.AddField(bfield)
+	return nil
+}
+
+func (b *BlugeWriter) addFieldByMappingType(
+	mappingType string,
+	key string,
+	value interface{},
+) (*bluge.TermField, error) {
+	var bfield *bluge.TermField
+	var err error
+	if t, ok := consts.MappingTypes[mappingType]; ok {
+		switch t {
+		case consts.NumericMappingType:
+			numericValue, ok := value.(float64)
+			if !ok {
+				return nil, fmt.Errorf("numeric value: %s is not numerical type", value)
+			}
+			bfield = bluge.NewNumericField(key, numericValue)
+		case consts.KeywordMappingType:
+			keywordValue, ok := value.(string)
+			if !ok {
+				return nil, fmt.Errorf("keyword value: %s is not string", value)
+			}
+			bfield = bluge.NewKeywordField(key, keywordValue)
+		case consts.BoolMappingType:
+			boolValue, ok := value.(bool)
+			if !ok {
+				return nil, fmt.Errorf("bool value: %s is not bool", value)
+			}
+			bfield = bluge.NewKeywordField(key, strconv.FormatBool(boolValue))
+		case consts.TextMappingType:
+			textValue, ok := value.(string)
+			if !ok {
+				return nil, fmt.Errorf("text value: %s is not string", value)
+			}
+			bfield = bluge.NewTextField(key, textValue)
+		case consts.DateMappingType:
+			var date time.Time
+
+			switch v := value.(type) {
+			case float64:
+				date = time.Unix(int64(v), 0)
+			case int64:
+				date = time.Unix(v, 0)
+			case string:
+				date, err = time.Parse(time.RFC3339, v)
+				if err != nil {
+					return nil, err
+				}
+			default:
+				return nil, fmt.Errorf("date value: %s is not string/float64/int64", value)
+			}
+
+			bfield = bluge.NewDateTimeField(key, date)
+		}
+	}
+	return bfield, err
 }

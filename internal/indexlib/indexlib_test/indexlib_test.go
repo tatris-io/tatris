@@ -44,7 +44,7 @@ func TestIndexLib(t *testing.T) {
 					ID = utils.GenerateID()
 					doc[consts.IDField] = ID
 				}
-				err = writer.Insert(ID, doc)
+				err = writer.Insert(ID, doc, index.Mappings)
 				if err != nil {
 					t.Fatalf("write fail: %s", err.Error())
 				}
