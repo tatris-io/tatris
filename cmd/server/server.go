@@ -45,7 +45,7 @@ func initLoggers(confPath string) {
 }
 
 func initServer(confPath string) {
-	serverConf := config.DefaultConfig()
+	serverConf := config.Cfg
 	content, err := os.ReadFile(confPath)
 	if err != nil {
 		logger.Panic("fail to open server conf, use the default settings instead", zap.Error(err))
