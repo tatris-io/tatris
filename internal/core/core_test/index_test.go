@@ -224,8 +224,7 @@ func TestMapping(t *testing.T) {
 			index: &core.Index{
 				Index: &protocol.Index{
 					Mappings: &protocol.Mappings{
-						Dynamic:        false,
-						RejectedPolicy: "abort",
+						Dynamic: false,
 						Properties: map[string]protocol.Property{
 							"long_key":    {Type: "long"},
 							"integer_key": {Type: "integer"},
