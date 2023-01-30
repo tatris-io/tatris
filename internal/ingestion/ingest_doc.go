@@ -42,7 +42,7 @@ func IngestDocs(indexName string, docs []map[string]interface{}) error {
 		zap.Int("size", len(idDocs)),
 	)
 	for docID, doc := range idDocs {
-		err := writer.Insert(docID, doc)
+		err := writer.Insert(docID, doc, index.Mappings)
 		if err != nil {
 			return err
 		}

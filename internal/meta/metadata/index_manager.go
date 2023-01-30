@@ -7,8 +7,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/patrickmn/go-cache"
 	"strings"
+
+	"github.com/patrickmn/go-cache"
 
 	"go.uber.org/zap"
 
@@ -23,17 +24,6 @@ import (
 
 var metaStore storage.MetaStore
 var metaCache *cache.Cache
-
-var supportTypes = []string{
-	"integer",
-	"long",
-	"float",
-	"double",
-	"boolean",
-	"date",
-	"keyword",
-	"text",
-}
 
 func init() {
 	var err error
@@ -157,10 +147,8 @@ func checkReservedField(properties map[string]protocol.Property) error {
 }
 
 func checkType(paramType string) error {
-	for _, supportType := range supportTypes {
-		if strings.EqualFold(paramType, supportType) {
-			return nil
-		}
+	if _, ok := consts.MappingTypes[strings.ToLower(paramType)]; ok {
+		return nil
 	}
 	return fmt.Errorf("the type %s is not supported", paramType)
 }
