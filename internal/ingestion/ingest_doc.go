@@ -5,7 +5,10 @@ package ingestion
 
 import (
 	"errors"
+	"fmt"
 	"time"
+
+	"github.com/tatris-io/tatris/internal/core"
 
 	"go.uber.org/zap"
 
@@ -21,7 +24,10 @@ func IngestDocs(indexName string, docs []map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	idDocs := buildDocs(docs)
+	idDocs, err := buildDocs(index, docs)
+	if err != nil {
+		return fmt.Errorf("fail to check mapping for %s", err.Error())
+	}
 	shard := index.GetShardByRouting()
 	if shard == nil {
 		return errors.New("shard not found")
@@ -52,7 +58,10 @@ func IngestDocs(indexName string, docs []map[string]interface{}) error {
 	return metadata.SaveIndex(index)
 }
 
-func buildDocs(docs []map[string]interface{}) map[string]map[string]interface{} {
+func buildDocs(
+	index *core.Index,
+	docs []map[string]interface{},
+) (map[string]map[string]interface{}, error) {
 	idDocs := make(map[string]map[string]interface{})
 	for _, doc := range docs {
 		docID := ""
@@ -67,7 +76,11 @@ func buildDocs(docs []map[string]interface{}) map[string]map[string]interface{} 
 		}
 		doc[consts.IDField] = docID
 		doc[consts.TimestampField] = docTimestamp
+		err := index.CheckMapping(docID, doc)
+		if err != nil {
+			return idDocs, err
+		}
 		idDocs[docID] = doc
 	}
-	return idDocs
+	return idDocs, nil
 }

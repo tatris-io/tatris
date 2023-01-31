@@ -5,6 +5,7 @@ package metadata
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -49,4 +50,46 @@ func TestManager(t *testing.T) {
 		}
 	})
 
+}
+
+func TestDynamicMappingCheck(t *testing.T) {
+	tests := []struct {
+		name     string
+		mappings *protocol.Mappings
+	}{
+		{
+			name:     "empty_mapping",
+			mappings: &protocol.Mappings{},
+		},
+		{
+			name: "dynamic_mapping",
+			mappings: &protocol.Mappings{
+				Dynamic: "true",
+			},
+		},
+		{
+			name: "invalid_explicit_mapping",
+			mappings: &protocol.Mappings{
+				Dynamic: "false",
+			},
+		},
+		{
+			name: "valid_explicit_mapping",
+			mappings: &protocol.Mappings{
+				Dynamic:    "false",
+				Properties: map[string]protocol.Property{},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testErr := checkMapping(tt.mappings)
+			if strings.HasPrefix(tt.name, "valid_") {
+				assert.NoError(t, testErr)
+			} else if strings.HasPrefix(tt.name, "invalid_") {
+				assert.True(t, testErr != nil)
+			}
+		})
+	}
 }
