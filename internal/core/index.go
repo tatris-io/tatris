@@ -189,7 +189,7 @@ func checkFieldType(
 func isDateType(value string) bool {
 	layout, layoutErr := detectTimeLayout(value)
 	if layoutErr != nil {
-		logger.Warn(layoutErr.Error())
+		logger.Debug(layoutErr.Error())
 		return false
 	}
 	_, err := time.Parse(layout, value)
@@ -203,10 +203,14 @@ func detectTimeLayout(value string) (string, error) {
 		} else if strings.Index(value, "T") == 10 {
 			return "2006-01-02T15:04:05", nil
 		}
-	} else if len(value) == 25 && strings.Index(value, "T") == 10 {
-		return "2006-01-02T15:04:05Z07:00", nil
-	} else if len(value) == 29 && strings.Index(value, "T") == 10 && strings.Index(value, ".") == 19 {
-		return "2006-01-02T15:04:05.999Z07:00", nil
+	} else if len(value) == 20 && strings.Index(value, "T") == 10 && strings.HasSuffix(value, "Z") {
+		return "2006-01-02T15:04:05Z", nil
+	} else if len(value) == 23 && strings.Index(value, " ") == 10 && strings.Index(value, ".") == 19 {
+		return "2006-01-02 15:04:05.000", nil
+	} else if len(value) == 23 && strings.Index(value, "T") == 10 && strings.Index(value, ".") == 19 {
+		return "2006-01-02T15:04:05.000", nil
+	} else if len(value) == 24 && strings.Index(value, "T") == 10 && strings.Index(value, ".") == 19 && strings.HasSuffix(value, "Z") {
+		return "2006-01-02T15:04:05.000Z", nil
 	}
 	return "", fmt.Errorf("unsupported time layout of %s", value)
 }
