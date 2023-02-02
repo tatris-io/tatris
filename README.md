@@ -10,7 +10,7 @@ Time-aware storage and search system
 ### via source code
 ```
 git clone git@github.com:tatris-io/tatris.git && cd tatris && make
-./bin/tatris-server --conf.logging=conf/log-conf.yaml --conf.server=conf/server-conf.yaml
+./bin/tatris-server --conf.logging=conf/log-conf.yml --conf.server=conf/server-conf.yml
 ```
 
 ### via docker
