@@ -9,7 +9,8 @@ RUN --mount=target=/go/src,type=bind \
 
 FROM centos:centos7
 
-RUN yum -y install epel-release && yum install -y sudo net-tools iproute dstat which supervisor stress unzip jq screen nginx wget telnet cronolog less && \
+RUN yum -y install epel-release && \
+  yum install -y sudo which supervisor less && \
   yum -y clean all && \
   rm -rf /var/cache/yum
 
