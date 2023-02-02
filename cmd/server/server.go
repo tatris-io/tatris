@@ -4,8 +4,9 @@
 package main
 
 import (
-	"encoding/json"
 	"os"
+
+	"gopkg.in/yaml.v2"
 
 	"github.com/tatris-io/tatris/internal/core/config"
 
@@ -34,7 +35,7 @@ func initLoggers(confPath string) {
 		return
 	}
 	var logConf util.Config
-	if err := json.Unmarshal(content, &logConf); err != nil {
+	if err := yaml.Unmarshal(content, &logConf); err != nil {
 		logger.Panic("fail to init loggers, use the default console logger instead", zap.Error(err))
 		return
 	}
@@ -51,7 +52,7 @@ func initServer(confPath string) {
 		logger.Panic("fail to open server conf, use the default settings instead", zap.Error(err))
 		return
 	}
-	if err := json.Unmarshal(content, serverConf); err != nil {
+	if err := yaml.Unmarshal(content, serverConf); err != nil {
 		logger.Panic("fail to init server, use the default settings instead", zap.Error(err))
 		return
 	}

@@ -3,10 +3,11 @@
 package util
 
 import (
-	"encoding/json"
 	"os"
 	"path"
 	"testing"
+
+	"gopkg.in/yaml.v2"
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zapcore"
@@ -37,54 +38,45 @@ func TestCalcLogRootPath(t *testing.T) {
 }
 
 const (
-	validConfig1 string = `{
-		"level": "info",
-		"root-path": "/tmp/tatris/logs",
-		"disable-error-verbose": true,
-		"development": false
-	}`
-	validConfig2 string = `{
-		"level": "info",
-		"root-path": "/tmp/tatris/logs",
-		"disable-error-verbose": true,
-		"development": false,
-		"global-logger": {
-			"file-confs": [
-				{
-					"file-name": "global-error.log",
-					"max-size": 200,
-					"max-days": 10,
-					"max-backups": 20,
-					"level-max": "error",
-					"level-min": "error"
-				},
-				{
-					"file-name": "global-all.log",
-					"max-size": 200,
-					"max-days": 10,
-					"max-backups": 20,
-					"level-min": "info"
-				}
-			],
-			"console-confs": [
-				{
-					"console-fd": "stdout",
-					"level-max": "error",
-					"level-min": "info"
-				}
-			]
-		}
-	}`
+	validConfig1 string = `
+     level: info
+     root-path: /tmp/tatris/logs
+     disable-error-verbose: true
+     development: false
+`
+	validConfig2 string = `
+     level: info
+     root-path: /tmp/tatris/logs
+     disable-error-verbose: true
+     development: false
+     global-logger:
+       file-confs:
+         - file-name: global-error.log
+           max-size: 200
+           max-days: 10
+           max-backups: 20
+           level-max: error
+           level-min: error
+         - file-name: global-all.log
+           max-size: 200
+           max-days: 10
+           max-backups: 20
+           level-min: info
+       console-confs:
+         - console-fd: stdout
+           level-max: error
+           level-min: info
+`
 )
 
 func TestConfigUnmarshal(t *testing.T) {
 	var validConfStruct1 Config
-	err1 := json.Unmarshal([]byte(validConfig1), &validConfStruct1)
+	err1 := yaml.Unmarshal([]byte(validConfig1), &validConfStruct1)
 	assert.Empty(t, err1)
 	validConfStruct1.Verify()
 
 	var validConfStruct2 Config
-	err2 := json.Unmarshal([]byte(validConfig2), &validConfStruct2)
+	err2 := yaml.Unmarshal([]byte(validConfig2), &validConfStruct2)
 	assert.Empty(t, err2)
 	validConfStruct2.Verify()
 
