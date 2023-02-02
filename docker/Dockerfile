@@ -1,17 +1,16 @@
-FROM golang:1.19 AS build
+FROM --platform=$TARGETPLATFORM golang:1.19 AS build
 
-WORKDIR /go/cache
-ADD go.mod .
-ADD go.sum .
-RUN go mod download
+ARG TARGETPLATFORM
 
-COPY . /go/src/
-WORKDIR /go/src/
-RUN make fast-build
+RUN --mount=target=/go/src,type=bind \
+  echo "building for $TARGETPLATFORM" && \
+  cd /go/src && \
+  go build -o /go/bin/tatris-server ./cmd/server/...
 
 FROM centos:centos7
 
-RUN yum -y install epel-release && yum install -y sudo net-tools iproute dstat which supervisor stress unzip jq screen nginx wget telnet cronolog less && \
+RUN yum -y install epel-release && \
+  yum install -y sudo which supervisor less && \
   yum -y clean all && \
   rm -rf /var/cache/yum
 
@@ -20,7 +19,7 @@ RUN echo 'PS1="\n\e[1;37m[\e[m\e[1;32m\u\e[m\e[1;33m@\e[m\e[1;35m\h\e[m \e[1;35m
   echo 'alias vim="vi"' >> /etc/bashrc && \
   echo 'alias ll="ls -laF"' >> /etc/bashrc && \
   echo 'shell /bin/bash' >> /root/.screenrc && \
-# user tatris initialization
+  # user tatris initialization
   groupadd tatris && \
   useradd tatris -s /bin/bash -g tatris -G root && \
   echo 'shell /bin/bash' >> /home/tatris/.screenrc && \
@@ -44,7 +43,7 @@ VOLUME /home/tatris/logs
 # fix auth
 RUN chown -R tatris:tatris /home/tatris
 
-COPY --from=build /go/src/bin /home/tatris/bin
+COPY --from=build /go/bin /home/tatris/bin
 
 USER tatris
 
