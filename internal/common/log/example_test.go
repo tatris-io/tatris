@@ -3,11 +3,12 @@
 package log
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path"
 	"testing"
+
+	"gopkg.in/yaml.v2"
 
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/common/log/util"
@@ -15,39 +16,30 @@ import (
 )
 
 const (
-	logConfJSON string = `{
-		"level": "info",
-		"root-path": "./_logs",
-		"disable-error-verbose": true,
-		"development": false,
-		"global-logger": {
-			"file-confs": [
-				{
-					"file-name": "global-error.log",
-					"max-size": 300,
-					"max-days": 5,
-					"max-backups": 5,
-					"level-max": "error",
-					"level-min": "error"
-				},
-				{
-					"file-name": "global-all.log",
-					"max-size": 300,
-					"max-days": 5,
-					"max-backups": 5,
-					"level-min": "info",
-					"level-max": "fatal"
-				}
-			],
-			"console-confs": [
-				{
-					"console-fd": "stdout",
-					"level-min": "info",
-					"level-max": "fatal"
-				}
-			]
-		}
-	}`
+	logConfYAML string = `
+     level: info
+     root-path: ./_logs
+     disable-error-verbose: true
+     development: false
+     global-logger:
+       file-confs:
+         - file-name: global-error.log
+           max-size: 300
+           max-days: 5
+           max-backups: 5
+           level-max: error
+           level-min: error
+         - file-name: global-all.log
+           max-size: 300
+           max-days: 5
+           max-backups: 5
+           level-min: info
+           level-max: fatal
+       console-confs:
+         - console-fd: stdout
+           level-min: info
+           level-max: fatal
+`
 )
 
 func TestLoggingExample(_ *testing.T) {
@@ -66,7 +58,7 @@ func TestLoggingExample(_ *testing.T) {
 
 func _initializeWithConf() {
 	var logConfStruct util.Config
-	if err := json.Unmarshal([]byte(logConfJSON), &logConfStruct); err != nil {
+	if err := yaml.Unmarshal([]byte(logConfYAML), &logConfStruct); err != nil {
 		// here we can safely use logger API. Before we initialize loggers with the user's config,
 		// there is a default underlying console logger.
 		logger.Infof("unmarshal logger config errors: %v", err)

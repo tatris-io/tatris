@@ -21,14 +21,14 @@ func init() {
 }
 
 type Config struct {
-	Segment segment
+	Segment segment `yaml:"segment"`
 
 	_once   sync.Once
 	_inited atomic.Bool
 }
 
 type segment struct {
-	MatureThreshold int64 `json:"mature_threshold"`
+	MatureThreshold int64 `yaml:"mature_threshold"`
 }
 
 // Verify wraps doVerify with a `sync.Once`

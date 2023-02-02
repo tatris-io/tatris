@@ -4,8 +4,9 @@
 package main
 
 import (
-	"encoding/json"
 	"os"
+
+	"gopkg.in/yaml.v2"
 
 	"github.com/alecthomas/kong"
 	"github.com/gin-gonic/gin"
@@ -32,7 +33,7 @@ func initLoggers(confPath string) {
 		return
 	}
 	var logConf util.Config
-	if err := json.Unmarshal(content, &logConf); err != nil {
+	if err := yaml.Unmarshal(content, &logConf); err != nil {
 		logger.Panic("fail to init loggers, use the default console logger instead", zap.Error(err))
 		return
 	}

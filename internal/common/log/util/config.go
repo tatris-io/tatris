@@ -24,17 +24,17 @@ const (
 // Config contains all log related config
 type Config struct {
 	// Log level. Only logs with a higher level will be printed
-	Level string `json:"level"`
+	Level string `yaml:"level"`
 	// Root path for all logs
-	RootPath string `json:"root-path"`
+	RootPath string `yaml:"root-path"`
 	// DisableErrorVerbose stops annotating logs with the full verbose error message.
-	DisableErrorVerbose bool `json:"disable-error-verbose"`
+	DisableErrorVerbose bool `yaml:"disable-error-verbose"`
 	// Development puts the logger in development mode, which changes the
 	// behavior of DPanicLevel and takes stacktraces more liberally.
-	Development bool `json:"development"`
+	Development bool `yaml:"development"`
 
 	// GlobalLogger confs for all common logger
-	GlobalLogger *LoggerConfig `json:"global-logger"`
+	GlobalLogger *LoggerConfig `yaml:"global-logger"`
 
 	_level  zapcore.Level
 	_once   sync.Once
@@ -94,19 +94,19 @@ func (cfg *Config) GetLevel() zapcore.Level {
 // LoggerConfig configs a single logger
 type LoggerConfig struct {
 	// Configs for logs that output to files
-	Files []*FileConfig `json:"file-confs"`
+	Files []*FileConfig `yaml:"file-confs"`
 	// Configs for logs that output to `stderr` or `stdout`
-	Consoles []*ConsoleConfig `json:"console-confs"`
+	Consoles []*ConsoleConfig `yaml:"console-confs"`
 }
 
 // ConsoleConfig configs output to stdout or stderr
 type ConsoleConfig struct {
 	// ConsoleFD is one of `stdout` or `stderr`
-	ConsoleFD string `json:"console-fd"`
+	ConsoleFD string `yaml:"console-fd"`
 	// Highest level you want to output through this console FD
-	LevelMax string `json:"level-max"`
+	LevelMax string `yaml:"level-max"`
 	// Lowest level you want to output through this console FD
-	LevelMin string `json:"level-min"`
+	LevelMin string `yaml:"level-min"`
 
 	_minLevel zapcore.Level
 	_maxLevel zapcore.Level
@@ -140,17 +140,17 @@ func (cfg *ConsoleConfig) verify() {
 // LogFileConfig configs output to a single log file
 type FileConfig struct {
 	// Log Filename, default to stdout
-	FileName string `json:"file-name"`
+	FileName string `yaml:"file-name"`
 	// Max size for a single file, in MB, default is 300MB
-	MaxSize int `json:"max-size"`
+	MaxSize int `yaml:"max-size"`
 	// Max days for keeping log files, default is never delete
-	MaxDays int `json:"max-days"`
+	MaxDays int `yaml:"max-days"`
 	// Max number of old log files to retain
-	MaxBackups int `json:"max-backups"`
+	MaxBackups int `yaml:"max-backups"`
 	// Highest level you want to output through this file
-	LevelMax string `json:"level-max"`
+	LevelMax string `yaml:"level-max"`
 	// Lowest level you want to output through this file
-	LevelMin string `json:"level-min"`
+	LevelMin string `yaml:"level-min"`
 
 	_minLevel zapcore.Level
 	_maxLevel zapcore.Level
