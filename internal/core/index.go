@@ -8,13 +8,14 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/jinzhu/now"
+
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/protocol"
 	"go.uber.org/zap"
 
 	"strings"
-	"time"
 )
 
 type Index struct {
@@ -187,26 +188,6 @@ func checkFieldType(
 }
 
 func isDateType(value string) bool {
-	layout, layoutErr := detectTimeLayout(value)
-	if layoutErr != nil {
-		logger.Warn(layoutErr.Error())
-		return false
-	}
-	_, err := time.Parse(layout, value)
+	_, err := now.Parse(value)
 	return err == nil
-}
-
-func detectTimeLayout(value string) (string, error) {
-	if len(value) == 19 {
-		if strings.Index(value, " ") == 10 {
-			return "2006-01-02 15:04:05", nil
-		} else if strings.Index(value, "T") == 10 {
-			return "2006-01-02T15:04:05", nil
-		}
-	} else if len(value) == 25 && strings.Index(value, "T") == 10 {
-		return "2006-01-02T15:04:05Z07:00", nil
-	} else if len(value) == 29 && strings.Index(value, "T") == 10 && strings.Index(value, ".") == 19 {
-		return "2006-01-02T15:04:05.999Z07:00", nil
-	}
-	return "", fmt.Errorf("unsupported time layout of %s", value)
 }
