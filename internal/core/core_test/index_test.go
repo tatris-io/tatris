@@ -47,7 +47,7 @@ func TestIndex(t *testing.T) {
 			len(readers),
 		)
 
-		hits, err := query.SearchDocs(
+		resp, err := query.SearchDocs(
 			protocol.QueryRequest{
 				Index: index.Name,
 				Query: protocol.Query{Term: protocol.Term{"name": "elasticsearch"}},
@@ -55,7 +55,7 @@ func TestIndex(t *testing.T) {
 			},
 		)
 		assert.NoError(t, err)
-		assert.Equal(t, 1, len(hits.Hits))
+		assert.Equal(t, 1, len(resp.Hits.Hits))
 	})
 }
 

@@ -3,18 +3,33 @@
 package indexlib
 
 type QueryRequest interface {
-	searcher()
+	SetAggs(aggregations map[string]Aggs)
+	GetAggs() map[string]Aggs
 }
 
 type BaseQuery struct {
 	Boost float64
+	Aggs  map[string]Aggs
 }
 
-func (m *BaseQuery) searcher() {
+func NewBaseQuery() *BaseQuery {
+	return &BaseQuery{}
+}
+
+func (m *BaseQuery) SetAggs(aggs map[string]Aggs) {
+	m.Aggs = aggs
+}
+
+func (m *BaseQuery) GetAggs() map[string]Aggs {
+	return m.Aggs
 }
 
 type MatchAllQuery struct {
 	*BaseQuery
+}
+
+func NewMatchAllQuery() *MatchAllQuery {
+	return &MatchAllQuery{BaseQuery: NewBaseQuery()}
 }
 
 type MatchQuery struct {
@@ -27,6 +42,10 @@ type MatchQuery struct {
 	Operator  string // OR, AND
 }
 
+func NewMatchQuery() *MatchQuery {
+	return &MatchQuery{BaseQuery: NewBaseQuery()}
+}
+
 type MatchPhraseQuery struct {
 	*BaseQuery
 	MatchPhrase string
@@ -35,10 +54,18 @@ type MatchPhraseQuery struct {
 	Slop        int // Defaults to 0
 }
 
+func NewMatchPhraseQuery() *MatchPhraseQuery {
+	return &MatchPhraseQuery{BaseQuery: NewBaseQuery()}
+}
+
 type QueryString struct {
 	*BaseQuery
 	Query    string
 	Analyzer string
+}
+
+func NewQueryString() *QueryString {
+	return &QueryString{BaseQuery: NewBaseQuery()}
 }
 
 type TermQuery struct {
@@ -47,14 +74,26 @@ type TermQuery struct {
 	Field string
 }
 
+func NewTermQuery() *TermQuery {
+	return &TermQuery{BaseQuery: NewBaseQuery()}
+}
+
 type TermsQuery struct {
 	*BaseQuery
 	Terms map[string]*Terms
 }
 
+func NewTermsQuery() *TermsQuery {
+	return &TermsQuery{BaseQuery: NewBaseQuery()}
+}
+
 type Terms struct {
 	*BaseQuery
 	Fields []string
+}
+
+func NewTerms() *Terms {
+	return &Terms{BaseQuery: NewBaseQuery()}
 }
 
 type BooleanQuery struct {
@@ -66,9 +105,17 @@ type BooleanQuery struct {
 	MinShould int
 }
 
+func NewBooleanQuery() *BooleanQuery {
+	return &BooleanQuery{BaseQuery: NewBaseQuery()}
+}
+
 type RangeQuery struct {
 	*BaseQuery
 	Range map[string]*RangeVal
+}
+
+func NewRangeQuery() *RangeQuery {
+	return &RangeQuery{BaseQuery: NewBaseQuery()}
 }
 
 type RangeVal struct {
@@ -76,4 +123,41 @@ type RangeVal struct {
 	GTE interface{}
 	LT  interface{}
 	LTE interface{}
+}
+
+type Aggs struct {
+	Terms        *AggTerms
+	NumericRange *AggNumericRange
+	Sum          *AggMetric
+	Min          *AggMetric
+	Max          *AggMetric
+	Avg          *AggMetric
+	Cardinality  *AggMetric
+	WeightedAvg  *AggWeightedAvg
+	Aggs         map[string]Aggs
+}
+
+type AggMetric struct {
+	Field string
+}
+
+type AggWeightedAvg struct {
+	Value  *AggMetric
+	Weight *AggMetric
+}
+
+type AggTerms struct {
+	Field string
+	Size  int
+}
+
+type AggNumericRange struct {
+	Field  string
+	Ranges []NumericRange
+	Keyed  bool
+}
+
+type NumericRange struct {
+	To   float64
+	From float64
 }

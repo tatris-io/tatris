@@ -146,7 +146,6 @@ func (b *BlugeWriter) addField(
 	value interface{},
 	mappings *protocol.Mappings,
 ) error {
-	// TODO get index mapping, case field type(text、keyword、bool)
 	var bfield *bluge.TermField
 	switch key {
 	case consts.TimestampField:
@@ -220,5 +219,6 @@ func (b *BlugeWriter) addFieldByMappingType(
 			bfield = bluge.NewDateTimeField(key, date)
 		}
 	}
-	return bfield, err
+	// TODO Sortable、StoreValue、Aggregatable needs to be configured
+	return bfield.Sortable().StoreValue().Aggregatable(), err
 }

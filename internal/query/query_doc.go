@@ -18,12 +18,13 @@ import (
 	"go.uber.org/zap"
 )
 
-func SearchDocs(request protocol.QueryRequest) (*protocol.Hits, error) {
+func SearchDocs(request protocol.QueryRequest) (*protocol.QueryResponse, error) {
 	indexName := request.Index
 	index, err := metadata.GetIndex(indexName)
 	if err != nil {
 		return nil, err
 	}
+
 	start, end, err := timeRange(request.Query)
 	if err != nil {
 		return nil, err
@@ -32,7 +33,7 @@ func SearchDocs(request protocol.QueryRequest) (*protocol.Hits, error) {
 	if err != nil {
 		return nil, err
 	}
-	hits := &protocol.Hits{
+	hits := protocol.Hits{
 		Total: protocol.Total{Value: 0, Relation: "eq"},
 	}
 	if len(readers) == 0 {
@@ -42,7 +43,12 @@ func SearchDocs(request protocol.QueryRequest) (*protocol.Hits, error) {
 	if err != nil {
 		return nil, err
 	}
+	if aggs := request.Aggs; aggs != nil {
+		libRequest.SetAggs(transformAggs(aggs))
+	}
+
 	hits.Hits = make([]protocol.Hit, 0)
+	aggregations := make(map[string]protocol.AggsResponse)
 	var totalValue int64
 	totalRelation := "eq"
 	for _, reader := range readers {
@@ -59,11 +65,15 @@ func SearchDocs(request protocol.QueryRequest) (*protocol.Hits, error) {
 				protocol.Hit{Index: respHit.Index, ID: respHit.ID, Source: respHit.Source},
 			)
 		}
+
+		for k, v := range resp.Aggregations {
+			aggregations[k] = protocol.AggsResponse{Value: v.Value, Buckets: v.Buckets}
+		}
 		reader.Close()
 	}
 	hits.Total.Value = totalValue
 	hits.Total.Relation = totalRelation
-	return hits, nil
+	return &protocol.QueryResponse{Hits: hits, Aggregations: aggregations}, nil
 }
 
 func timeRange(query protocol.Query) (int64, int64, error) {
@@ -97,7 +107,7 @@ func timeRange(query protocol.Query) (int64, int64, error) {
 
 func transform(query protocol.Query) (indexlib.QueryRequest, error) {
 	if query.MatchAll != nil {
-		return &indexlib.MatchAllQuery{}, nil
+		return transformMatchAll()
 	} else if query.Match != nil {
 		return transformMatch(query)
 	} else if query.MatchPhrase != nil {
@@ -115,9 +125,61 @@ func transform(query protocol.Query) (indexlib.QueryRequest, error) {
 	} else if query.Bool != nil {
 		return transformBool(query)
 	} else {
-		// TODO: need to be supported
-		return nil, errors.New("need to be supported")
+		// Exposed queries allow users to specify no query, example: "{"size": xx}"
+		// Use match all query when query is nil
+		return transformMatchAll()
 	}
+}
+
+func transformAggs(aggs map[string]protocol.Aggs) map[string]indexlib.Aggs {
+	result := make(map[string]indexlib.Aggs, len(aggs))
+
+	for name, agg := range aggs {
+		indexlibAggs := indexlib.Aggs{}
+		if agg.Terms != nil {
+			if agg.Terms.Size == 0 {
+				agg.Terms.Size = 10
+			}
+
+			indexlibAggs.Terms = &indexlib.AggTerms{Field: agg.Terms.Field, Size: agg.Terms.Size}
+		} else if agg.NumericRange != nil {
+			indexLibRanges := make([]indexlib.NumericRange, 0, len(agg.NumericRange.Ranges))
+			if ranges := agg.NumericRange.Ranges; ranges != nil {
+				for _, r := range ranges {
+					indexLibRanges = append(indexLibRanges, indexlib.NumericRange{From: r.From, To: r.To})
+				}
+			}
+			indexlibAggs.NumericRange = &indexlib.AggNumericRange{Field: agg.NumericRange.Field, Ranges: indexLibRanges, Keyed: agg.NumericRange.Keyed}
+		} else if agg.Sum != nil {
+			indexlibAggs.Sum = &indexlib.AggMetric{Field: agg.Sum.Field}
+		} else if agg.Min != nil {
+			indexlibAggs.Min = &indexlib.AggMetric{Field: agg.Min.Field}
+		} else if agg.Max != nil {
+			indexlibAggs.Max = &indexlib.AggMetric{Field: agg.Max.Field}
+		} else if agg.Avg != nil {
+			indexlibAggs.Avg = &indexlib.AggMetric{Field: agg.Avg.Field}
+		} else if agg.WeightedAvg != nil {
+			indexlibAggs.WeightedAvg = &indexlib.AggWeightedAvg{
+				Value:  &indexlib.AggMetric{Field: agg.WeightedAvg.Value.Field},
+				Weight: &indexlib.AggMetric{Field: agg.WeightedAvg.Weight.Field},
+			}
+		} else if agg.Cardinality != nil {
+			indexlibAggs.Cardinality = &indexlib.AggMetric{Field: agg.Cardinality.Field}
+		}
+
+		// nested aggs
+		if agg.Aggs != nil {
+			indexlibAggs.Aggs = transformAggs(agg.Aggs)
+		}
+
+		result[name] = indexlibAggs
+	}
+
+	return result
+}
+
+func transformMatchAll() (indexlib.QueryRequest, error) {
+	return indexlib.NewMatchAllQuery(), nil
 }
 
 func transformMatch(query protocol.Query) (indexlib.QueryRequest, error) {
@@ -125,7 +187,7 @@ func transformMatch(query protocol.Query) (indexlib.QueryRequest, error) {
 	if len(matches) <= 0 {
 		return nil, errors.New("invalid match query")
 	}
-	matchQ := indexlib.MatchQuery{}
+	matchQ := indexlib.NewMatchQuery()
 	for k, v := range matches {
 		matchQ.Field = k
 		switch v := v.(type) {
@@ -147,7 +209,7 @@ func transformMatch(query protocol.Query) (indexlib.QueryRequest, error) {
 			}
 		}
 	}
-	return &matchQ, nil
+	return matchQ, nil
 }
 
 func transformMatchPhrase(query protocol.Query) (indexlib.QueryRequest, error) {
@@ -155,7 +217,7 @@ func transformMatchPhrase(query protocol.Query) (indexlib.QueryRequest, error) {
 	if len(matches) <= 0 {
 		return nil, errors.New("invalid match phrase query")
 	}
-	matchQ := indexlib.MatchPhraseQuery{}
+	matchQ := indexlib.NewMatchPhraseQuery()
 	for k, v := range matches {
 		matchQ.Field = k
 		switch v := v.(type) {
@@ -171,7 +233,7 @@ func transformMatchPhrase(query protocol.Query) (indexlib.QueryRequest, error) {
 			}
 		}
 	}
-	return &matchQ, nil
+	return matchQ, nil
 }
 
 func transformQueryString(query protocol.Query) (indexlib.QueryRequest, error) {
@@ -179,21 +241,21 @@ func transformQueryString(query protocol.Query) (indexlib.QueryRequest, error) {
 	if len(querys) <= 0 {
 		return nil, errors.New("invalid query string query")
 	}
-	queryStr := indexlib.QueryString{}
+	queryStr := indexlib.NewQueryString()
 	queryStr.Query = querys["query"].(string)
 	if analyzer, ok := querys["analyzer"]; ok {
 		queryStr.Analyzer = analyzer.(string)
 	}
 
-	return &queryStr, nil
+	return queryStr, nil
 }
 
 func transformTerm(query protocol.Query) (indexlib.QueryRequest, error) {
 	term := query.Term
 	if len(term) <= 0 {
-		return &indexlib.TermQuery{}, nil
+		return indexlib.NewTermQuery(), nil
 	}
-	termQ := indexlib.TermQuery{}
+	termQ := indexlib.NewTermQuery()
 	for k, v := range term {
 		termQ.Field = k
 		switch v := v.(type) {
@@ -203,7 +265,7 @@ func transformTerm(query protocol.Query) (indexlib.QueryRequest, error) {
 			termQ.Term = v["value"].(string)
 		}
 	}
-	return &termQ, nil
+	return termQ, nil
 }
 
 func transformIds(query protocol.Query) (indexlib.QueryRequest, error) {
@@ -211,9 +273,9 @@ func transformIds(query protocol.Query) (indexlib.QueryRequest, error) {
 	if len(ids.Values) <= 0 {
 		return &indexlib.Terms{}, nil
 	}
-	termsQ := indexlib.Terms{}
+	termsQ := indexlib.NewTerms()
 	termsQ.Fields = append(termsQ.Fields, ids.Values...)
-	return &termsQ, nil
+	return termsQ, nil
 }
 
 func transformTerms(query protocol.Query) (indexlib.QueryRequest, error) {
@@ -223,7 +285,7 @@ func transformTerms(query protocol.Query) (indexlib.QueryRequest, error) {
 	}
 	field := ""
 	values := []string{}
-	termsQ := indexlib.TermsQuery{}
+	termsQ := indexlib.NewTermsQuery()
 	for k, v := range terms {
 		field = k
 		for _, vv := range v {
@@ -238,7 +300,7 @@ func transformTerms(query protocol.Query) (indexlib.QueryRequest, error) {
 			Fields: values,
 		}
 	}
-	return &termsQ, nil
+	return termsQ, nil
 }
 
 func transformRange(query protocol.Query) (indexlib.QueryRequest, error) {
@@ -247,22 +309,22 @@ func transformRange(query protocol.Query) (indexlib.QueryRequest, error) {
 		return &indexlib.RangeQuery{}, nil
 	}
 
-	var rangeQ *indexlib.RangeQuery
+	rangeQ := indexlib.NewRangeQuery()
 	for k, v := range rangeQuery {
-		rangeQ = &indexlib.RangeQuery{Range: map[string]*indexlib.RangeVal{
+		rangeQ.Range = map[string]*indexlib.RangeVal{
 			k: {
 				GT:  v.Gt,
 				GTE: v.Gte,
 				LT:  v.Lt,
 				LTE: v.Lte,
 			},
-		}}
+		}
 	}
 	return rangeQ, nil
 }
 
 func transformBool(query protocol.Query) (indexlib.QueryRequest, error) {
-	q := &indexlib.BooleanQuery{}
+	q := indexlib.NewBooleanQuery()
 
 	if query.Bool.Must != nil {
 		q.Musts = make([]indexlib.QueryRequest, 0, len(query.Bool.Must))
