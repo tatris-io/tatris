@@ -6,9 +6,12 @@ package bluge
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"strings"
 	"time"
+
+	"github.com/blugelabs/bluge/search/aggregations"
 
 	"github.com/tatris-io/tatris/internal/common/utils"
 
@@ -72,6 +75,12 @@ func (b *BlugeReader) Search(
 	} else {
 		searchRequest = bluge.NewTopNSearch(limit, blugeQuery).WithStandardAggregations()
 	}
+	if aggs := query.GetAggs(); aggs != nil {
+		blugeAggs := b.generateAggregations(aggs)
+		for name, agg := range blugeAggs {
+			searchRequest.AddAggregation(name, agg)
+		}
+	}
 
 	dmi, err := b.Reader.Search(ctx, searchRequest)
 	if err != nil {
@@ -79,7 +88,7 @@ func (b *BlugeReader) Search(
 		return nil, err
 	}
 
-	return b.generateResponse(dmi), nil
+	return b.generateResponse(dmi)
 }
 
 func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) (bluge.Query, error) {
@@ -142,7 +151,9 @@ func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) (bluge.Query, e
 	return blugeQuery, nil
 }
 
-func (b *BlugeReader) generateResponse(dmi search.DocumentMatchIterator) *indexlib.QueryResponse {
+func (b *BlugeReader) generateResponse(
+	dmi search.DocumentMatchIterator,
+) (*indexlib.QueryResponse, error) {
 	Hits := make([]indexlib.Hit, 0)
 	next, err := dmi.Next()
 	for err == nil && next != nil {
@@ -185,15 +196,21 @@ func (b *BlugeReader) generateResponse(dmi search.DocumentMatchIterator) *indexl
 		next, err = dmi.Next()
 	}
 
+	aggsResponse, err := b.generateAggsResponse(dmi.Aggregations())
+	if err != nil {
+		return nil, err
+	}
+
 	resp := &indexlib.QueryResponse{
 		Took: dmi.Aggregations().Duration().Milliseconds(),
 		Hits: indexlib.Hits{
 			Total: indexlib.Total{Value: int64(dmi.Aggregations().Count())},
 			Hits:  Hits,
 		},
+		Aggregations: aggsResponse,
 	}
 
-	return resp
+	return resp, nil
 }
 
 func (b *BlugeReader) generateMatchQuery(query *indexlib.MatchQuery) (bluge.Query, error) {
@@ -307,6 +324,88 @@ func (b *BlugeReader) generateBoolQuery(query *indexlib.BooleanQuery) (bluge.Que
 	}
 	q.SetMinShould(query.MinShould)
 	return q, nil
+}
+
+func (b *BlugeReader) generateAggregations(
+	aggs map[string]indexlib.Aggs,
+) map[string]search.Aggregation {
+	result := make(map[string]search.Aggregation, len(aggs))
+
+	for name, agg := range aggs {
+		if agg.Terms != nil {
+			if agg.Terms.Size == 0 {
+				agg.Terms.Size = 10
+			}
+			termsAggregation := aggregations.NewTermsAggregation(
+				search.Field(agg.Terms.Field),
+				agg.Terms.Size,
+			)
+			// nested aggregation (bucket aggregation need support)
+			if len(agg.Aggs) > 0 {
+				subAggs := b.generateAggregations(agg.Aggs)
+				for k, v := range subAggs {
+					termsAggregation.AddAggregation(k, v)
+				}
+			}
+			result[name] = termsAggregation
+		} else if agg.NumericRange != nil {
+			ranges := aggregations.Ranges(search.Field(agg.NumericRange.Field))
+			for _, value := range agg.NumericRange.Ranges {
+				ranges.AddRange(aggregations.Range(value.From, value.To))
+			}
+			result[name] = ranges
+		} else if agg.Sum != nil {
+			result[name] = aggregations.Sum(search.Field(agg.Sum.Field))
+		} else if agg.Min != nil {
+			result[name] = aggregations.Min(search.Field(agg.Min.Field))
+		} else if agg.Max != nil {
+			result[name] = aggregations.Max(search.Field(agg.Max.Field))
+		} else if agg.Avg != nil {
+			result[name] = aggregations.Avg(search.Field(agg.Avg.Field))
+		} else if agg.WeightedAvg != nil {
+			result[name] = aggregations.WeightedAvg(search.Field(agg.WeightedAvg.Value.Field), search.Field(agg.WeightedAvg.Weight.Field))
+		} else if agg.Cardinality != nil {
+			result[name] = aggregations.Cardinality(search.Field(agg.Cardinality.Field))
+		}
+	}
+
+	return result
+}
+
+func (b *BlugeReader) generateAggsResponse(
+	buckets *search.Bucket,
+) (map[string]indexlib.AggsResponse, error) {
+	aggsResponse := make(map[string]indexlib.AggsResponse)
+	for name, value := range buckets.Aggregations() {
+		switch value := value.(type) {
+		case search.BucketCalculator:
+			aggsBuckets := make([]map[string]interface{}, 0)
+			for _, bucket := range value.Buckets() {
+				aggsBucket := make(map[string]interface{})
+				aggsBucket["key"] = bucket.Name()
+				aggsBucket["doc_count"] = bucket.Count()
+
+				if bucket.Aggregations() != nil {
+					aggsResponse, err := b.generateAggsResponse(bucket)
+					if err != nil {
+						return aggsResponse, err
+					}
+					for k, v := range aggsResponse {
+						aggsBucket[k] = v
+					}
+				}
+				aggsBuckets = append(aggsBuckets, aggsBucket)
+			}
+			aggsResponse[name] = indexlib.AggsResponse{Buckets: aggsBuckets}
+		case search.MetricCalculator:
+			aggsResponse[name] = indexlib.AggsResponse{Value: value.Value()}
+		case search.DurationCalculator:
+			aggsResponse[name] = indexlib.AggsResponse{Value: value.Duration().Milliseconds()}
+		default:
+			return aggsResponse, fmt.Errorf("bluge aggregation: %s calculator type: %s not support", name, value)
+		}
+	}
+	return aggsResponse, nil
 }
 
 func (b *BlugeReader) Close() {

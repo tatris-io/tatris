@@ -5,8 +5,9 @@ package indexlib
 import "time"
 
 type QueryResponse struct {
-	Took int64 `json:"took"`
-	Hits Hits  `json:"hits"`
+	Took         int64                   `json:"took"`
+	Hits         Hits                    `json:"hits"`
+	Aggregations map[string]AggsResponse `json:"aggregations"`
 }
 
 type Hits struct {
@@ -24,4 +25,9 @@ type Hit struct {
 	ID        string                 `json:"_id"`
 	Source    map[string]interface{} `json:"_source"`
 	Timestamp time.Time              `json:"_timestamp"`
+}
+
+type AggsResponse struct {
+	Value   interface{} `json:"value,omitempty"`   // metric aggregation
+	Buckets interface{} `json:"buckets,omitempty"` // bucket aggregation
 }

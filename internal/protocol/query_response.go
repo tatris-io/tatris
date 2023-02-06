@@ -3,12 +3,13 @@
 package protocol
 
 type QueryResponse struct {
-	Took     int64       `json:"took"` // unit: ms
-	TimedOut bool        `json:"timedOut"`
-	Shards   Shards      `json:"_shards"`
-	Hits     Hits        `json:"hits"`
-	Error    interface{} `json:"error"`
-	Status   int32       `json:"status"`
+	Took         int64                   `json:"took"` // unit: ms
+	TimedOut     bool                    `json:"timedOut"`
+	Shards       Shards                  `json:"_shards"`
+	Hits         Hits                    `json:"hits"`
+	Error        interface{}             `json:"error,omitempty"`
+	Status       int32                   `json:"status"`
+	Aggregations map[string]AggsResponse `json:"aggregations,omitempty"`
 }
 
 type Shards struct {
@@ -32,4 +33,9 @@ type Hit struct {
 	Index  string                 `json:"_index"`
 	ID     string                 `json:"_id"`
 	Source map[string]interface{} `json:"_source"`
+}
+
+type AggsResponse struct {
+	Value   interface{} `json:"value,omitempty"`
+	Buckets interface{} `json:"buckets,omitempty"`
 }

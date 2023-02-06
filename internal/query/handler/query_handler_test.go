@@ -44,6 +44,11 @@ func TestQueryHandler(t *testing.T) {
 		c.Request.Body = io.NopCloser(bytes.NewBufferString(queryRequest))
 		QueryHandler(c)
 		fmt.Println(w)
+
+		c.Request.Body = io.NopCloser(bytes.NewBufferString(queryWithAggRequest))
+		QueryHandler(c)
+		fmt.Println(w)
+
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 }
@@ -78,6 +83,51 @@ const queryRequest = `
           }
         }
       ]
+    }
+  }
+}
+`
+
+const queryWithAggRequest = `
+{
+  "size": 20,
+  "aggs": {
+    "lang": {
+     "terms": {
+       "field": "lang",
+       "size": 10
+     },
+     "aggs": {
+       "avg_forks": {
+         "avg": {
+           "field": "forks"
+         }
+       },
+       "sum_stars": {
+         "sum": {
+           "field": "stars"
+         }
+       },
+       "cardinality_name": {
+         "cardinality": {
+           "field": "name"
+         }
+       },
+      "range_forks": {
+       "range": {
+         "field": "forks",
+         "ranges": [
+           {
+             "to": 10000
+           },
+           {
+             "from": 10000,
+             "to": 20000
+           }
+         ]
+       }
+      }
+     }
     }
   }
 }
