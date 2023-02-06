@@ -7,12 +7,9 @@ import (
 	"encoding/json"
 	"errors"
 	"math"
-	"path"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/tatris-io/tatris/internal/core/config"
 
 	"github.com/patrickmn/go-cache"
 	"github.com/tatris-io/tatris/internal/common/consts"
@@ -20,9 +17,7 @@ import (
 	"github.com/tatris-io/tatris/internal/common/utils"
 	"github.com/tatris-io/tatris/internal/core"
 	"github.com/tatris-io/tatris/internal/core/wal/log"
-	"github.com/tatris-io/tatris/internal/core/wal/tidwall"
 	"github.com/tatris-io/tatris/internal/meta/metadata"
-	"github.com/tidwall/wal"
 	"go.uber.org/zap"
 )
 
@@ -39,30 +34,14 @@ func init() {
 }
 
 func OpenWAL(shard *core.Shard) (log.WalLog, error) {
-	options := config.Cfg.Wal
 	name := shard.GetName()
 	defer utils.Timerf("open wal finish, name:%s", name)()
-	p := path.Join(consts.DefaultWALPath, name)
-	logger.Info("open wal", zap.String("name", name), zap.Any("options", options))
-	twalLog := &tidwall.TWalLog{}
-	twalOptions := &wal.Options{}
-	twalOptions.NoSync = options.NoSync
-	twalOptions.SegmentSize = options.SegmentSize
-	if options.LogFormat == 1 {
-		twalOptions.LogFormat = wal.JSON
-	} else {
-		twalOptions.LogFormat = wal.Binary
-	}
-	twalOptions.SegmentCacheSize = options.SegmentCacheSize
-	twalOptions.NoCopy = options.NoCopy
-	twalOptions.DirPerms = options.DirPerms
-	twalOptions.FilePerms = options.FilePerms
-	l, err := wal.Open(p, twalOptions)
+	wal, err := shard.OpenWAL()
 	if err != nil {
 		return nil, err
 	}
-	twalLog.Log = l
-	return twalLog, nil
+	wals.Set(name, wal, cache.NoExpiration)
+	return wal, nil
 }
 
 func ProduceWAL(shard *core.Shard, docs []map[string]interface{}) error {
@@ -77,7 +56,6 @@ func ProduceWAL(shard *core.Shard, docs []map[string]interface{}) error {
 		if wal, err = OpenWAL(shard); err != nil {
 			return err
 		}
-		wals.Set(name, wal, cache.NoExpiration)
 	}
 	datas := make([][]byte, 0)
 	for _, doc := range docs {

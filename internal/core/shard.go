@@ -4,8 +4,15 @@ package core
 
 import (
 	"fmt"
+	"path"
 	"sync"
 	"time"
+
+	"github.com/tatris-io/tatris/internal/common/consts"
+	"github.com/tatris-io/tatris/internal/core/config"
+	"github.com/tatris-io/tatris/internal/core/wal/log"
+	"github.com/tatris-io/tatris/internal/core/wal/tidwall"
+	"github.com/tidwall/wal"
 
 	"go.uber.org/zap"
 
@@ -17,8 +24,9 @@ type Shard struct {
 	Index    *Index `json:"-"`
 	ShardID  int
 	Segments []*Segment
-	lock     sync.RWMutex
 	Stat     ShardStat
+	Wal      log.WalLog
+	lock     sync.RWMutex
 }
 
 func (shard *Shard) GetName() string {
@@ -62,6 +70,37 @@ func (shard *Shard) CheckSegments() {
 			)
 		}
 	}
+}
+
+func (shard *Shard) OpenWAL() (log.WalLog, error) {
+	shard.lock.Lock()
+	defer shard.lock.Unlock()
+	if shard.Wal == nil {
+		options := config.Cfg.Wal
+		name := shard.GetName()
+		p := path.Join(consts.DefaultWALPath, name)
+		logger.Info("open wal", zap.String("name", name), zap.Any("options", options))
+		twalLog := &tidwall.TWalLog{}
+		twalOptions := &wal.Options{}
+		twalOptions.NoSync = options.NoSync
+		twalOptions.SegmentSize = options.SegmentSize
+		if options.LogFormat == 1 {
+			twalOptions.LogFormat = wal.JSON
+		} else {
+			twalOptions.LogFormat = wal.Binary
+		}
+		twalOptions.SegmentCacheSize = options.SegmentCacheSize
+		twalOptions.NoCopy = options.NoCopy
+		twalOptions.DirPerms = options.DirPerms
+		twalOptions.FilePerms = options.FilePerms
+		l, err := wal.Open(p, twalOptions)
+		if err != nil {
+			return nil, err
+		}
+		twalLog.Log = l
+		shard.Wal = twalLog
+	}
+	return shard.Wal, nil
 }
 
 func (shard *Shard) UpdateStat(min, max time.Time, docs int64, wals uint64) {
