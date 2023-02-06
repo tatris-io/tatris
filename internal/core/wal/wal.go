@@ -41,7 +41,7 @@ func init() {
 func OpenWAL(shard *core.Shard) (log.WalLog, error) {
 	options := config.Cfg.Wal
 	name := shard.GetName()
-	defer utils.Timerf("consume wal finish, name:%s", name)()
+	defer utils.Timerf("open wal finish, name:%s", name)()
 	p := path.Join(consts.DefaultWALPath, name)
 	logger.Info("open wal", zap.String("name", name), zap.Any("options", options))
 	twalLog := &tidwall.TWalLog{}
