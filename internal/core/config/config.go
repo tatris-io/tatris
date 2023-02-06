@@ -16,13 +16,13 @@ var Cfg *Config
 func init() {
 	Cfg = &Config{
 		Segment: Segment{
-			MatureThreshold: 500,
+			MatureThreshold: 20000,
 		},
 		Wal: Wal{
 			NoSync:           false,    // Fsync after every write
 			SegmentSize:      20971520, // 20 MB log segment files
 			LogFormat:        0,        // Binary format is small and fast
-			SegmentCacheSize: 1,        // Number of cached in-memory segments
+			SegmentCacheSize: 3,        // Number of cached in-memory segments
 			NoCopy:           false,    // Make a new copy of data for every Read call
 			DirPerms:         0750,     // Permissions for the created directories
 			FilePerms:        0640,     // Permissions for the created data files
@@ -85,7 +85,7 @@ func (s *Segment) verify() {
 }
 
 func (w *Wal) verify() {
-	if w.LogFormat < 0 || w.LogFormat > 1 {
+	if w.LogFormat > 1 {
 		panic("log_format should be 0 for binary format or 1 for JSON format")
 	}
 	if w.SegmentSize <= 0 {

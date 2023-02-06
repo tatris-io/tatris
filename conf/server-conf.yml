@@ -1,2 +1,10 @@
 segment:
-  mature_threshold: 10000
+  mature_threshold: 20000
+wal:
+  no_sync: false
+  segment_size: 20971520
+  log_format: 0
+  segment_cache_size: 3
+  no_copy: false
+  dir_perms: 0750
+  file_perms: 0640

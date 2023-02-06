@@ -5,6 +5,7 @@ package ingestion
 
 import (
 	"fmt"
+
 	"github.com/tatris-io/tatris/internal/core/wal"
 	"github.com/tatris-io/tatris/internal/meta/metadata"
 )
@@ -18,8 +19,5 @@ func IngestDocs(indexName string, docs []map[string]interface{}) error {
 	if shard == nil {
 		return fmt.Errorf("shard not found, index=%s", indexName)
 	}
-	if err = wal.ProduceWAL(shard, docs); err != nil {
-		return err
-	}
-	return nil
+	return wal.ProduceWAL(shard, docs)
 }

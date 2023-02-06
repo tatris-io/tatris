@@ -32,10 +32,8 @@ func init() {
 	wals = cache.New(cache.NoExpiration, cache.NoExpiration)
 	go func() {
 		ticker := time.NewTicker(time.Second)
-		for {
-			for range ticker.C {
-				ConsumeWALs()
-			}
+		for range ticker.C {
+			ConsumeWALs()
 		}
 	}()
 }
@@ -139,8 +137,8 @@ func ConsumeWAL(shard *core.Shard, wal log.WalLog) error {
 	} else {
 		from = uint64(math.Max(float64(firstIndex), float64(shard.Stat.WalIndex))) + 1
 	}
-	to = lastIndex
-	if from == to {
+	to = uint64(math.Min(float64(lastIndex), float64(from+5000-1)))
+	if from >= to {
 		return nil
 	}
 	logger.Info(
@@ -182,7 +180,7 @@ func ConsumeWAL(shard *core.Shard, wal log.WalLog) error {
 		zap.String("name", name),
 		zap.Uint64("from", from),
 		zap.Uint64("to", to),
-		zap.Uint64("size", to-from),
+		zap.Uint64("size", to-from+1),
 	)
 	return nil
 }
@@ -218,7 +216,7 @@ func buildDocs(
 	docs []map[string]interface{},
 ) (map[string]map[string]interface{}, time.Time, time.Time, error) {
 	idDocs := make(map[string]map[string]interface{})
-	minTime, maxTime := time.UnixMilli(0), time.UnixMilli(math.MaxInt64)
+	minTime, maxTime := time.UnixMilli(math.MaxInt64), time.UnixMilli(0)
 	for _, doc := range docs {
 		docID := ""
 		docTimestamp := time.Now()
