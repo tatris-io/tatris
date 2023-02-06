@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/tatris-io/tatris/internal/protocol"
@@ -161,6 +162,10 @@ func (b *BlugeWriter) addField(
 		if p, ok := mappings.Properties[key]; ok {
 			field, err := b.addFieldByMappingType(p.Type, key, value)
 			if err != nil {
+				if strings.EqualFold(p.Type, consts.ExplicitMappingConfig) {
+					// ignore invalid field, just record in _source
+					return nil
+				}
 				return err
 			}
 			bfield = field

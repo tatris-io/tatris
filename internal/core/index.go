@@ -8,14 +8,11 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/tatris-io/tatris/internal/common/consts"
-
-	"github.com/tatris-io/tatris/internal/indexlib/manage"
-
 	"github.com/jinzhu/now"
-
+	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/indexlib"
+	"github.com/tatris-io/tatris/internal/indexlib/manage"
 	"github.com/tatris-io/tatris/internal/protocol"
 	"go.uber.org/zap"
 
@@ -102,18 +99,23 @@ func (index *Index) tryCheckDataFieldType(doc map[string]interface{}) error {
 			continue
 		}
 		if p, ok := properties[k]; ok {
-			if strings.EqualFold(p.Type, fieldType) {
+			if !hasConflict(p, fieldType) {
 				continue
 			}
-			return fmt.Errorf(
-				"inconsistent field type of %s, current: %s original: %s",
-				k,
-				fieldType,
-				p.Type,
-			)
-		} else if strings.EqualFold(dynamic, "true") {
+			if err := handleByPolicy(p.Dynamic); err != nil {
+				return fmt.Errorf(
+					"inconsistent field type of %s, current: %s original: %s",
+					k,
+					fieldType,
+					p.Type,
+				)
+			}
+		} else if strings.EqualFold(dynamic, consts.DynamicMappingConfig) {
 			// try to add the field type dynamically
-			p = protocol.Property{Type: fieldType}
+			p = protocol.Property{
+				Type:    fieldType,
+				Dynamic: consts.DynamicMappingConfig,
+			}
 			properties[k] = p
 		} else {
 			// explicit mapping check
@@ -126,8 +128,20 @@ func (index *Index) tryCheckDataFieldType(doc map[string]interface{}) error {
 	return nil
 }
 
+func hasConflict(p protocol.Property, fieldType string) bool {
+	dynamic := p.Dynamic
+	if strings.EqualFold(dynamic, "") || strings.EqualFold(dynamic, consts.DynamicMappingConfig) {
+		return !strings.EqualFold(p.Type, fieldType)
+	}
+	if validTypes, ok := consts.ValidDynamicMappingTypes[p.Type]; ok {
+		return !validTypes.Contains(fieldType)
+	}
+	// invalid p.Type that is not contained in ValidDynamicMappingTypes
+	return true
+}
+
 func handleByPolicy(dynamic string) error {
-	if strings.EqualFold(dynamic, "strict") {
+	if strings.EqualFold(dynamic, consts.StrictMappingConfig) {
 		return errors.New("reject doc for strict mode")
 	}
 	return nil
@@ -139,58 +153,39 @@ func checkFieldType(
 	key string,
 	value interface{},
 ) (string, error) {
-	if strings.EqualFold(dynamic, "true") {
+	if strings.EqualFold(dynamic, consts.DynamicMappingConfig) {
 		switch v := value.(type) {
 		case string:
 			if isDateType(v) {
-				return "date", nil
+				return consts.DateMappingType, nil
 			}
-			return "text", nil
+			return consts.TextMappingType, nil
 		case bool:
-			return "boolean", nil
+			return consts.BooleanMappingType, nil
 		case int, int64:
 			return "long", nil
 		case float32, float64:
 			return "double", nil
 		default:
-			return "other", fmt.Errorf("unknown field type of %s", v)
+			return consts.UnknownMappingType, fmt.Errorf("unknown field type of %s", v)
 		}
 	} else {
 		typeOf := reflect.TypeOf(value)
 		typeName := typeOf.Name()
+		// explicit field property
 		if p, ok := properties[key]; ok {
-			switch p.Type {
-			case "text", "keyword":
-				if strings.EqualFold(typeName, "string") {
-					return p.Type, nil
-				}
-			case "date":
-				if strings.EqualFold(typeName, "string") && isDateType(value.(string)) {
-					return p.Type, nil
-				}
-			case "long":
-				if strings.HasPrefix(typeName, "int") {
-					return p.Type, nil
-				}
-			case "integer":
-				if strings.HasPrefix(typeName, "int") && !strings.EqualFold(typeName, "int64") {
-					return p.Type, nil
-				}
-			case "double":
-				if strings.HasPrefix(typeName, "float") {
-					return p.Type, nil
-				}
-			case "float":
-				if strings.HasPrefix(typeName, "float") && !strings.EqualFold(typeName, "float64") {
-					return p.Type, nil
-				}
-			case "byte":
-				if strings.EqualFold(typeName, "byte") || strings.EqualFold(typeName, "int") {
-					return p.Type, nil
+			// property type is valid config
+			if set, ok := consts.ValidFieldTypes[p.Type]; ok {
+				// field type can be correctly handled
+				if set.Contains(typeName) {
+					// valid date type or other types
+					if !strings.EqualFold(p.Type, consts.DateMappingType) || isDateType(value.(string)) {
+						return p.Type, nil
+					}
 				}
 			}
 		}
-		return "other", fmt.Errorf("unknown field type of %s", typeName)
+		return consts.UnknownMappingType, fmt.Errorf("unknown field type of %s", typeName)
 	}
 }
 

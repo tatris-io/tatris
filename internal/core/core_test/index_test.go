@@ -90,8 +90,10 @@ func TestMapping(t *testing.T) {
 			index: &core.Index{
 				Index: &protocol.Index{
 					Mappings: &protocol.Mappings{
-						Dynamic:    "true",
-						Properties: map[string]protocol.Property{},
+						Dynamic: "true",
+						Properties: map[string]protocol.Property{
+							"date_key": {Dynamic: consts.StrictMappingConfig},
+						},
 					},
 				},
 			},

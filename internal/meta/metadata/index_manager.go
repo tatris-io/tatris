@@ -157,12 +157,18 @@ func checkReservedField(properties map[string]protocol.Property) error {
 	if exist {
 		return errors.New("_id is a built-in field")
 	}
-	properties[consts.IDField] = protocol.Property{Type: "keyword"}
+	properties[consts.IDField] = protocol.Property{
+		Type:    consts.KeywordMappingType,
+		Dynamic: consts.StrictMappingConfig,
+	}
 	_, exist = properties[consts.TimestampField]
 	if exist {
 		return errors.New("_timestamp is a built-in field")
 	}
-	properties[consts.TimestampField] = protocol.Property{Type: "date"}
+	properties[consts.TimestampField] = protocol.Property{
+		Type:    consts.DateMappingType,
+		Dynamic: consts.StrictMappingConfig,
+	}
 	return nil
 }
 
