@@ -3,7 +3,9 @@
 package core
 
 import (
+	"fmt"
 	"sync"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -16,6 +18,11 @@ type Shard struct {
 	ShardID  int
 	Segments []*Segment
 	lock     sync.RWMutex
+	Stat     ShardStat
+}
+
+func (shard *Shard) GetName() string {
+	return fmt.Sprintf("%s/%d", shard.Index.Name, shard.ShardID)
 }
 
 func (shard *Shard) GetSegmentNum() int {
@@ -55,6 +62,37 @@ func (shard *Shard) CheckSegments() {
 			)
 		}
 	}
+}
+
+func (shard *Shard) UpdateStat(min, max time.Time, docs int64, wals uint64) {
+	mint := min.UnixMilli()
+	maxt := max.UnixMilli()
+	shard.lock.Lock()
+	defer shard.lock.Unlock()
+	if shard.Stat.MinTime == 0 {
+		shard.Stat.MinTime = mint
+	}
+	if shard.Stat.MaxTime == 0 {
+		shard.Stat.MaxTime = maxt
+	}
+
+	if mint != 0 && shard.Stat.MinTime > mint {
+		shard.Stat.MinTime = mint
+	}
+	if maxt != 0 && shard.Stat.MaxTime < maxt {
+		shard.Stat.MaxTime = maxt
+	}
+	shard.Stat.DocNum += docs
+	if wals != 0 {
+		shard.Stat.WalIndex = wals
+	}
+	logger.Info(
+		"update shard stat",
+		zap.Int64("minTime", shard.Stat.MinTime),
+		zap.Int64("maxTime", shard.Stat.MaxTime),
+		zap.Int64("docNum", shard.Stat.DocNum),
+		zap.Uint64("walIndex", shard.Stat.WalIndex),
+	)
 }
 
 func (shard *Shard) addSegment(segmentID int) {

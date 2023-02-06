@@ -5,6 +5,7 @@
     "number_of_replicas": 1
   },
   "mappings": {
+    "dynamic": "false",
     "properties": {
       "name": {
         "Type": "keyword"
