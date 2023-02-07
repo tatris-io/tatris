@@ -27,6 +27,8 @@ Alternatively, we hereby provide a bootstrap script `start-server.sh`, which eas
 With the mechanism provided by `start-server.sh`, the location of the config files can be changed via the `TATRIS_PATH_SERVER_CONF` and `TATRIS_PATH_LOGGING_CONF` environment variables. You can `export` the `TATRIS_PATH_SERVER_CONF` and `TATRIS_PATH_LOGGING_CONF` environment variables via the command line or your shell profile.
 
 ```shell
+# To avoid the influence of current working directory, it's
+# better you use the absolute path.
 export TATRIS_PATH_SERVER_CONF=/path/to/my/server/config
 export TATRIS_PATH_LOGGING_CONF=/path/to/my/logging/config
 ./bin/start-server.sh
