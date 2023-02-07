@@ -83,7 +83,7 @@ func (b *BlugeWriter) Reader() (indexlib.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &BlugeReader{b.BaseConfig, reader}, nil
+	return &BlugeReader{[]*indexlib.BaseConfig{b.BaseConfig}, []*bluge.Reader{reader}}, nil
 }
 
 func (b *BlugeWriter) Close() {

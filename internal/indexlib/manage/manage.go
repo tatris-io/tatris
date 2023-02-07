@@ -15,16 +15,18 @@ import (
 // This means that changes made to the index after the reader is obtained never affect the results
 // returned by this reader. This also means that this Reader is holding onto resources and MUST be
 // closed when it is no longer needed.
-func GetReader(config *indexlib.BaseConfig) (indexlib.Reader, error) {
-	if config.Index == "" {
-		return nil, errors.New("no index specified")
+func GetReader(configs ...*indexlib.BaseConfig) (indexlib.Reader, error) {
+	for _, config := range configs {
+		if config.Index == "" {
+			return nil, errors.New("no index specified")
+		}
+
+		indexlib.SetDefaultConfig(config)
 	}
 
-	baseConfig := indexlib.SetDefaultConfig(config)
-
-	switch baseConfig.IndexLibType {
+	switch configs[0].IndexLibType {
 	case indexlib.BlugeIndexLibType:
-		blugeReader := bluge.NewBlugeReader(baseConfig)
+		blugeReader := bluge.NewBlugeReader(configs...)
 		err := blugeReader.OpenReader()
 		if err != nil {
 			log.Printf("bluge open reader error: %s", err)

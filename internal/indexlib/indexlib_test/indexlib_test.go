@@ -65,7 +65,9 @@ func TestIndexLib(t *testing.T) {
 		defer reader.Close()
 
 		// test match query
-		matchQuery := &indexlib.MatchQuery{Match: "elasticsearch", Field: "name"}
+		matchQuery := indexlib.NewMatchQuery()
+		matchQuery.Match = "elasticsearch"
+		matchQuery.Field = "name"
 		resp, err := reader.Search(context.Background(), matchQuery, -1)
 		assert.NoError(t, err)
 		respJSON, err := json.Marshal(resp)
@@ -73,7 +75,9 @@ func TestIndexLib(t *testing.T) {
 		logger.Infof("match query result: %s", string(respJSON))
 
 		// test term query
-		termQuery := &indexlib.TermQuery{Term: "elasticsearch", Field: "name"}
+		termQuery := indexlib.NewTermQuery()
+		termQuery.Term = "elasticsearch"
+		termQuery.Field = "name"
 		termResp, err := reader.Search(context.Background(), termQuery, 10)
 		assert.NoError(t, err)
 		termRespJSON, err := json.Marshal(termResp)
@@ -81,11 +85,10 @@ func TestIndexLib(t *testing.T) {
 		logger.Infof("term query result: %s", string(termRespJSON))
 
 		// test terms query
-		termsQuery := &indexlib.TermsQuery{
-			Terms: map[string]*indexlib.Terms{
-				"name": {
-					Fields: []string{"elasticsearch", "meilisearch"},
-				},
+		termsQuery := indexlib.NewTermsQuery()
+		termsQuery.Terms = map[string]*indexlib.Terms{
+			"name": {
+				Fields: []string{"elasticsearch", "meilisearch"},
 			},
 		}
 		termsResp, err := reader.Search(context.Background(), termsQuery, 10)
@@ -95,14 +98,13 @@ func TestIndexLib(t *testing.T) {
 		logger.Infof("terms query result: %s", string(termsRespJSON))
 
 		// test ids query
-		idsQuery := &indexlib.TermsQuery{
-			Terms: map[string]*indexlib.Terms{
-				"_id": {
-					Fields: []string{
-						docs[0][consts.IDField].(string),
-						docs[1][consts.IDField].(string),
-						docs[2][consts.IDField].(string)},
-				},
+		idsQuery := indexlib.NewTermsQuery()
+		idsQuery.Terms = map[string]*indexlib.Terms{
+			"_id": {
+				Fields: []string{
+					docs[0][consts.IDField].(string),
+					docs[1][consts.IDField].(string),
+					docs[2][consts.IDField].(string)},
 			},
 		}
 		idsResp, err := reader.Search(context.Background(), idsQuery, 10)
@@ -112,12 +114,13 @@ func TestIndexLib(t *testing.T) {
 		logger.Infof("ids query result: %s", string(idsRespJSON))
 
 		// test range query
-		rangeQuery := &indexlib.RangeQuery{Range: map[string]*indexlib.RangeVal{
+		rangeQuery := indexlib.NewRangeQuery()
+		rangeQuery.Range = map[string]*indexlib.RangeVal{
 			"stars": {
 				GTE: 10000,
 				LT:  100000,
 			},
-		}}
+		}
 		rangeResp, err := reader.Search(context.Background(), rangeQuery, 10)
 		assert.NoError(t, err)
 		rangeRespJSON, err := json.Marshal(rangeResp)
@@ -125,10 +128,9 @@ func TestIndexLib(t *testing.T) {
 		logger.Infof("range query result: %s", string(rangeRespJSON))
 
 		// test bool query
-		boolQuery := &indexlib.BooleanQuery{
-			Musts:   []indexlib.QueryRequest{termQuery},
-			Filters: []indexlib.QueryRequest{termsQuery},
-		}
+		boolQuery := indexlib.NewBooleanQuery()
+		boolQuery.Musts = []indexlib.QueryRequest{termQuery}
+		boolQuery.Filters = []indexlib.QueryRequest{termsQuery}
 		boolResp, err := reader.Search(context.Background(), boolQuery, 10)
 		assert.NoError(t, err)
 		boolRespJSON, err := json.Marshal(boolResp)

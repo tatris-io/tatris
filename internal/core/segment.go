@@ -65,6 +65,17 @@ func (segment *Segment) GetReader() (indexlib.Reader, error) {
 	return manage.GetReader(config)
 }
 
+func (segment *Segment) GetConfig() *indexlib.BaseConfig {
+	indexName := segment.Shard.Index.Name
+	shardID := segment.Shard.ShardID
+	segmentID := segment.SegmentID
+	config := &indexlib.BaseConfig{
+		Index:    fmt.Sprintf("%s/%d/%d", indexName, shardID, segmentID),
+		DataPath: consts.DefaultDataPath,
+	}
+	return config
+}
+
 func (segment *Segment) IsMature() bool {
 	return segment.Stat.DocNum > config.Cfg.Segment.MatureThreshold
 }
