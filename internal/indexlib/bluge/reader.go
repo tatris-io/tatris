@@ -26,23 +26,24 @@ import (
 )
 
 type BlugeReader struct {
-	Configs []*indexlib.BaseConfig
+	*indexlib.BaseConfig
+	Indexes []string
 	Readers []*bluge.Reader
 }
 
-func NewBlugeReader(configs ...*indexlib.BaseConfig) *BlugeReader {
-	return &BlugeReader{Configs: configs, Readers: make([]*bluge.Reader, 0)}
+func NewBlugeReader(config *indexlib.BaseConfig, index ...string) *BlugeReader {
+	return &BlugeReader{BaseConfig: config, Indexes: index, Readers: make([]*bluge.Reader, 0)}
 }
 
 func (b *BlugeReader) OpenReader() error {
 	var cfg bluge.Config
 
-	for _, c := range b.Configs {
-		switch c.StorageType {
+	for _, index := range b.Indexes {
+		switch b.StorageType {
 		case indexlib.FSStorageType:
-			cfg = config.GetFSConfig(c.DataPath, c.Index)
+			cfg = config.GetFSConfig(b.DataPath, index)
 		default:
-			cfg = config.GetFSConfig(c.DataPath, c.Index)
+			cfg = config.GetFSConfig(b.DataPath, index)
 		}
 
 		reader, err := bluge.OpenReader(cfg)
@@ -61,8 +62,8 @@ func (b *BlugeReader) Search(
 	limit int,
 ) (*indexlib.QueryResponse, error) {
 	defer utils.Timerf(
-		"bluge search docs finish, index:%s, query:%+v, limit:%d",
-		b.Configs[0].Index,
+		"bluge search docs finish, index:%+v, query:%+v, limit:%d",
+		b.Indexes,
 		query,
 		limit,
 	)()

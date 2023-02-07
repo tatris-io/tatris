@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/tatris-io/tatris/internal/common/consts"
+
 	"github.com/tatris-io/tatris/internal/indexlib/manage"
 
 	"github.com/jinzhu/now"
@@ -52,12 +54,11 @@ func (index *Index) GetShardByRouting() *Shard {
 
 func (index *Index) GetReaderByTime(start, end int64) (indexlib.Reader, error) {
 	splits := make([]string, 0)
-	configs := make([]*indexlib.BaseConfig, 0)
+	indexes := make([]string, 0)
 	for _, shard := range index.Shards {
 		for _, segment := range shard.Segments {
 			if segment.MatchTime(start, end) {
-				config := segment.GetConfig()
-				configs = append(configs, config)
+				indexes = append(indexes, segment.GetName())
 				splits = append(splits, fmt.Sprintf("%d/%d", shard.ShardID, segment.SegmentID))
 			}
 		}
@@ -67,10 +68,13 @@ func (index *Index) GetReaderByTime(start, end int64) (indexlib.Reader, error) {
 		zap.String("index", index.Name),
 		zap.Int64("start", start),
 		zap.Int64("end", end),
-		zap.Int("size", len(configs)),
+		zap.Int("size", len(indexes)),
 		zap.Any("splits", splits),
 	)
-	return manage.GetReader(configs...)
+	config := &indexlib.BaseConfig{
+		DataPath: consts.DefaultDataPath,
+	}
+	return manage.GetReader(config, indexes...)
 }
 
 func (index *Index) CheckMapping(docID string, doc map[string]interface{}) error {

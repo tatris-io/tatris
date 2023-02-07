@@ -23,11 +23,12 @@ import (
 
 type BlugeWriter struct {
 	*indexlib.BaseConfig
+	Index  string
 	Writer *bluge.Writer
 }
 
-func NewBlugeWriter(config *indexlib.BaseConfig) *BlugeWriter {
-	return &BlugeWriter{BaseConfig: config}
+func NewBlugeWriter(config *indexlib.BaseConfig, index string) *BlugeWriter {
+	return &BlugeWriter{BaseConfig: config, Index: index}
 }
 
 func (b *BlugeWriter) OpenWriter() error {
@@ -83,7 +84,11 @@ func (b *BlugeWriter) Reader() (indexlib.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &BlugeReader{[]*indexlib.BaseConfig{b.BaseConfig}, []*bluge.Reader{reader}}, nil
+	return &BlugeReader{
+		BaseConfig: b.BaseConfig,
+		Indexes:    []string{b.Index},
+		Readers:    []*bluge.Reader{reader},
+	}, nil
 }
 
 func (b *BlugeWriter) Close() {

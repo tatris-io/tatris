@@ -12,11 +12,13 @@ const (
 type BaseConfig struct {
 	StorageType  string
 	DataPath     string
-	Index        string
 	IndexLibType string
 }
 
 func SetDefaultConfig(config *BaseConfig) *BaseConfig {
+	if config == nil {
+		config = &BaseConfig{}
+	}
 	if config.DataPath == "" {
 		config.DataPath = DefaultDataPath
 	}
