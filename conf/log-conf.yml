@@ -1,5 +1,5 @@
 level: info
-root-path: ./_logs
+root-path: ./logs
 disable-error-verbose: true
 development: false
 global-logger:
@@ -18,5 +18,5 @@ global-logger:
       level-max: fatal
   console-confs:
     - console-fd: stdout
-      level-min: info
+      level-min: panic
       level-max: fatal
