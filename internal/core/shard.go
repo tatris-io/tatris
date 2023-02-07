@@ -25,7 +25,7 @@ type Shard struct {
 	ShardID  int
 	Segments []*Segment
 	Stat     ShardStat
-	Wal      log.WalLog
+	wal      log.WalLog
 	lock     sync.RWMutex
 }
 
@@ -75,7 +75,7 @@ func (shard *Shard) CheckSegments() {
 func (shard *Shard) OpenWAL() (log.WalLog, error) {
 	shard.lock.Lock()
 	defer shard.lock.Unlock()
-	if shard.Wal == nil {
+	if shard.wal == nil {
 		options := config.Cfg.Wal
 		name := shard.GetName()
 		p := path.Join(consts.DefaultWALPath, name)
@@ -98,9 +98,9 @@ func (shard *Shard) OpenWAL() (log.WalLog, error) {
 			return nil, err
 		}
 		twalLog.Log = l
-		shard.Wal = twalLog
+		shard.wal = twalLog
 	}
-	return shard.Wal, nil
+	return shard.wal, nil
 }
 
 func (shard *Shard) UpdateStat(min, max time.Time, docs int64, wals uint64) {

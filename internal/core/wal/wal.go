@@ -152,6 +152,10 @@ func ConsumeWAL(shard *core.Shard, wal log.WalLog) error {
 		return err
 	}
 	shard.UpdateStat(minTime, maxTime, int64(len(docs)), to)
+	err = metadata.SaveIndex(shard.Index)
+	if err != nil {
+		return err
+	}
 	// The id passed to func TruncateFront cannot be greater than the last index of the stock log
 	err = wal.TruncateFront(to)
 	if err != nil {
