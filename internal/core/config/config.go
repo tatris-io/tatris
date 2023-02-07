@@ -19,13 +19,13 @@ func init() {
 			MatureThreshold: 20000,
 		},
 		Wal: Wal{
-			NoSync:           false,    // Fsync after every write
-			SegmentSize:      20971520, // 20 MB log segment files
-			LogFormat:        0,        // Binary format is small and fast
-			SegmentCacheSize: 3,        // Number of cached in-memory segments
-			NoCopy:           false,    // Make a new copy of data for every Read call
-			DirPerms:         0750,     // Permissions for the created directories
-			FilePerms:        0640,     // Permissions for the created data files
+			NoSync:           false,
+			SegmentSize:      20971520,
+			LogFormat:        0,
+			SegmentCacheSize: 3,
+			NoCopy:           false,
+			DirPerms:         0750,
+			FilePerms:        0640,
 		},
 	}
 }
@@ -43,26 +43,14 @@ type Segment struct {
 }
 
 type Wal struct {
-	// NoSync disables fsync after writes. This is less durable and puts the
-	// log at risk of data loss when there's a server crash.
-	NoSync bool `yaml:"no_sync"`
-	// SegmentSize of each segment. This is just a target value, actual size
-	// may differ. Default is 20 MB.
-	SegmentSize int `yaml:"segment_size"`
-	// LogFormat is the format of the log files. Default is Binary.
-	LogFormat byte `yaml:"log_format"`
-	// SegmentCacheSize is the maximum number of segments that will be held in
-	// memory for caching. Increasing this value may enhance performance for
-	// concurrent read operations. Default is 1
-	SegmentCacheSize int `yaml:"segment_cache_size"`
-	// NoCopy allows for the Read() operation to return the raw underlying data
-	// slice. This is an optimization to help minimize allocations. When this
-	// option is set, do not modify the returned data because it may affect
-	// other Read calls. Default false
-	NoCopy bool `yaml:"no_copy"`
-	// Perms represents the datafiles modes and permission bits
-	DirPerms  os.FileMode `yaml:"dir_perms"`
-	FilePerms os.FileMode `yaml:"file_perms"`
+	NoSync      bool `yaml:"no_sync"`
+	SegmentSize int  `yaml:"segment_size"`
+	// 0: Binary; 1: JSON
+	LogFormat        byte        `yaml:"log_format"`
+	SegmentCacheSize int         `yaml:"segment_cache_size"`
+	NoCopy           bool        `yaml:"no_copy"`
+	DirPerms         os.FileMode `yaml:"dir_perms"`
+	FilePerms        os.FileMode `yaml:"file_perms"`
 }
 
 // Verify wraps doVerify with a `sync.Once`
