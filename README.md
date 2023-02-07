@@ -5,7 +5,7 @@
 Time-aware storage and search system
 
 
-## Get started
+## Getting started
 
 #### Build from source and have try!
 Tatris compiles to a single binary. You can execute the following commands and have a try:
