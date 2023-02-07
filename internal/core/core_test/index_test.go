@@ -39,12 +39,12 @@ func TestIndex(t *testing.T) {
 			assert.NotNil(t, index.GetShard(i))
 		}
 		assert.NotNil(t, index.GetShardByRouting())
-		readers, err := index.GetReadersByTime(start.Unix(), time.Now().UnixMilli())
+		reader, err := index.GetReaderByTime(start.Unix(), time.Now().UnixMilli())
 		assert.NoError(t, err)
 		assert.Equal(
 			t,
 			(int)(math.Ceil((float64(len(docs)))/(float64(config.Cfg.Segment.MatureThreshold)))),
-			len(readers),
+			reader.Count(),
 		)
 
 		resp, err := query.SearchDocs(

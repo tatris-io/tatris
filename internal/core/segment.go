@@ -39,14 +39,11 @@ func (segment *Segment) GetWriter() (indexlib.Writer, error) {
 	if segment.writer != nil {
 		return segment.writer, nil
 	}
-	indexName := segment.Shard.Index.Name
-	shardID := segment.Shard.ShardID
 	// open a writer
 	config := &indexlib.BaseConfig{
-		Index:    fmt.Sprintf("%s/%d/%d", indexName, shardID, segment.SegmentID),
 		DataPath: consts.DefaultDataPath,
 	}
-	writer, err := manage.GetWriter(config)
+	writer, err := manage.GetWriter(config, segment.GetName())
 	if err != nil {
 		return nil, err
 	}
@@ -55,14 +52,10 @@ func (segment *Segment) GetWriter() (indexlib.Writer, error) {
 }
 
 func (segment *Segment) GetReader() (indexlib.Reader, error) {
-	indexName := segment.Shard.Index.Name
-	shardID := segment.Shard.ShardID
-	segmentID := segment.SegmentID
 	config := &indexlib.BaseConfig{
-		Index:    fmt.Sprintf("%s/%d/%d", indexName, shardID, segmentID),
 		DataPath: consts.DefaultDataPath,
 	}
-	return manage.GetReader(config)
+	return manage.GetReader(config, segment.GetName())
 }
 
 func (segment *Segment) IsMature() bool {

@@ -8,6 +8,10 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/tatris-io/tatris/internal/common/consts"
+
+	"github.com/tatris-io/tatris/internal/indexlib/manage"
+
 	"github.com/jinzhu/now"
 
 	"github.com/tatris-io/tatris/internal/common/log/logger"
@@ -48,18 +52,14 @@ func (index *Index) GetShardByRouting() *Shard {
 	return nil
 }
 
-func (index *Index) GetReadersByTime(start, end int64) ([]indexlib.Reader, error) {
+func (index *Index) GetReaderByTime(start, end int64) (indexlib.Reader, error) {
 	splits := make([]string, 0)
-	readers := make([]indexlib.Reader, 0)
+	indexes := make([]string, 0)
 	for _, shard := range index.Shards {
 		for _, segment := range shard.Segments {
 			if segment.MatchTime(start, end) {
-				reader, err := segment.GetReader()
-				if err != nil {
-					return nil, err
-				}
+				indexes = append(indexes, segment.GetName())
 				splits = append(splits, fmt.Sprintf("%d/%d", shard.ShardID, segment.SegmentID))
-				readers = append(readers, reader)
 			}
 		}
 	}
@@ -68,10 +68,13 @@ func (index *Index) GetReadersByTime(start, end int64) ([]indexlib.Reader, error
 		zap.String("index", index.Name),
 		zap.Int64("start", start),
 		zap.Int64("end", end),
-		zap.Int("size", len(readers)),
+		zap.Int("size", len(indexes)),
 		zap.Any("splits", splits),
 	)
-	return readers, nil
+	config := &indexlib.BaseConfig{
+		DataPath: consts.DefaultDataPath,
+	}
+	return manage.GetReader(config, indexes...)
 }
 
 func (index *Index) CheckMapping(docID string, doc map[string]interface{}) error {

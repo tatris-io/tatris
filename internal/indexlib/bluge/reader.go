@@ -27,29 +27,32 @@ import (
 
 type BlugeReader struct {
 	*indexlib.BaseConfig
-	Reader *bluge.Reader
+	Indexes []string
+	Readers []*bluge.Reader
 }
 
-func NewBlugeReader(config *indexlib.BaseConfig) *BlugeReader {
-	return &BlugeReader{BaseConfig: config}
+func NewBlugeReader(config *indexlib.BaseConfig, index ...string) *BlugeReader {
+	return &BlugeReader{BaseConfig: config, Indexes: index, Readers: make([]*bluge.Reader, 0)}
 }
 
 func (b *BlugeReader) OpenReader() error {
 	var cfg bluge.Config
 
-	switch b.StorageType {
-	case indexlib.FSStorageType:
-		cfg = config.GetFSConfig(b.DataPath, b.Index)
-	default:
-		cfg = config.GetFSConfig(b.DataPath, b.Index)
+	for _, index := range b.Indexes {
+		switch b.StorageType {
+		case indexlib.FSStorageType:
+			cfg = config.GetFSConfig(b.DataPath, index)
+		default:
+			cfg = config.GetFSConfig(b.DataPath, index)
+		}
+
+		reader, err := bluge.OpenReader(cfg)
+		if err != nil {
+			return err
+		}
+		b.Readers = append(b.Readers, reader)
 	}
 
-	reader, err := bluge.OpenReader(cfg)
-	if err != nil {
-		return err
-	}
-
-	b.Reader = reader
 	return nil
 }
 
@@ -59,8 +62,8 @@ func (b *BlugeReader) Search(
 	limit int,
 ) (*indexlib.QueryResponse, error) {
 	defer utils.Timerf(
-		"bluge search docs finish, index:%s, query:%+v, limit:%d",
-		b.Index,
+		"bluge search docs finish, index:%+v, query:%+v, limit:%d",
+		b.Indexes,
 		query,
 		limit,
 	)()
@@ -82,13 +85,31 @@ func (b *BlugeReader) Search(
 		}
 	}
 
-	dmi, err := b.Reader.Search(ctx, searchRequest)
-	if err != nil {
-		log.Printf("bluge all match error: %s", err)
-		return nil, err
-	}
+	docs := make([]*search.DocumentMatch, 0)
+	var bucket *search.Bucket
 
-	return b.generateResponse(dmi)
+	for _, reader := range b.Readers {
+		dmi, err := reader.Search(ctx, searchRequest)
+		if err != nil {
+			log.Printf("bluge all match error: %s", err)
+			return nil, err
+		}
+		next, err := dmi.Next()
+		for err == nil && next != nil {
+			docs = append(docs, next)
+			next, err = dmi.Next()
+		}
+
+		// merge aggregation response
+		if bucket == nil {
+			bucket = dmi.Aggregations()
+		} else {
+			bucket.Merge(dmi.Aggregations())
+		}
+	}
+	bucket.Aggregation("duration").Finish()
+
+	return b.generateResponse(docs, bucket)
 }
 
 func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) (bluge.Query, error) {
@@ -152,17 +173,17 @@ func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) (bluge.Query, e
 }
 
 func (b *BlugeReader) generateResponse(
-	dmi search.DocumentMatchIterator,
+	docs []*search.DocumentMatch,
+	buckets *search.Bucket,
 ) (*indexlib.QueryResponse, error) {
 	Hits := make([]indexlib.Hit, 0)
-	next, err := dmi.Next()
-	for err == nil && next != nil {
+	for _, doc := range docs {
 		var id string
 		var index string
 		var source map[string]interface{}
 		var timestamp time.Time
 
-		err = next.VisitStoredFields(func(field string, value []byte) bool {
+		err := doc.VisitStoredFields(func(field string, value []byte) bool {
 			switch field {
 			case consts.TimestampField:
 				location, _ := time.LoadLocation("Asia/Shanghai")
@@ -192,19 +213,17 @@ func (b *BlugeReader) generateResponse(
 			Timestamp: timestamp,
 		}
 		Hits = append(Hits, hit)
-
-		next, err = dmi.Next()
 	}
 
-	aggsResponse, err := b.generateAggsResponse(dmi.Aggregations())
+	aggsResponse, err := b.generateAggsResponse(buckets)
 	if err != nil {
 		return nil, err
 	}
 
 	resp := &indexlib.QueryResponse{
-		Took: dmi.Aggregations().Duration().Milliseconds(),
+		Took: buckets.Duration().Milliseconds(),
 		Hits: indexlib.Hits{
-			Total: indexlib.Total{Value: int64(dmi.Aggregations().Count())},
+			Total: indexlib.Total{Value: int64(buckets.Count())},
 			Hits:  Hits,
 		},
 		Aggregations: aggsResponse,
@@ -408,9 +427,13 @@ func (b *BlugeReader) generateAggsResponse(
 	return aggsResponse, nil
 }
 
+func (b *BlugeReader) Count() int {
+	return len(b.Readers)
+}
+
 func (b *BlugeReader) Close() {
-	if b.Reader != nil {
-		err := b.Reader.Close()
+	for _, reader := range b.Readers {
+		err := reader.Close()
 		if err != nil {
 			log.Printf("fail to close bluge reader for: %s", err)
 		}

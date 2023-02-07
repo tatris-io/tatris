@@ -29,16 +29,16 @@ func SearchDocs(request protocol.QueryRequest) (*protocol.QueryResponse, error) 
 	if err != nil {
 		return nil, err
 	}
-	readers, err := index.GetReadersByTime(start, end)
-	if err != nil {
+	reader, err := index.GetReaderByTime(start, end)
+	if reader == nil || err != nil {
 		return nil, err
 	}
+	defer reader.Close()
+
 	hits := protocol.Hits{
 		Total: protocol.Total{Value: 0, Relation: "eq"},
 	}
-	if len(readers) == 0 {
-		return nil, nil
-	}
+
 	libRequest, err := transform(request.Query)
 	if err != nil {
 		return nil, err
@@ -49,30 +49,25 @@ func SearchDocs(request protocol.QueryRequest) (*protocol.QueryResponse, error) 
 
 	hits.Hits = make([]protocol.Hit, 0)
 	aggregations := make(map[string]protocol.AggsResponse)
-	var totalValue int64
-	totalRelation := "eq"
-	for _, reader := range readers {
-		resp, err := reader.Search(context.Background(), libRequest, int(request.Size))
-		if err != nil {
-			return nil, err
-		}
-		respHits := resp.Hits
-		totalValue += respHits.Total.Value
-		totalRelation = respHits.Total.Relation
-		for _, respHit := range respHits.Hits {
-			hits.Hits = append(
-				hits.Hits,
-				protocol.Hit{Index: respHit.Index, ID: respHit.ID, Source: respHit.Source},
-			)
-		}
 
-		for k, v := range resp.Aggregations {
-			aggregations[k] = protocol.AggsResponse{Value: v.Value, Buckets: v.Buckets}
-		}
-		reader.Close()
+	resp, err := reader.Search(context.Background(), libRequest, int(request.Size))
+	if err != nil {
+		return nil, err
 	}
-	hits.Total.Value = totalValue
-	hits.Total.Relation = totalRelation
+	respHits := resp.Hits
+	for _, respHit := range respHits.Hits {
+		hits.Hits = append(
+			hits.Hits,
+			protocol.Hit{Index: respHit.Index, ID: respHit.ID, Source: respHit.Source},
+		)
+	}
+
+	for k, v := range resp.Aggregations {
+		aggregations[k] = protocol.AggsResponse{Value: v.Value, Buckets: v.Buckets}
+	}
+
+	hits.Total.Value = respHits.Total.Value
+	hits.Total.Relation = respHits.Total.Relation
 	return &protocol.QueryResponse{Hits: hits, Aggregations: aggregations}, nil
 }
 
