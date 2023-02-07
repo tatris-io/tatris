@@ -53,6 +53,17 @@ func SaveIndex(index *core.Index) error {
 	return metaStore.Set(fillKey(index.Name), json)
 }
 
+func GetShard(indexName string, shardID int) (*core.Shard, error) {
+	index, err := GetIndex(indexName)
+	if err != nil {
+		return nil, err
+	}
+	if index == nil {
+		return nil, nil
+	}
+	return index.GetShard(shardID), nil
+}
+
 func GetIndex(indexName string) (*core.Index, error) {
 	var index *core.Index
 	cachedIndex, found := metaCache.Get(indexName)
@@ -98,6 +109,7 @@ func buildIndex(index *core.Index) {
 		shards[i] = &core.Shard{}
 		shards[i].ShardID = i
 		shards[i].Index = index
+		shards[i].Stat = core.ShardStat{}
 	}
 	index.Shards = shards
 }

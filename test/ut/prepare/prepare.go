@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -106,6 +107,8 @@ func CreateIndexAndDocs(version string) (*core.Index, []map[string]interface{}, 
 		logger.Error("ingest docs failed ", zap.String("msg", err.Error()))
 		return index, nil, err
 	}
+	// wait wal consume
+	time.Sleep(time.Second * 3)
 	logger.Info("ingest docs", zap.Int("size", len(docs)))
 	return index, docs, nil
 }

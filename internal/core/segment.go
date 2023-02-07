@@ -26,6 +26,15 @@ type Segment struct {
 	writer    indexlib.Writer
 }
 
+func (segment *Segment) GetName() string {
+	return fmt.Sprintf(
+		"%s/%d/%d",
+		segment.Shard.Index.Name,
+		segment.Shard.ShardID,
+		segment.SegmentID,
+	)
+}
+
 func (segment *Segment) GetWriter() (indexlib.Writer, error) {
 	if segment.writer != nil {
 		return segment.writer, nil
@@ -64,19 +73,25 @@ func (segment *Segment) MatchTime(start, end int64) bool {
 	return start <= segment.Stat.MaxTime && end >= segment.Stat.MinTime
 }
 
-func (segment *Segment) UpdateStat(timestamp time.Time) {
-	t := timestamp.UnixMilli()
+func (segment *Segment) UpdateStat(min, max time.Time, docs int64) {
+	mint := min.UnixMilli()
+	maxt := max.UnixMilli()
 	segment.lock.Lock()
 	defer segment.lock.Unlock()
-	segment.Stat.DocNum++
-	if segment.Stat.MinTime == 0 || segment.Stat.MaxTime == 0 {
-		segment.Stat.MinTime = t
-		segment.Stat.MaxTime = t
-	} else if segment.Stat.MinTime > t {
-		segment.Stat.MinTime = t
-	} else if segment.Stat.MaxTime < t {
-		segment.Stat.MaxTime = t
+	if segment.Stat.MinTime == 0 {
+		segment.Stat.MinTime = mint
 	}
+	if segment.Stat.MaxTime == 0 {
+		segment.Stat.MaxTime = maxt
+	}
+
+	if mint != 0 && segment.Stat.MinTime > mint {
+		segment.Stat.MinTime = mint
+	}
+	if maxt != 0 && segment.Stat.MaxTime < maxt {
+		segment.Stat.MaxTime = maxt
+	}
+	segment.Stat.DocNum += docs
 	logger.Info(
 		"update segment stat",
 		zap.Int64("minTime", segment.Stat.MinTime),

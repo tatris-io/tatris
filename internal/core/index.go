@@ -23,6 +23,10 @@ type Index struct {
 	Shards []*Shard `json:"shards"`
 }
 
+func (index *Index) GetName() string {
+	return index.Name
+}
+
 func (index *Index) GetShardNum() int {
 	return len(index.Shards)
 }

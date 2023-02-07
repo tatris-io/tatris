@@ -8,3 +8,8 @@ type Stat struct {
 	MaxTime int64
 	DocNum  int64
 }
+
+type ShardStat struct {
+	Stat
+	WalIndex uint64
+}
