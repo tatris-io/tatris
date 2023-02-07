@@ -5,11 +5,14 @@ package indexlib
 type QueryRequest interface {
 	SetAggs(aggregations map[string]Aggs)
 	GetAggs() map[string]Aggs
+	SetSort(sort Sort)
+	GetSort() Sort
 }
 
 type BaseQuery struct {
 	Boost float64
 	Aggs  map[string]Aggs
+	Sort  Sort
 }
 
 func NewBaseQuery() *BaseQuery {
@@ -22,6 +25,14 @@ func (m *BaseQuery) SetAggs(aggs map[string]Aggs) {
 
 func (m *BaseQuery) GetAggs() map[string]Aggs {
 	return m.Aggs
+}
+
+func (m *BaseQuery) SetSort(sort Sort) {
+	m.Sort = sort
+}
+
+func (m *BaseQuery) GetSort() Sort {
+	return m.Sort
 }
 
 type MatchAllQuery struct {
@@ -160,4 +171,10 @@ type AggNumericRange struct {
 type NumericRange struct {
 	To   float64
 	From float64
+}
+
+type Sort []map[string]SortTerm
+
+type SortTerm struct {
+	Order string
 }

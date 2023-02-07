@@ -7,6 +7,7 @@ type QueryRequest struct {
 	Index string          `json:"index"`
 	Query Query           `json:"query"`
 	Aggs  map[string]Aggs `json:"aggs"`
+	Sort  Sort            `json:"sort"`
 	Size  int64           `json:"size"`
 }
 
@@ -100,4 +101,10 @@ type AggNumericRange struct {
 type NumericRange struct {
 	To   float64 `json:"to"`
 	From float64 `json:"from"`
+}
+
+type Sort []map[string]SortTerm
+
+type SortTerm struct {
+	Order string `json:"order"`
 }
