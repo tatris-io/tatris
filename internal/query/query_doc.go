@@ -30,11 +30,8 @@ func SearchDocs(request protocol.QueryRequest) (*protocol.QueryResponse, error) 
 		return nil, err
 	}
 	reader, err := index.GetReaderByTime(start, end)
-	if err != nil {
+	if reader == nil || err != nil {
 		return nil, err
-	}
-	if reader == nil {
-		return nil, nil
 	}
 	defer reader.Close()
 
