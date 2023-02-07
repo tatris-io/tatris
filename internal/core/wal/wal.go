@@ -21,6 +21,10 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	consumptionLimit = 5000
+)
+
 var wals *cache.Cache
 
 func init() {
@@ -115,7 +119,7 @@ func ConsumeWAL(shard *core.Shard, wal log.WalLog) error {
 	} else {
 		from = uint64(math.Max(float64(firstIndex), float64(shard.Stat.WalIndex))) + 1
 	}
-	to = uint64(math.Min(float64(lastIndex), float64(from+5000-1)))
+	to = uint64(math.Min(float64(lastIndex), float64(from+consumptionLimit-1)))
 	if from >= to {
 		return nil
 	}
