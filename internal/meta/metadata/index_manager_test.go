@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/tatris-io/tatris/internal/common/consts"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/tatris-io/tatris/internal/protocol"
 )
@@ -64,19 +66,19 @@ func TestDynamicMappingCheck(t *testing.T) {
 		{
 			name: "dynamic_mapping",
 			mappings: &protocol.Mappings{
-				Dynamic: "true",
+				Dynamic: consts.DynamicMappingMode,
 			},
 		},
 		{
 			name: "invalid_explicit_mapping",
 			mappings: &protocol.Mappings{
-				Dynamic: "false",
+				Dynamic: consts.IgnoreMappingMode,
 			},
 		},
 		{
 			name: "valid_explicit_mapping",
 			mappings: &protocol.Mappings{
-				Dynamic:    "false",
+				Dynamic:    consts.IgnoreMappingMode,
 				Properties: map[string]protocol.Property{},
 			},
 		},

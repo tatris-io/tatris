@@ -8,6 +8,10 @@ const (
 	BoolMappingType    = "bool"
 	TextMappingType    = "text"
 	DateMappingType    = "date"
+
+	StrictMappingMode  = "strict"
+	IgnoreMappingMode  = "false"
+	DynamicMappingMode = "true"
 )
 
 var MappingTypes map[string]string

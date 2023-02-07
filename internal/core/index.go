@@ -6,11 +6,10 @@ package core
 import (
 	"errors"
 	"fmt"
-	"reflect"
 
-	"github.com/jinzhu/now"
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
+	"github.com/tatris-io/tatris/internal/common/utils"
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/indexlib/manage"
 	"github.com/tatris-io/tatris/internal/protocol"
@@ -91,105 +90,105 @@ func (index *Index) tryCheckDataFieldType(doc map[string]interface{}) error {
 	dynamic := index.Mappings.Dynamic
 
 	for k, v := range doc {
-		fieldType, err := checkFieldType(dynamic, properties, k, v)
+		// make sure field-level dynamic
+		fieldDynamic := makeSureFieldDynamic(dynamic, properties, k)
+		// make sure field type, explicit type or dynamic type
+		fieldType, err := makeSureFieldType(fieldDynamic, properties, k, v)
 		if err != nil {
-			if err := handleByPolicy(dynamic); err != nil {
-				return err
-			}
-			continue
+			return fmt.Errorf(
+				"fail to make sure field type of %s, field dynamic: %s, for %s",
+				k,
+				fieldDynamic,
+				err.Error(),
+			)
 		}
-		if p, ok := properties[k]; ok {
-			if !hasConflict(p, fieldType) {
-				continue
-			}
-			if err := handleByPolicy(p.Dynamic); err != nil {
-				return fmt.Errorf(
-					"inconsistent field type of %s, current: %s original: %s",
-					k,
-					fieldType,
-					p.Type,
-				)
-			}
-		} else if strings.EqualFold(dynamic, consts.DynamicMappingConfig) {
-			// try to add the field type dynamically
-			p = protocol.Property{
+		_, ok := properties[k]
+		if isNewDynamicField(ok, dynamic) {
+			// add field to properties
+			p := protocol.Property{
 				Type:    fieldType,
-				Dynamic: consts.DynamicMappingConfig,
+				Dynamic: consts.DynamicMappingMode,
 			}
 			properties[k] = p
-		} else {
-			// explicit mapping check
-			if err := handleByPolicy(dynamic); err != nil {
-				return err
-			}
 		}
 	}
 	index.Mappings.Properties = properties
 	return nil
 }
 
-func hasConflict(p protocol.Property, fieldType string) bool {
-	dynamic := p.Dynamic
-	if strings.EqualFold(dynamic, "") || strings.EqualFold(dynamic, consts.DynamicMappingConfig) {
-		return !strings.EqualFold(p.Type, fieldType)
-	}
-	if validTypes, ok := consts.ValidDynamicMappingTypes[p.Type]; ok {
-		return !validTypes.Contains(fieldType)
-	}
-	// invalid p.Type that is not contained in ValidDynamicMappingTypes
-	return true
+func isNewDynamicField(ok bool, dynamic string) bool {
+	return !ok && strings.EqualFold(dynamic, "true")
 }
 
-func handleByPolicy(dynamic string) error {
-	if strings.EqualFold(dynamic, consts.StrictMappingConfig) {
-		return errors.New("reject doc for strict mode")
-	}
-	return nil
-}
-
-func checkFieldType(
+func makeSureFieldType(
 	dynamic string,
 	properties map[string]protocol.Property,
-	key string,
-	value interface{},
+	k string,
+	v interface{},
 ) (string, error) {
-	if strings.EqualFold(dynamic, consts.DynamicMappingConfig) {
-		switch v := value.(type) {
-		case string:
-			if isDateType(v) {
-				return consts.DateMappingType, nil
-			}
-			return consts.TextMappingType, nil
-		case bool:
-			return consts.BooleanMappingType, nil
-		case int, int64:
-			return "long", nil
-		case float32, float64:
-			return "double", nil
-		default:
-			return consts.UnknownMappingType, fmt.Errorf("unknown field type of %s", v)
+	if property, ok := properties[k]; ok {
+		if validFieldType(property, v) {
+			return property.Type, nil
 		}
-	} else {
-		typeOf := reflect.TypeOf(value)
-		typeName := typeOf.Name()
-		// explicit field property
-		if p, ok := properties[key]; ok {
-			// property type is valid config
-			if set, ok := consts.ValidFieldTypes[p.Type]; ok {
-				// field type can be correctly handled
-				if set.Contains(typeName) {
-					// valid date type or other types
-					if !strings.EqualFold(p.Type, consts.DateMappingType) || isDateType(value.(string)) {
-						return p.Type, nil
-					}
-				}
-			}
-		}
-		return consts.UnknownMappingType, fmt.Errorf("unknown field type of %s", typeName)
+		return "", fmt.Errorf("inconsistent field type of %s, expected type %s", k, property.Type)
+	}
+	switch dynamic {
+	case consts.DynamicMappingMode:
+		return getDynamicFieldType(v)
+	case consts.IgnoreMappingMode:
+		return "", nil
+	case consts.StrictMappingMode:
+		return "", errors.New("unknown field type for strict mode")
+	default:
+		return "", fmt.Errorf("unknown dynamic %s mode", dynamic)
 	}
 }
 
-func isDateType(value string) bool {
-	_, err := now.Parse(value)
-	return err == nil
+// Check that the field type specified in the property matches the value data type
+func validFieldType(property protocol.Property, value interface{}) bool {
+	switch property.Type {
+	case "text", "match_only_text", "keyword", "constant_keyword":
+		return utils.IsString(value)
+	case "date":
+		return utils.IsDateType(value)
+	case "short", "byte", "integer", "long":
+		return utils.IsInteger(value)
+	case "float", "double":
+		return utils.IsFloat(value)
+	case "boolean":
+		return utils.IsBool(value)
+	default:
+		return false
+	}
+}
+
+func getDynamicFieldType(value interface{}) (string, error) {
+	switch v := value.(type) {
+	case string:
+		if utils.IsDateType(v) {
+			return "date", nil
+		}
+		return "text", nil
+	case bool:
+		return "boolean", nil
+	case int, int64:
+		return "long", nil
+	case float32, float64:
+		return "double", nil
+	default:
+		return "", fmt.Errorf("unknown field type of %s", v)
+	}
+}
+
+func makeSureFieldDynamic(
+	dynamic string,
+	properties map[string]protocol.Property,
+	k string,
+) string {
+	if property, ok := properties[k]; ok {
+		if !strings.EqualFold(property.Dynamic, "") {
+			return property.Dynamic
+		}
+	}
+	return dynamic
 }
