@@ -120,14 +120,17 @@ func TestQueryHandler(t *testing.T) {
                  {
                    "size": 20,
                    "query": {
-                     "match": {
+                     "term": {
                        "lang": "Java"
                      }
                    },
                    "sort": [
                      {
-                       "stars": {
+                       "forks": {
                          "order": "desc"
+                       },
+                       "stars": {
+                         "order": "asc"
                        }
                      }
                    ]
