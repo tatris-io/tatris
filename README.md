@@ -7,7 +7,7 @@ Time-aware storage and search system
 
 ## Getting started
 
-#### Build from source and have try!
+#### Build from source and have a try!
 Tatris compiles to a single binary. You can execute the following commands and have a try:
 ```
 git clone git@github.com:tatris-io/tatris.git

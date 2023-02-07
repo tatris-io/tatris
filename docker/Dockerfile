@@ -43,6 +43,7 @@ VOLUME /home/tatris/logs
 RUN chown -R tatris:tatris /home/tatris
 
 COPY --from=build /go/bin /home/tatris/bin
+COPY bin/start-server.sh /home/tatris/bin
 
 USER tatris
 

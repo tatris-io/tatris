@@ -29,7 +29,7 @@ else
   _PATH_LOGGING_CONF="${TATRIS_PATH_LOGGING_CONF}"
 fi
 
-# Check the existance of configuration files
+# Check the existence of configuration files
 BOOTSTRAP_ARGS=""
 if [ -e ${_PATH_SERVER_CONF} ]
 then
