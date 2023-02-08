@@ -176,5 +176,6 @@ type NumericRange struct {
 type Sort []map[string]SortTerm
 
 type SortTerm struct {
-	Order string
+	Order   string
+	Missing string
 }

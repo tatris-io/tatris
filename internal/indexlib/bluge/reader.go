@@ -84,6 +84,9 @@ func (b *BlugeReader) Search(
 				if strings.EqualFold("desc", v.Order) {
 					sort.Desc()
 				}
+				if strings.EqualFold("_first", v.Missing) {
+					sort.MissingFirst()
+				}
 				sorts = append(sorts, sort)
 			}
 		}

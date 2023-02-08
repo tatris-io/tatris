@@ -181,7 +181,7 @@ func transformSort(sort protocol.Sort) indexlib.Sort {
 	for i, s := range sort {
 		result[i] = make(map[string]indexlib.SortTerm)
 		for k, v := range s {
-			result[i][k] = indexlib.SortTerm{Order: v.Order}
+			result[i][k] = indexlib.SortTerm{Order: v.Order, Missing: v.Missing}
 		}
 	}
 	return result

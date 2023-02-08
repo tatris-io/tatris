@@ -106,5 +106,6 @@ type NumericRange struct {
 type Sort []map[string]SortTerm
 
 type SortTerm struct {
-	Order string `json:"order"`
+	Order   string `json:"order"`
+	Missing string `json:"missing"`
 }
