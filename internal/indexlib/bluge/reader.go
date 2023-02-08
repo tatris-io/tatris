@@ -71,12 +71,26 @@ func (b *BlugeReader) Search(
 	if err != nil {
 		return nil, err
 	}
-	var searchRequest bluge.SearchRequest
 
-	if limit == -1 {
-		searchRequest = bluge.NewAllMatches(blugeQuery).WithStandardAggregations()
-	} else {
-		searchRequest = bluge.NewTopNSearch(limit, blugeQuery).WithStandardAggregations()
+	if limit < 0 {
+		limit = 10
+	}
+	searchRequest := bluge.NewTopNSearch(limit, blugeQuery).WithStandardAggregations()
+	if querySorts := query.GetSort(); querySorts != nil {
+		sorts := make([]*search.Sort, 0, len(querySorts))
+		for _, querySort := range querySorts {
+			for k, v := range querySort {
+				sort := search.SortBy(search.Field(k))
+				if strings.EqualFold("desc", v.Order) {
+					sort.Desc()
+				}
+				if strings.EqualFold("_first", v.Missing) {
+					sort.MissingFirst()
+				}
+				sorts = append(sorts, sort)
+			}
+		}
+		searchRequest.SortByCustom(sorts)
 	}
 	if aggs := query.GetAggs(); aggs != nil {
 		blugeAggs := b.generateAggregations(aggs)

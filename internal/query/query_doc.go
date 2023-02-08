@@ -46,6 +46,9 @@ func SearchDocs(request protocol.QueryRequest) (*protocol.QueryResponse, error) 
 	if aggs := request.Aggs; aggs != nil {
 		libRequest.SetAggs(transformAggs(aggs))
 	}
+	if sort := request.Sort; sort != nil {
+		libRequest.SetSort(transformSort(sort))
+	}
 
 	hits.Hits = make([]protocol.Hit, 0)
 	aggregations := make(map[string]protocol.AggsResponse)
@@ -170,6 +173,17 @@ func transformAggs(aggs map[string]protocol.Aggs) map[string]indexlib.Aggs {
 		result[name] = indexlibAggs
 	}
 
+	return result
+}
+
+func transformSort(sort protocol.Sort) indexlib.Sort {
+	result := make([]map[string]indexlib.SortTerm, len(sort))
+	for i, s := range sort {
+		result[i] = make(map[string]indexlib.SortTerm)
+		for k, v := range s {
+			result[i][k] = indexlib.SortTerm{Order: v.Order, Missing: v.Missing}
+		}
+	}
 	return result
 }
 
