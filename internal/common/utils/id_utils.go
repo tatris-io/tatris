@@ -12,29 +12,14 @@ import (
 	"net"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
-
-type Seq struct {
-	m         *sync.Mutex
-	seqNumber int32
-}
-
-func (s *Seq) IncreaseAndGetSeq(delta int32) int32 {
-	s.m.Lock()
-	s.seqNumber += delta
-	defer s.m.Unlock()
-	return s.seqNumber
-}
-
-func NewSeq(start int32) *Seq {
-	return &Seq{m: new(sync.Mutex), seqNumber: start}
-}
 
 var (
 	r          = rand.New(rand.NewSource(time.Now().UnixNano()))
 	mu         sync.Mutex
-	seq        = NewSeq(RandInt32())
+	seq        = RandInt32()
 	interfaces []net.Interface // cached list of interfaces
 )
 
@@ -54,7 +39,7 @@ func generateID() (string, error) {
 		return "", err
 	}
 	var idBytes [15]byte
-	sequenceId := uint32(seq.IncreaseAndGetSeq(1) & 0xffffff)
+	sequenceId := uint32(atomic.AddInt32(&seq, 1) & 0xffffff)
 	idBytes[0] = uint8(sequenceId & 0xff)
 	idBytes[1] = uint8((sequenceId >> 16) & 0xff)
 	idBytes[2] = uint8((now >> 16) & 0xff)
