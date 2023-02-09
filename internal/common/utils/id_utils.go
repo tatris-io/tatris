@@ -17,10 +17,17 @@ import (
 	"go.uber.org/zap"
 )
 
+func init() {
+	var err error
+	interfaces, err = net.Interfaces()
+	if err != nil {
+		logger.Error("get Interfaces fail", zap.Error(err))
+	}
+}
+
 var (
 	r          = rand.New(rand.NewSource(time.Now().UnixNano()))
 	mu         sync.Mutex
-	imu        sync.Mutex
 	seq        = RandInt32()
 	interfaces []net.Interface // cached list of interfaces
 )
@@ -102,15 +109,9 @@ func RandByte() byte {
 }
 
 func getHardwareInterface(name string) (string, []byte) {
-	imu.Lock()
 	if interfaces == nil {
-		var err error
-		interfaces, err = net.Interfaces()
-		if err != nil {
-			return "", nil
-		}
+		return "", nil
 	}
-	imu.Unlock()
 	for _, ifs := range interfaces {
 		if len(ifs.HardwareAddr) >= 6 && (name == "" || name == ifs.Name) {
 			return ifs.Name, ifs.HardwareAddr
