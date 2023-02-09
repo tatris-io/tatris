@@ -51,7 +51,10 @@ func TestIndexLib(t *testing.T) {
 	})
 
 	t.Run("test_read", func(t *testing.T) {
-		reader, err := manage.GetReader(&indexlib.BaseConfig{}, path.Join(consts.DefaultDataPath, index.Name))
+		reader, err := manage.GetReader(
+			&indexlib.BaseConfig{},
+			path.Join(consts.DefaultDataPath, index.Name),
+		)
 		if err != nil {
 			t.Fatalf("get reader error: %s", err.Error())
 		}

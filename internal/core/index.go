@@ -74,16 +74,8 @@ func (index *Index) GetReaderByTime(start, end int64) (indexlib.Reader, error) {
 }
 
 func (index *Index) CheckMapping(docID string, doc map[string]interface{}) error {
-	if err := index.tryCheckDataFieldType(doc); err != nil {
-		return fmt.Errorf("illegal doc %s for %s", docID, err.Error())
-	}
-	return nil
-}
-
-func (index *Index) tryCheckDataFieldType(doc map[string]interface{}) error {
-
 	if index.Index == nil || index.Mappings == nil || index.Mappings.Properties == nil {
-		return errors.New("mapping can not be nil")
+		return fmt.Errorf("doc %s mapping can not be nil", docID)
 	}
 
 	properties := index.Mappings.Properties
@@ -91,19 +83,20 @@ func (index *Index) tryCheckDataFieldType(doc map[string]interface{}) error {
 
 	for k, v := range doc {
 		// make sure field-level dynamic
-		fieldDynamic := makeSureFieldDynamic(dynamic, properties, k)
+		fieldDynamic := getFieldDynamic(dynamic, properties, k)
 		// make sure field type, explicit type or dynamic type
-		fieldType, err := makeSureFieldType(fieldDynamic, properties, k, v)
+		fieldType, err := getFieldType(fieldDynamic, properties, k, v)
 		if err != nil {
 			return fmt.Errorf(
-				"fail to make sure field type of %s, field dynamic: %s, for %s",
+				"doc %s fail to make sure field type of %s, field dynamic: %s, for %s",
+				docID,
 				k,
 				fieldDynamic,
 				err.Error(),
 			)
 		}
-		_, ok := properties[k]
-		if isNewDynamicField(ok, dynamic) {
+
+		if _, ok := properties[k]; !ok && strings.EqualFold(dynamic, consts.DynamicMappingMode) {
 			// add field to properties
 			p := protocol.Property{
 				Type:    fieldType,
@@ -116,25 +109,25 @@ func (index *Index) tryCheckDataFieldType(doc map[string]interface{}) error {
 	return nil
 }
 
-func isNewDynamicField(ok bool, dynamic string) bool {
-	return !ok && strings.EqualFold(dynamic, "true")
-}
-
-func makeSureFieldType(
+func getFieldType(
 	dynamic string,
 	properties map[string]protocol.Property,
-	k string,
-	v interface{},
+	fieldName string,
+	value interface{},
 ) (string, error) {
-	if property, ok := properties[k]; ok {
-		if validFieldType(property, v) {
+	if property, ok := properties[fieldName]; ok {
+		if validFieldType(property, value) {
 			return property.Type, nil
 		}
-		return "", fmt.Errorf("inconsistent field type of %s, expected type %s", k, property.Type)
+		return "", fmt.Errorf(
+			"inconsistent field type of %s, expected type %s",
+			fieldName,
+			property.Type,
+		)
 	}
 	switch dynamic {
 	case consts.DynamicMappingMode:
-		return getDynamicFieldType(v)
+		return getDynamicFieldType(value)
 	case consts.IgnoreMappingMode:
 		return "", nil
 	case consts.StrictMappingMode:
@@ -180,12 +173,12 @@ func getDynamicFieldType(value interface{}) (string, error) {
 	}
 }
 
-func makeSureFieldDynamic(
+func getFieldDynamic(
 	dynamic string,
 	properties map[string]protocol.Property,
-	k string,
+	fieldName string,
 ) string {
-	if property, ok := properties[k]; ok {
+	if property, ok := properties[fieldName]; ok {
 		if !strings.EqualFold(property.Dynamic, "") {
 			return property.Dynamic
 		}
