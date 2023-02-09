@@ -26,7 +26,7 @@ var (
 func GenerateID() (string, error) {
 	docId, err := generateID()
 	if err != nil {
-		logger.Error("generate ID fail", zap.String("msg", err.Error()))
+		logger.Error("generate ID fail", zap.Error(err))
 		return "", err
 	}
 	return docId, nil
