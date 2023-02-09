@@ -11,6 +11,7 @@ require (
 	github.com/blugelabs/query_string v0.3.0
 	github.com/deckarep/golang-set/v2 v2.1.0
 	github.com/gin-gonic/gin v1.8.2
+	github.com/google/uuid v1.3.0
 	github.com/jinzhu/now v1.1.5
 	github.com/mgechev/revive v1.2.4
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -23,6 +24,7 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools/gotestsum v1.8.2
+	gotest.tools/v3 v3.3.0
 )
 
 require (
@@ -54,6 +56,7 @@ require (
 	github.com/go-playground/validator/v10 v10.11.1 // indirect
 	github.com/goccy/go-json v0.10.0 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
+	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/hpcloud/tail v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect

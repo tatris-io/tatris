@@ -38,7 +38,10 @@ func TestIndexLib(t *testing.T) {
 			for _, doc := range docs {
 				ID := ""
 				if docID, ok := doc[consts.IDField]; !ok || docID == "" {
-					ID = utils.GenerateID()
+					ID, err := utils.GenerateID()
+					if err != nil {
+						t.Fatalf("generate docID fail: %s", err.Error())
+					}
 					doc[consts.IDField] = ID
 				}
 				err = writer.Insert(ID, doc, index.Mappings)
