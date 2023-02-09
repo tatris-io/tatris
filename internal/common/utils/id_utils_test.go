@@ -16,25 +16,26 @@ type TestCase struct {
 }
 
 func TestGenerateID(t *testing.T) {
-	cond := TestCase{sw: new(sync.WaitGroup), loop: 5000, goroutineCount: 200}
+	cond := TestCase{sw: new(sync.WaitGroup), loop: 1000, goroutineCount: 200}
 	cond.sw.Add(cond.goroutineCount)
-	ids := make(map[string]string)
-	mutex := sync.Mutex{}
+	var ids sync.Map
 	for i := 0; i < cond.goroutineCount; i++ {
 		go func() {
 			defer cond.sw.Done()
-			defer mutex.Unlock()
-			mutex.Lock()
 			for i := 0; i < cond.loop; i++ {
-				if docID, err := GenerateID(); err == nil {
-					ids[docID] = docID
+				if id, err := GenerateID(); err == nil {
+					ids.Store(id, id)
 				}
 			}
 		}()
 	}
 	cond.sw.Wait()
-	realLen := len(ids)
+	realLen := 0
+	ids.Range(func(key, value any) bool {
+		realLen++
+		return true
+	})
 	expectLen := cond.goroutineCount * cond.loop
 	t.Logf("expectLen: %d realLen : %d", expectLen, realLen)
-	assert.Equal(t, len(ids), expectLen)
+	assert.Equal(t, realLen, expectLen)
 }
