@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/tatris-io/tatris/internal/common/consts"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/tatris-io/tatris/internal/protocol"
 )
@@ -30,7 +32,7 @@ func TestManager(t *testing.T) {
 		{"Res":true ,"Index":{"settings":{"number_of_shards":3,"number_of_replicas":1},"mappings":{"properties":{"name":{"type":"date"}}}}},
 		{"Res":true ,"Index":{"settings":{"number_of_shards":3,"number_of_replicas":1},"mappings":{"properties":{"name":{"type":"dAtE"}}}}},
 		{"Res":false},
-		{"Res":false ,"Index":{"settings":{"number_of_shards":3,"number_of_replicas":1},"mappings":{}}},
+		{"Res":true ,"Index":{"settings":{"number_of_shards":3,"number_of_replicas":1},"mappings":{}}},
 		{"Res":false ,"Index":{"settings":{"number_of_shards":3,"number_of_replicas":1},"mappings":{"properties":{"name":{"type":"keyword"},"age":{"type":"string"}}}}},
 		{"Res":false ,"Index":{"settings":{"number_of_shards":3,"number_of_replicas":1},"mappings":{"properties":{"name":{"type":"bool"},"age":{"type":"int"}}}}}
 	]`
@@ -64,19 +66,19 @@ func TestDynamicMappingCheck(t *testing.T) {
 		{
 			name: "dynamic_mapping",
 			mappings: &protocol.Mappings{
-				Dynamic: "true",
+				Dynamic: consts.DynamicMappingMode,
 			},
 		},
 		{
 			name: "invalid_explicit_mapping",
 			mappings: &protocol.Mappings{
-				Dynamic: "false",
+				Dynamic: consts.IgnoreMappingMode,
 			},
 		},
 		{
 			name: "valid_explicit_mapping",
 			mappings: &protocol.Mappings{
-				Dynamic:    "false",
+				Dynamic:    consts.IgnoreMappingMode,
 				Properties: map[string]protocol.Property{},
 			},
 		},

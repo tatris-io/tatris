@@ -90,8 +90,10 @@ func TestMapping(t *testing.T) {
 			index: &core.Index{
 				Index: &protocol.Index{
 					Mappings: &protocol.Mappings{
-						Dynamic:    "true",
-						Properties: map[string]protocol.Property{},
+						Dynamic: consts.DynamicMappingMode,
+						Properties: map[string]protocol.Property{
+							"date_key": {Dynamic: consts.StrictMappingMode},
+						},
 					},
 				},
 			},
@@ -107,7 +109,7 @@ func TestMapping(t *testing.T) {
 			index: &core.Index{
 				Index: &protocol.Index{
 					Mappings: &protocol.Mappings{
-						Dynamic: "false",
+						Dynamic: consts.IgnoreMappingMode,
 						Properties: map[string]protocol.Property{
 							"string_key": {Type: "text"},
 							"date_key":   {Type: "date"},
@@ -131,7 +133,7 @@ func TestMapping(t *testing.T) {
 			index: &core.Index{
 				Index: &protocol.Index{
 					Mappings: &protocol.Mappings{
-						Dynamic: "false",
+						Dynamic: consts.IgnoreMappingMode,
 						Properties: map[string]protocol.Property{
 							"string_key": {Type: "text"},
 							"date_key":   {Type: "keyword"},
@@ -141,7 +143,7 @@ func TestMapping(t *testing.T) {
 			},
 		},
 		{
-			name: "valid_explicit_mapping",
+			name: "invalid_explicit_mapping",
 			docs: []map[string]interface{}{
 				{
 					"string_key": "string_value",
@@ -155,7 +157,7 @@ func TestMapping(t *testing.T) {
 			index: &core.Index{
 				Index: &protocol.Index{
 					Mappings: &protocol.Mappings{
-						Dynamic: "false",
+						Dynamic: consts.IgnoreMappingMode,
 						Properties: map[string]protocol.Property{
 							"string_key": {Type: "text"},
 							"date_key":   {Type: "date"},
@@ -179,7 +181,7 @@ func TestMapping(t *testing.T) {
 			index: &core.Index{
 				Index: &protocol.Index{
 					Mappings: &protocol.Mappings{
-						Dynamic: "strict",
+						Dynamic: consts.StrictMappingMode,
 						Properties: map[string]protocol.Property{
 							"string_key": {Type: "text"},
 							"date_key":   {Type: "date"},
@@ -201,7 +203,7 @@ func TestMapping(t *testing.T) {
 			index: &core.Index{
 				Index: &protocol.Index{
 					Mappings: &protocol.Mappings{
-						Dynamic:    "true",
+						Dynamic:    consts.DynamicMappingMode,
 						Properties: map[string]protocol.Property{},
 					},
 				},
@@ -220,7 +222,7 @@ func TestMapping(t *testing.T) {
 			index: &core.Index{
 				Index: &protocol.Index{
 					Mappings: &protocol.Mappings{
-						Dynamic: "strict",
+						Dynamic: consts.StrictMappingMode,
 						Properties: map[string]protocol.Property{
 							"long_key":    {Type: "long"},
 							"integer_key": {Type: "integer"},

@@ -6,16 +6,12 @@ package core
 import (
 	"errors"
 	"fmt"
-	"reflect"
 
 	"github.com/tatris-io/tatris/internal/common/consts"
-
-	"github.com/tatris-io/tatris/internal/indexlib/manage"
-
-	"github.com/jinzhu/now"
-
 	"github.com/tatris-io/tatris/internal/common/log/logger"
+	"github.com/tatris-io/tatris/internal/common/utils"
 	"github.com/tatris-io/tatris/internal/indexlib"
+	"github.com/tatris-io/tatris/internal/indexlib/manage"
 	"github.com/tatris-io/tatris/internal/protocol"
 	"go.uber.org/zap"
 
@@ -78,123 +74,114 @@ func (index *Index) GetReaderByTime(start, end int64) (indexlib.Reader, error) {
 }
 
 func (index *Index) CheckMapping(docID string, doc map[string]interface{}) error {
-	if err := index.tryCheckDataFieldType(doc); err != nil {
-		return fmt.Errorf("illegal doc %s for %s", docID, err.Error())
-	}
-	return nil
-}
-
-func (index *Index) tryCheckDataFieldType(doc map[string]interface{}) error {
-
 	if index.Index == nil || index.Mappings == nil || index.Mappings.Properties == nil {
-		return errors.New("mapping can not be nil")
+		return fmt.Errorf("doc %s mapping can not be nil", docID)
 	}
 
 	properties := index.Mappings.Properties
 	dynamic := index.Mappings.Dynamic
 
 	for k, v := range doc {
-		fieldType, err := checkFieldType(dynamic, properties, k, v)
+		// make sure field-level dynamic
+		fieldDynamic := getFieldDynamic(dynamic, properties, k)
+		// make sure field type, explicit type or dynamic type
+		fieldType, err := getFieldType(fieldDynamic, properties, k, v)
 		if err != nil {
-			if err := handleByPolicy(dynamic); err != nil {
-				return err
-			}
-			continue
-		}
-		if p, ok := properties[k]; ok {
-			if strings.EqualFold(p.Type, fieldType) {
-				continue
-			}
 			return fmt.Errorf(
-				"inconsistent field type of %s, current: %s original: %s",
+				"doc %s fail to make sure field type of %s, field dynamic: %s, for %s",
+				docID,
 				k,
-				fieldType,
-				p.Type,
+				fieldDynamic,
+				err.Error(),
 			)
-		} else if strings.EqualFold(dynamic, "true") {
-			// try to add the field type dynamically
-			p = protocol.Property{Type: fieldType}
-			properties[k] = p
-		} else {
-			// explicit mapping check
-			if err := handleByPolicy(dynamic); err != nil {
-				return err
+		}
+
+		if _, ok := properties[k]; !ok && strings.EqualFold(dynamic, consts.DynamicMappingMode) {
+			// add field to properties
+			p := protocol.Property{
+				Type:    fieldType,
+				Dynamic: consts.DynamicMappingMode,
 			}
+			properties[k] = p
 		}
 	}
 	index.Mappings.Properties = properties
 	return nil
 }
 
-func handleByPolicy(dynamic string) error {
-	if strings.EqualFold(dynamic, "strict") {
-		return errors.New("reject doc for strict mode")
-	}
-	return nil
-}
-
-func checkFieldType(
+func getFieldType(
 	dynamic string,
 	properties map[string]protocol.Property,
-	key string,
+	fieldName string,
 	value interface{},
 ) (string, error) {
-	if strings.EqualFold(dynamic, "true") {
-		switch v := value.(type) {
-		case string:
-			if isDateType(v) {
-				return "date", nil
-			}
-			return "text", nil
-		case bool:
-			return "boolean", nil
-		case int, int64:
-			return "long", nil
-		case float32, float64:
-			return "double", nil
-		default:
-			return "other", fmt.Errorf("unknown field type of %s", v)
+	if property, ok := properties[fieldName]; ok {
+		if validFieldType(property, value) {
+			return property.Type, nil
 		}
-	} else {
-		typeOf := reflect.TypeOf(value)
-		typeName := typeOf.Name()
-		if p, ok := properties[key]; ok {
-			switch p.Type {
-			case "text", "keyword":
-				if strings.EqualFold(typeName, "string") {
-					return p.Type, nil
-				}
-			case "date":
-				if strings.EqualFold(typeName, "string") && isDateType(value.(string)) {
-					return p.Type, nil
-				}
-			case "long":
-				if strings.HasPrefix(typeName, "int") {
-					return p.Type, nil
-				}
-			case "integer":
-				if strings.HasPrefix(typeName, "int") && !strings.EqualFold(typeName, "int64") {
-					return p.Type, nil
-				}
-			case "double":
-				if strings.HasPrefix(typeName, "float") {
-					return p.Type, nil
-				}
-			case "float":
-				if strings.HasPrefix(typeName, "float") && !strings.EqualFold(typeName, "float64") {
-					return p.Type, nil
-				}
-			case "byte":
-				if strings.EqualFold(typeName, "byte") || strings.EqualFold(typeName, "int") {
-					return p.Type, nil
-				}
-			}
-		}
-		return "other", fmt.Errorf("unknown field type of %s", typeName)
+		return "", fmt.Errorf(
+			"inconsistent field type of %s, expected type %s",
+			fieldName,
+			property.Type,
+		)
+	}
+	switch dynamic {
+	case consts.DynamicMappingMode:
+		return getDynamicFieldType(value)
+	case consts.IgnoreMappingMode:
+		return "", nil
+	case consts.StrictMappingMode:
+		return "", errors.New("unknown field type for strict mode")
+	default:
+		return "", fmt.Errorf("unknown dynamic %s mode", dynamic)
 	}
 }
 
-func isDateType(value string) bool {
-	_, err := now.Parse(value)
-	return err == nil
+// Check that the field type specified in the property matches the value data type
+func validFieldType(property protocol.Property, value interface{}) bool {
+	switch property.Type {
+	case "text", "match_only_text", "keyword", "constant_keyword":
+		return utils.IsString(value)
+	case "date":
+		return utils.IsDateType(value)
+	case "short", "byte", "integer", "long":
+		return utils.IsInteger(value)
+	case "float", "double":
+		return utils.IsFloat(value)
+	case "boolean":
+		return utils.IsBool(value)
+	default:
+		return false
+	}
+}
+
+func getDynamicFieldType(value interface{}) (string, error) {
+	switch v := value.(type) {
+	case string:
+		if utils.IsDateType(v) {
+			return "date", nil
+		}
+		return "text", nil
+	case bool:
+		return "boolean", nil
+	case int, int64:
+		return "long", nil
+	case float32, float64:
+		return "double", nil
+	default:
+		return "", fmt.Errorf("unknown field type of %s", v)
+	}
+}
+
+func getFieldDynamic(
+	dynamic string,
+	properties map[string]protocol.Property,
+	fieldName string,
+) string {
+	if property, ok := properties[fieldName]; ok {
+		if !strings.EqualFold(property.Dynamic, "") {
+			return property.Dynamic
+		}
+	}
+	return dynamic
 }

@@ -37,4 +37,6 @@ type Mappings struct {
 type Property struct {
 	// field data type
 	Type string
+	// field-level mapping mode
+	Dynamic string `json:"dynamic,omitempty"`
 }

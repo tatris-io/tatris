@@ -128,9 +128,9 @@ func checkParam(index *protocol.Index) error {
 
 func checkMapping(mappings *protocol.Mappings) error {
 	if mappings.Dynamic == "" {
-		mappings.Dynamic = "true"
+		mappings.Dynamic = consts.DynamicMappingMode
 	}
-	dynamic := strings.EqualFold(mappings.Dynamic, "true")
+	dynamic := strings.EqualFold(mappings.Dynamic, consts.DynamicMappingMode)
 	properties := &mappings.Properties
 	if *properties == nil {
 		if dynamic {
@@ -157,12 +157,18 @@ func checkReservedField(properties map[string]protocol.Property) error {
 	if exist {
 		return errors.New("_id is a built-in field")
 	}
-	properties[consts.IDField] = protocol.Property{Type: "keyword"}
+	properties[consts.IDField] = protocol.Property{
+		Type:    consts.KeywordMappingType,
+		Dynamic: consts.StrictMappingMode,
+	}
 	_, exist = properties[consts.TimestampField]
 	if exist {
 		return errors.New("_timestamp is a built-in field")
 	}
-	properties[consts.TimestampField] = protocol.Property{Type: "date"}
+	properties[consts.TimestampField] = protocol.Property{
+		Type:    consts.DateMappingType,
+		Dynamic: consts.StrictMappingMode,
+	}
 	return nil
 }
 

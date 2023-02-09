@@ -9,6 +9,7 @@ require (
 	github.com/blugelabs/bluge v0.2.2
 	github.com/blugelabs/bluge_segment_api v0.2.0
 	github.com/blugelabs/query_string v0.3.0
+	github.com/deckarep/golang-set/v2 v2.1.0
 	github.com/gin-gonic/gin v1.8.2
 	github.com/jinzhu/now v1.1.5
 	github.com/mgechev/revive v1.2.4
@@ -20,6 +21,7 @@ require (
 	go.uber.org/zap v1.24.0
 	golang.org/x/tools v0.3.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
+	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools/gotestsum v1.8.2
 )
 
@@ -91,6 +93,5 @@ require (
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6 // indirect
 	gopkg.in/fsnotify.v1 v1.4.7 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

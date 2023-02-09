@@ -1,6 +1,6 @@
 // Copyright 2022 Tatris Project Authors. Licensed under Apache-2.0.
 
-package core
+package utils
 
 import (
 	"testing"
@@ -18,6 +18,6 @@ func TestDateParse(t *testing.T) {
 	}
 	for _, date := range dates {
 		t.Log(date)
-		assert.True(t, isDateType(date))
+		assert.True(t, IsDateType(date))
 	}
 }
