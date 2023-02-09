@@ -11,6 +11,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sourcegraph/conc/pool"
+	"github.com/tatris-io/tatris/internal/core/config"
+
 	"github.com/patrickmn/go-cache"
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
@@ -73,33 +76,41 @@ func ProduceWAL(shard *core.Shard, docs []map[string]interface{}) error {
 }
 
 func ConsumeWALs() {
-	for name, wal := range wals.Items() {
-		split := strings.Index(name, "/")
-		i := name[:split]
-		s, err := strconv.Atoi(name[split+1:])
-		if err != nil {
-			logger.Error(
-				"parse wal name failed",
-				zap.String("name", name),
-				zap.Error(err),
-			)
-			continue
-		}
-		shard, err := metadata.GetShard(i, s)
-		if shard == nil || err != nil {
-			logger.Error("get shard failed", zap.String("name", name), zap.Error(err))
-			continue
-		}
-		err = ConsumeWAL(shard, wal.Object.(log.WalLog))
-		if err != nil {
-			logger.Error(
-				"consume shard wal failed",
-				zap.String("name", name),
-				zap.Error(err),
-			)
-			continue
-		}
+	p := pool.New().WithMaxGoroutines(config.Cfg.Wal.Parallel)
+	items := wals.Items()
+	defer utils.Timerf("consume wals finish, size:%d", len(items))()
+	for name, wal := range items {
+		n := name
+		w := wal
+		p.Go(func() {
+			split := strings.Index(n, "/")
+			i := n[:split]
+			s, err := strconv.Atoi(n[split+1:])
+			if err != nil {
+				logger.Error(
+					"parse wal name failed",
+					zap.String("name", n),
+					zap.Error(err),
+				)
+				return
+			}
+			shard, err := metadata.GetShard(i, s)
+			if shard == nil || err != nil {
+				logger.Error("get shard failed", zap.String("name", n), zap.Error(err))
+				return
+			}
+			err = ConsumeWAL(shard, w.Object.(log.WalLog))
+			if err != nil {
+				logger.Error(
+					"consume shard wal failed",
+					zap.String("name", n),
+					zap.Error(err),
+				)
+				return
+			}
+		})
 	}
+	p.Wait()
 }
 
 func ConsumeWAL(shard *core.Shard, wal log.WalLog) error {
