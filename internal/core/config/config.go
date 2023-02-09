@@ -26,6 +26,10 @@ func init() {
 			NoCopy:           false,
 			DirPerms:         0750,
 			FilePerms:        0640,
+			Parallel:         16,
+		},
+		Query: Query{
+			Parallel: 16,
 		},
 	}
 }
@@ -33,6 +37,7 @@ func init() {
 type Config struct {
 	Segment Segment `yaml:"segment"`
 	Wal     Wal     `yaml:"wal"`
+	Query   Query   `yaml:"query"`
 
 	_once   sync.Once
 	_inited atomic.Bool
@@ -51,6 +56,13 @@ type Wal struct {
 	NoCopy           bool        `yaml:"no_copy"`
 	DirPerms         os.FileMode `yaml:"dir_perms"`
 	FilePerms        os.FileMode `yaml:"file_perms"`
+	// the number of Goroutines used to consume WAL each time
+	Parallel int `yaml:"parallel"`
+}
+
+type Query struct {
+	// the number of Goroutines used to retrieve multiple segments per query
+	Parallel int `yaml:"parallel"`
 }
 
 // Verify wraps doVerify with a `sync.Once`
@@ -68,19 +80,28 @@ func (cfg *Config) IsVerified() bool {
 
 func (s *Segment) verify() {
 	if s.MatureThreshold <= 0 {
-		panic("mature_threshold should be positive")
+		panic("segment.mature_threshold should be positive")
 	}
 }
 
 func (w *Wal) verify() {
 	if w.LogFormat > 1 {
-		panic("log_format should be 0 for binary format or 1 for JSON format")
+		panic("wal.log_format should be 0 for binary format or 1 for JSON format")
 	}
 	if w.SegmentSize <= 0 {
-		panic("segment_size should be positive")
+		panic("wal.segment_size should be positive")
 	}
 	if w.SegmentCacheSize <= 0 {
-		panic("segment_cache_size should be positive")
+		panic("wal.segment_cache_size should be positive")
+	}
+	if w.Parallel <= 0 {
+		panic("wal.parallel should be positive")
+	}
+}
+
+func (q *Query) verify() {
+	if q.Parallel <= 0 {
+		panic("query.parallel should be positive")
 	}
 }
 
@@ -88,6 +109,7 @@ func (w *Wal) verify() {
 func (cfg *Config) doVerify() {
 	cfg.Segment.verify()
 	cfg.Wal.verify()
+	cfg.Query.verify()
 }
 
 func (cfg *Config) String() string {

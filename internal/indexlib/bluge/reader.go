@@ -11,7 +11,12 @@ import (
 	"strings"
 	"time"
 
+	cfg "github.com/tatris-io/tatris/internal/core/config"
+
 	"github.com/blugelabs/bluge/search/aggregations"
+	"github.com/sourcegraph/conc/pool"
+	"github.com/tatris-io/tatris/internal/common/log/logger"
+	"go.uber.org/zap"
 
 	"github.com/tatris-io/tatris/internal/common/utils"
 
@@ -29,6 +34,11 @@ type BlugeReader struct {
 	*indexlib.BaseConfig
 	Indexes []string
 	Readers []*bluge.Reader
+}
+
+type BlugeSearchResult struct {
+	docs    []*search.DocumentMatch
+	buckets []*search.Bucket
 }
 
 func NewBlugeReader(config *indexlib.BaseConfig, index ...string) *BlugeReader {
@@ -99,31 +109,39 @@ func (b *BlugeReader) Search(
 		}
 	}
 
-	docs := make([]*search.DocumentMatch, 0)
-	var bucket *search.Bucket
-
+	p := pool.NewWithResults[*BlugeSearchResult]().WithErrors().
+		WithMaxGoroutines(cfg.Cfg.Query.Parallel)
 	for _, reader := range b.Readers {
-		dmi, err := reader.Search(ctx, searchRequest)
-		if err != nil {
-			log.Printf("bluge all match error: %s", err)
-			return nil, err
-		}
-		next, err := dmi.Next()
-		for err == nil && next != nil {
-			docs = append(docs, next)
-			next, err = dmi.Next()
-		}
-
-		// merge aggregation response
-		if bucket == nil {
-			bucket = dmi.Aggregations()
-		} else {
-			bucket.Merge(dmi.Aggregations())
-		}
+		p.Go(func() (*BlugeSearchResult, error) {
+			result := &BlugeSearchResult{
+				docs:    make([]*search.DocumentMatch, 0),
+				buckets: make([]*search.Bucket, 0),
+			}
+			dmi, err := reader.Search(ctx, searchRequest)
+			if err != nil {
+				logger.Error(
+					"bluge search failed",
+					zap.Any("request", searchRequest),
+					zap.Error(err),
+				)
+				return result, err
+			}
+			next, err := dmi.Next()
+			for err == nil && next != nil {
+				result.docs = append(result.docs, next)
+				next, err = dmi.Next()
+			}
+			result.buckets = append(result.buckets, dmi.Aggregations())
+			return result, nil
+		})
 	}
-	bucket.Aggregation("duration").Finish()
 
-	return b.generateResponse(docs, bucket)
+	results, err := p.Wait()
+	if err != nil {
+		return nil, err
+	}
+
+	return b.generateResponse(results)
 }
 
 func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) (bluge.Query, error) {
@@ -187,57 +205,69 @@ func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) (bluge.Query, e
 }
 
 func (b *BlugeReader) generateResponse(
-	docs []*search.DocumentMatch,
-	buckets *search.Bucket,
+	results []*BlugeSearchResult,
 ) (*indexlib.QueryResponse, error) {
+
 	Hits := make([]indexlib.Hit, 0)
-	for _, doc := range docs {
-		var id string
-		var index string
-		var source map[string]interface{}
-		var timestamp time.Time
+	var bucket *search.Bucket
+	for _, result := range results {
+		for _, doc := range result.docs {
+			var id string
+			var index string
+			var source map[string]interface{}
+			var timestamp time.Time
 
-		err := doc.VisitStoredFields(func(field string, value []byte) bool {
-			switch field {
-			case consts.TimestampField:
-				location, _ := time.LoadLocation("Asia/Shanghai")
-				timestamp, _ = bluge.DecodeDateTime(value)
-				timestamp = timestamp.In(location)
-			case consts.IDField:
-				id = string(value)
-			case consts.IndexField:
-				index = string(value)
-			case consts.SourceField:
-				err := json.Unmarshal(value, &source)
-				if err != nil {
-					log.Printf("bluge source unmarshal error: %s", err)
+			err := doc.VisitStoredFields(func(field string, value []byte) bool {
+				switch field {
+				case consts.TimestampField:
+					location, _ := time.LoadLocation("Asia/Shanghai")
+					timestamp, _ = bluge.DecodeDateTime(value)
+					timestamp = timestamp.In(location)
+				case consts.IDField:
+					id = string(value)
+				case consts.IndexField:
+					index = string(value)
+				case consts.SourceField:
+					err := json.Unmarshal(value, &source)
+					if err != nil {
+						log.Printf("bluge source unmarshal error: %s", err)
+					}
 				}
+				return true
+			})
+			if err != nil {
+				log.Printf("bluge VisitStored error: %s", err)
+				continue
 			}
-			return true
-		})
-		if err != nil {
-			log.Printf("bluge VisitStored error: %s", err)
-			continue
-		}
 
-		hit := indexlib.Hit{
-			Index:     index,
-			ID:        id,
-			Source:    source,
-			Timestamp: timestamp,
+			hit := indexlib.Hit{
+				Index:     index,
+				ID:        id,
+				Source:    source,
+				Timestamp: timestamp,
+			}
+			Hits = append(Hits, hit)
 		}
-		Hits = append(Hits, hit)
+		for _, b := range result.buckets {
+			if bucket == nil {
+				bucket = b
+			} else {
+				bucket.Merge(b)
+			}
+		}
 	}
 
-	aggsResponse, err := b.generateAggsResponse(buckets)
+	bucket.Aggregation("duration").Finish()
+
+	aggsResponse, err := b.generateAggsResponse(bucket)
 	if err != nil {
 		return nil, err
 	}
 
 	resp := &indexlib.QueryResponse{
-		Took: buckets.Duration().Milliseconds(),
+		Took: bucket.Duration().Milliseconds(),
 		Hits: indexlib.Hits{
-			Total: indexlib.Total{Value: int64(buckets.Count())},
+			Total: indexlib.Total{Value: int64(bucket.Count())},
 			Hits:  Hits,
 		},
 		Aggregations: aggsResponse,
@@ -406,20 +436,20 @@ func (b *BlugeReader) generateAggregations(
 }
 
 func (b *BlugeReader) generateAggsResponse(
-	buckets *search.Bucket,
+	bucket *search.Bucket,
 ) (map[string]indexlib.AggsResponse, error) {
 	aggsResponse := make(map[string]indexlib.AggsResponse)
-	for name, value := range buckets.Aggregations() {
+	for name, value := range bucket.Aggregations() {
 		switch value := value.(type) {
 		case search.BucketCalculator:
 			aggsBuckets := make([]map[string]interface{}, 0)
-			for _, bucket := range value.Buckets() {
+			for _, bkt := range value.Buckets() {
 				aggsBucket := make(map[string]interface{})
-				aggsBucket["key"] = bucket.Name()
-				aggsBucket["doc_count"] = bucket.Count()
+				aggsBucket["key"] = bkt.Name()
+				aggsBucket["doc_count"] = bkt.Count()
 
-				if bucket.Aggregations() != nil {
-					aggsResponse, err := b.generateAggsResponse(bucket)
+				if bkt.Aggregations() != nil {
+					aggsResponse, err := b.generateAggsResponse(bkt)
 					if err != nil {
 						return aggsResponse, err
 					}
