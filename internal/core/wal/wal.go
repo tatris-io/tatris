@@ -209,7 +209,11 @@ func buildDocs(
 		if id, ok := doc[consts.IDField]; ok && id != nil && id != "" {
 			docID = id.(string)
 		} else {
-			docID = utils.GenerateID()
+			genID, err := utils.GenerateID()
+			if err != nil {
+				return idDocs, minTime, maxTime, err
+			}
+			docID = genID
 		}
 		if timestamp, ok := doc[consts.TimestampField]; ok && timestamp != nil {
 			docTimestamp = timestamp.(time.Time)
