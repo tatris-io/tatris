@@ -5,15 +5,16 @@ package utils
 
 import (
 	"encoding/base64"
-	"github.com/google/uuid"
-	"github.com/tatris-io/tatris/internal/common/log/logger"
-	"go.uber.org/zap"
 	"math/rand"
 	"net"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/tatris-io/tatris/internal/common/log/logger"
+	"go.uber.org/zap"
 )
 
 var (
@@ -24,24 +25,23 @@ var (
 )
 
 func GenerateID() (string, error) {
-	docId, err := generateID()
+	docID, err := generateID()
 	if err != nil {
-		logger.Error("generate ID fail", zap.String("msg", err.Error()))
+		logger.Error("generate ID fail", zap.Error(err))
 		return "", err
 	}
-	return docId, nil
+	return docID, nil
 }
 
-// create docID like es
 func generateID() (string, error) {
 	now, _, err := uuid.GetTime()
 	if err != nil {
 		return "", err
 	}
 	var idBytes [15]byte
-	sequenceId := uint32(atomic.AddInt32(&seq, 1) & 0xffffff)
-	idBytes[0] = uint8(sequenceId & 0xff)
-	idBytes[1] = uint8((sequenceId >> 16) & 0xff)
+	sequenceID := uint32(atomic.AddInt32(&seq, 1) & 0xffffff)
+	idBytes[0] = uint8(sequenceID & 0xff)
+	idBytes[1] = uint8((sequenceID >> 16) & 0xff)
 	idBytes[2] = uint8((now >> 16) & 0xff)
 	idBytes[3] = uint8((now >> 24) & 0xff)
 	idBytes[4] = uint8((now >> 32) & 0xff)
@@ -56,7 +56,7 @@ func generateID() (string, error) {
 	}
 	copy(idBytes[6:], macBytes[:])
 	idBytes[12] = uint8((now >> 8) & 0xff)
-	idBytes[13] = uint8(sequenceId >> 8 & 0xff)
+	idBytes[13] = uint8(sequenceID >> 8 & 0xff)
 	idBytes[14] = uint8(now & 0xff)
 	return base64.URLEncoding.EncodeToString(idBytes[0:]), nil
 }
@@ -70,7 +70,8 @@ func constructDummyMulticastAddress() []byte {
 	return address[0:]
 }
 
-// TimestampUUID returns a Version 1 UUID based on the current NodeID and clock sequence, and the current time.
+// TimestampUUID returns a Version 1 UUID based on the current NodeID and clock sequence, and the
+// current time.
 func TimestampUUID() (string, error) {
 	id, err := uuid.NewUUID()
 	if err != nil {
