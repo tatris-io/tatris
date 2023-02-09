@@ -112,12 +112,13 @@ func (b *BlugeReader) Search(
 	p := pool.NewWithResults[*BlugeSearchResult]().WithErrors().
 		WithMaxGoroutines(cfg.Cfg.Query.Parallel)
 	for _, reader := range b.Readers {
+		r := reader
 		p.Go(func() (*BlugeSearchResult, error) {
 			result := &BlugeSearchResult{
 				docs:    make([]*search.DocumentMatch, 0),
 				buckets: make([]*search.Bucket, 0),
 			}
-			dmi, err := reader.Search(ctx, searchRequest)
+			dmi, err := r.Search(ctx, searchRequest)
 			if err != nil {
 				logger.Error(
 					"bluge search failed",

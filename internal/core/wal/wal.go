@@ -80,28 +80,30 @@ func ConsumeWALs() {
 	items := wals.Items()
 	defer utils.Timerf("consume wals finish, size:%d", len(items))()
 	for name, wal := range items {
+		n := name
+		w := wal
 		p.Go(func() {
-			split := strings.Index(name, "/")
-			i := name[:split]
-			s, err := strconv.Atoi(name[split+1:])
+			split := strings.Index(n, "/")
+			i := n[:split]
+			s, err := strconv.Atoi(n[split+1:])
 			if err != nil {
 				logger.Error(
 					"parse wal name failed",
-					zap.String("name", name),
+					zap.String("name", n),
 					zap.Error(err),
 				)
 				return
 			}
 			shard, err := metadata.GetShard(i, s)
 			if shard == nil || err != nil {
-				logger.Error("get shard failed", zap.String("name", name), zap.Error(err))
+				logger.Error("get shard failed", zap.String("name", n), zap.Error(err))
 				return
 			}
-			err = ConsumeWAL(shard, wal.Object.(log.WalLog))
+			err = ConsumeWAL(shard, w.Object.(log.WalLog))
 			if err != nil {
 				logger.Error(
 					"consume shard wal failed",
-					zap.String("name", name),
+					zap.String("name", n),
 					zap.Error(err),
 				)
 				return
