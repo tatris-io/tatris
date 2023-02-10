@@ -188,26 +188,26 @@ func (b *BlugeWriter) addFieldByMappingType(
 		case consts.NumericMappingType:
 			numericValue, ok := value.(float64)
 			if !ok {
-				return nil, &errs.InvalidValueError{Field: key, Type: t, Value: value}
+				return nil, &errs.InvalidFieldValError{Field: key, Type: t, Value: value}
 			}
 			bfield = bluge.NewNumericField(key, numericValue)
 		case consts.KeywordMappingType:
 			keywordValue, ok := value.(string)
 			if !ok {
-				return nil, &errs.InvalidValueError{Field: key, Type: t, Value: value}
+				return nil, &errs.InvalidFieldValError{Field: key, Type: t, Value: value}
 			}
 			bfield = bluge.NewKeywordField(key, keywordValue)
 			bfield.WithAnalyzer(generateAnalyzer("keyword"))
 		case consts.BoolMappingType:
 			boolValue, ok := value.(bool)
 			if !ok {
-				return nil, &errs.InvalidValueError{Field: key, Type: t, Value: value}
+				return nil, &errs.InvalidFieldValError{Field: key, Type: t, Value: value}
 			}
 			bfield = bluge.NewKeywordField(key, strconv.FormatBool(boolValue))
 		case consts.TextMappingType:
 			textValue, ok := value.(string)
 			if !ok {
-				return nil, &errs.InvalidValueError{Field: key, Type: t, Value: value}
+				return nil, &errs.InvalidFieldValError{Field: key, Type: t, Value: value}
 			}
 			bfield = bluge.NewTextField(key, textValue)
 			// TODO get analyzer from config
@@ -226,7 +226,7 @@ func (b *BlugeWriter) addFieldByMappingType(
 					return nil, err
 				}
 			default:
-				return nil, &errs.InvalidValueError{Field: key, Type: t, Value: value}
+				return nil, &errs.InvalidFieldValError{Field: key, Type: t, Value: value}
 			}
 
 			bfield = bluge.NewDateTimeField(key, date)

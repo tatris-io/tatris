@@ -54,13 +54,13 @@ func (e *InvalidFieldError) Error() string {
 	return fmt.Sprintf("field: %s, message: %s", e.Field, e.Message)
 }
 
-type InvalidValueError struct {
+type InvalidFieldValError struct {
 	Field string `json:"field"`
 	Type  string `json:"type"`
 	Value any    `json:"value"`
 }
 
-func (e *InvalidValueError) Error() string {
+func (e *InvalidFieldValError) Error() string {
 	return fmt.Sprintf("field: %s, type: %s, value: %v", e.Field, e.Type, e.Value)
 }
 

@@ -113,7 +113,7 @@ func getFieldType(
 		if validFieldType(property, value) {
 			return property.Type, nil
 		}
-		return "", &errs.InvalidValueError{Field: fieldName, Type: property.Type, Value: value}
+		return "", &errs.InvalidFieldValError{Field: fieldName, Type: property.Type, Value: value}
 	}
 	switch dynamic {
 	case consts.DynamicMappingMode:
@@ -121,7 +121,7 @@ func getFieldType(
 	case consts.IgnoreMappingMode:
 		return "", nil
 	case consts.StrictMappingMode:
-		return "", &errs.InvalidValueError{Field: fieldName, Type: "_strict", Value: value}
+		return "", &errs.InvalidFieldValError{Field: fieldName, Type: "_strict", Value: value}
 	default:
 		return "", &errs.UnsupportedError{Desc: "dynamic mode", Value: dynamic}
 	}
@@ -159,7 +159,7 @@ func getDynamicFieldType(field string, value interface{}) (string, error) {
 	case float32, float64:
 		return "double", nil
 	default:
-		return "", &errs.InvalidValueError{Field: field, Value: value}
+		return "", &errs.InvalidFieldValError{Field: field, Value: value}
 	}
 }
 
