@@ -45,12 +45,16 @@ func (shard *Shard) GetSegment(idx int) *Segment {
 	return shard.Segments[idx]
 }
 
+func (shard *Shard) GetLatestSegmentID() int {
+	return shard.GetSegmentNum() - 1
+}
+
 func (shard *Shard) GetLatestSegment() *Segment {
-	num := shard.GetSegmentNum()
-	if num == 0 {
+	SegmentID := shard.GetLatestSegmentID()
+	if SegmentID < 0 {
 		return nil
 	}
-	return shard.Segments[num-1]
+	return shard.Segments[SegmentID]
 }
 
 func (shard *Shard) CheckSegments() {

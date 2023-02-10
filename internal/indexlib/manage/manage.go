@@ -4,16 +4,14 @@
 package manage
 
 import (
-	"errors"
-	"log"
-
 	"github.com/tatris-io/tatris/internal/protocol"
 
+	"github.com/tatris-io/tatris/internal/common/errs"
+	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/indexlib/bluge"
+	"go.uber.org/zap"
 )
-
-var ErrIndexMustBeSet = errors.New("index must be set")
 
 // GetReader The Reader represents a stable snapshot of the index a point in time.
 // This means that changes made to the index after the reader is obtained never affect the results
@@ -24,27 +22,18 @@ func GetReader(
 	mappings *protocol.Mappings,
 	index ...string,
 ) (indexlib.Reader, error) {
-	if len(index) == 0 {
-		return nil, ErrIndexMustBeSet
-	}
-	for _, i := range index {
-		if i == "" {
-			return nil, errors.New("no index specified")
-		}
-	}
 	indexlib.SetDefaultConfig(config)
-
 	switch config.IndexLibType {
 	case indexlib.BlugeIndexLibType:
 		blugeReader := bluge.NewBlugeReader(config, mappings, index...)
 		err := blugeReader.OpenReader()
 		if err != nil {
-			log.Printf("bluge open reader error: %s", err)
+			logger.Error("bluge open reader failed", zap.Error(err))
 			return nil, err
 		}
 		return blugeReader, nil
 	default:
-		return nil, errors.New("index lib not support")
+		return nil, errs.ErrIndexLibNotSupport
 	}
 }
 
@@ -57,9 +46,6 @@ func GetWriter(
 	mappings *protocol.Mappings,
 	index string,
 ) (indexlib.Writer, error) {
-	if index == "" {
-		return nil, errors.New("no index specified")
-	}
 	baseConfig := indexlib.SetDefaultConfig(config)
 
 	switch baseConfig.IndexLibType {
@@ -67,11 +53,11 @@ func GetWriter(
 		blugeWriter := bluge.NewBlugeWriter(baseConfig, mappings, index)
 		err := blugeWriter.OpenWriter()
 		if err != nil {
-			log.Printf("bluge open writer error: %s", err)
+			logger.Error("bluge open writer failed", zap.Error(err))
 			return nil, err
 		}
 		return blugeWriter, nil
 	default:
-		return nil, errors.New("index lib not support")
+		return nil, errs.ErrIndexLibNotSupport
 	}
 }

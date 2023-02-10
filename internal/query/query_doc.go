@@ -5,39 +5,29 @@ package query
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"strconv"
 	"time"
 
-	"github.com/tatris-io/tatris/internal/indexlib/manage"
+	"github.com/tatris-io/tatris/internal/core"
+
+	"github.com/tatris-io/tatris/internal/common/errs"
 
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/indexlib"
-	"github.com/tatris-io/tatris/internal/meta/metadata"
 	"github.com/tatris-io/tatris/internal/protocol"
 	"go.uber.org/zap"
 )
 
-func SearchDocs(request protocol.QueryRequest) (*protocol.QueryResponse, error) {
-	indexName := request.Index
-	index, err := metadata.GetIndex(indexName)
-	if err != nil {
-		return nil, err
-	}
-	if index == nil {
-		return nil, errors.New("index not found: " + indexName)
-	}
-
+func SearchDocs(index *core.Index, request protocol.QueryRequest) (*protocol.QueryResponse, error) {
 	start, end, err := timeRange(request.Query)
 	if err != nil {
 		return nil, err
 	}
 	reader, err := index.GetReaderByTime(start, end)
-	if reader == nil || err != nil {
-		// no match any index, returns an appropriate response
-		if err == manage.ErrIndexMustBeSet {
+	if err != nil {
+		// no match any segments, returns an appropriate response
+		if err == errs.ErrNoSegmentMatched {
 			return &protocol.QueryResponse{Hits: protocol.Hits{Hits: []protocol.Hit{}}}, nil
 		}
 		return nil, err
@@ -107,7 +97,7 @@ func timeRange(query protocol.Query) (int64, int64, error) {
 		logger.Warn("unsupported: extract timeRange from bool query", zap.String("role", "query"))
 	}
 	if start > end {
-		return start, end, fmt.Errorf("invalid time range: %d, %d", start, end)
+		return start, end, &errs.InvalidQueryError{Query: query, Message: "invalid time range"}
 	}
 	return start, end, nil
 }
@@ -203,7 +193,7 @@ func transformMatchAll() (indexlib.QueryRequest, error) {
 func transformMatch(query protocol.Query) (indexlib.QueryRequest, error) {
 	matches := query.Match
 	if len(matches) <= 0 {
-		return nil, errors.New("invalid match query")
+		return nil, &errs.InvalidQueryError{Query: query, Message: "invalid match"}
 	}
 	matchQ := indexlib.NewMatchQuery()
 	for k, v := range matches {
@@ -233,7 +223,7 @@ func transformMatch(query protocol.Query) (indexlib.QueryRequest, error) {
 func transformMatchPhrase(query protocol.Query) (indexlib.QueryRequest, error) {
 	matches := query.MatchPhrase
 	if len(matches) <= 0 {
-		return nil, errors.New("invalid match phrase query")
+		return nil, &errs.InvalidQueryError{Query: query, Message: "invalid match_phrase"}
 	}
 	matchQ := indexlib.NewMatchPhraseQuery()
 	for k, v := range matches {
@@ -257,7 +247,7 @@ func transformMatchPhrase(query protocol.Query) (indexlib.QueryRequest, error) {
 func transformQueryString(query protocol.Query) (indexlib.QueryRequest, error) {
 	querys := query.QueryString
 	if len(querys) <= 0 {
-		return nil, errors.New("invalid query string query")
+		return nil, &errs.InvalidQueryError{Query: query, Message: "invalid query_string"}
 	}
 	queryStr := indexlib.NewQueryString()
 	queryStr.Query = querys["query"].(string)
@@ -311,7 +301,7 @@ func transformTerms(query protocol.Query) (indexlib.QueryRequest, error) {
 			case string:
 				values = append(values, vv)
 			default:
-				return nil, errors.New("unsupported terms value type")
+				return nil, &errs.UnsupportedError{Desc: "term", Value: vv}
 			}
 		}
 		termsQ.Terms[field] = &indexlib.Terms{
@@ -349,7 +339,7 @@ func transformBool(query protocol.Query) (indexlib.QueryRequest, error) {
 		for _, must := range query.Bool.Must {
 			queryRequest, err := transform(*must)
 			if err != nil {
-				return nil, errors.New("bool query must transform error")
+				return nil, err
 			}
 			q.Musts = append(q.Musts, queryRequest)
 		}
@@ -359,7 +349,7 @@ func transformBool(query protocol.Query) (indexlib.QueryRequest, error) {
 		for _, mustNot := range query.Bool.MustNot {
 			queryRequest, err := transform(*mustNot)
 			if err != nil {
-				return nil, errors.New("bool query mustNot transform error")
+				return nil, err
 			}
 			q.MustNots = append(q.MustNots, queryRequest)
 		}
@@ -369,7 +359,7 @@ func transformBool(query protocol.Query) (indexlib.QueryRequest, error) {
 		for _, should := range query.Bool.Should {
 			queryRequest, err := transform(*should)
 			if err != nil {
-				return nil, errors.New("bool query should transform error")
+				return nil, err
 			}
 			q.Shoulds = append(q.Shoulds, queryRequest)
 		}
@@ -379,7 +369,7 @@ func transformBool(query protocol.Query) (indexlib.QueryRequest, error) {
 		for _, filter := range query.Bool.Filter {
 			queryRequest, err := transform(*filter)
 			if err != nil {
-				return nil, errors.New("bool query filter transform error")
+				return nil, err
 			}
 			q.Filters = append(q.Filters, queryRequest)
 		}
@@ -387,7 +377,7 @@ func transformBool(query protocol.Query) (indexlib.QueryRequest, error) {
 	if query.Bool.MinimumShouldMatch != "" {
 		minShould, err := strconv.Atoi(query.Bool.MinimumShouldMatch)
 		if err != nil {
-			return nil, errors.New("bool query minimumShouldMatch transform error")
+			return nil, err
 		}
 		q.MinShould = minShould
 	}

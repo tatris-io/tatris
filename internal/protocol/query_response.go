@@ -30,9 +30,9 @@ type Total struct {
 }
 
 type Hit struct {
-	Index  string                 `json:"_index"`
-	ID     string                 `json:"_id"`
-	Source map[string]interface{} `json:"_source"`
+	Index  string   `json:"_index"`
+	ID     string   `json:"_id"`
+	Source Document `json:"_source"`
 }
 
 type AggsResponse struct {

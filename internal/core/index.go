@@ -4,8 +4,7 @@
 package core
 
 import (
-	"errors"
-	"fmt"
+	"github.com/tatris-io/tatris/internal/common/errs"
 
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
@@ -49,13 +48,11 @@ func (index *Index) GetShardByRouting() *Shard {
 }
 
 func (index *Index) GetReaderByTime(start, end int64) (indexlib.Reader, error) {
-	splits := make([]string, 0)
-	indexes := make([]string, 0)
+	segments := make([]string, 0)
 	for _, shard := range index.Shards {
 		for _, segment := range shard.Segments {
 			if segment.MatchTime(start, end) {
-				indexes = append(indexes, segment.GetName())
-				splits = append(splits, fmt.Sprintf("%d/%d", shard.ShardID, segment.SegmentID))
+				segments = append(segments, segment.GetName())
 			}
 		}
 	}
@@ -64,18 +61,21 @@ func (index *Index) GetReaderByTime(start, end int64) (indexlib.Reader, error) {
 		zap.String("index", index.Name),
 		zap.Int64("start", start),
 		zap.Int64("end", end),
-		zap.Int("size", len(indexes)),
-		zap.Any("splits", splits),
+		zap.Int("size", len(segments)),
+		zap.Any("segments", segments),
 	)
+	if len(segments) == 0 {
+		return nil, errs.ErrNoSegmentMatched
+	}
 	config := &indexlib.BaseConfig{
 		DataPath: consts.DefaultDataPath,
 	}
-	return manage.GetReader(config, index.Mappings, indexes...)
+	return manage.GetReader(config, index.Mappings, segments...)
 }
 
-func (index *Index) CheckMapping(docID string, doc map[string]interface{}) error {
+func (index *Index) CheckMapping(doc protocol.Document) error {
 	if index.Index == nil || index.Mappings == nil || index.Mappings.Properties == nil {
-		return fmt.Errorf("doc %s mapping can not be nil", docID)
+		return errs.ErrEmptyMappings
 	}
 
 	properties := index.Mappings.Properties
@@ -87,13 +87,7 @@ func (index *Index) CheckMapping(docID string, doc map[string]interface{}) error
 		// make sure field type, explicit type or dynamic type
 		fieldType, err := getFieldType(fieldDynamic, properties, k, v)
 		if err != nil {
-			return fmt.Errorf(
-				"doc %s fail to make sure field type of %s, field dynamic: %s, for %s",
-				docID,
-				k,
-				fieldDynamic,
-				err.Error(),
-			)
+			return err
 		}
 
 		if _, ok := properties[k]; !ok && strings.EqualFold(dynamic, consts.DynamicMappingMode) {
@@ -119,21 +113,17 @@ func getFieldType(
 		if validFieldType(property, value) {
 			return property.Type, nil
 		}
-		return "", fmt.Errorf(
-			"inconsistent field type of %s, expected type %s",
-			fieldName,
-			property.Type,
-		)
+		return "", &errs.InvalidFieldValError{Field: fieldName, Type: property.Type, Value: value}
 	}
 	switch dynamic {
 	case consts.DynamicMappingMode:
-		return getDynamicFieldType(value)
+		return getDynamicFieldType(fieldName, value)
 	case consts.IgnoreMappingMode:
 		return "", nil
 	case consts.StrictMappingMode:
-		return "", errors.New("unknown field type for strict mode")
+		return "", &errs.InvalidFieldValError{Field: fieldName, Type: "_strict", Value: value}
 	default:
-		return "", fmt.Errorf("unknown dynamic %s mode", dynamic)
+		return "", &errs.UnsupportedError{Desc: "dynamic mode", Value: dynamic}
 	}
 }
 
@@ -155,7 +145,7 @@ func validFieldType(property protocol.Property, value interface{}) bool {
 	}
 }
 
-func getDynamicFieldType(value interface{}) (string, error) {
+func getDynamicFieldType(field string, value interface{}) (string, error) {
 	switch v := value.(type) {
 	case string:
 		if utils.IsDateType(v) {
@@ -169,7 +159,7 @@ func getDynamicFieldType(value interface{}) (string, error) {
 	case float32, float64:
 		return "double", nil
 	default:
-		return "", fmt.Errorf("unknown field type of %s", v)
+		return "", &errs.InvalidFieldValError{Field: field, Value: value}
 	}
 }
 

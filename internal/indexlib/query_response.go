@@ -2,7 +2,11 @@
 
 package indexlib
 
-import "time"
+import (
+	"time"
+
+	"github.com/tatris-io/tatris/internal/protocol"
+)
 
 type QueryResponse struct {
 	Took         int64                   `json:"took"`
@@ -21,10 +25,10 @@ type Total struct {
 }
 
 type Hit struct {
-	Index     string                 `json:"_index"`
-	ID        string                 `json:"_id"`
-	Source    map[string]interface{} `json:"_source"`
-	Timestamp time.Time              `json:"_timestamp"`
+	Index     string            `json:"_index"`
+	ID        string            `json:"_id"`
+	Source    protocol.Document `json:"_source"`
+	Timestamp time.Time         `json:"_timestamp"`
 }
 
 type AggsResponse struct {

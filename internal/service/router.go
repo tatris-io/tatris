@@ -5,13 +5,12 @@ package service
 import (
 	"fmt"
 
+	"github.com/tatris-io/tatris/internal/service/handler"
+
 	"go.uber.org/zap"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
-	handler1 "github.com/tatris-io/tatris/internal/ingestion/handler"
-	handler2 "github.com/tatris-io/tatris/internal/meta/handler"
-	handler3 "github.com/tatris-io/tatris/internal/query/handler"
 )
 
 func StartHTTPServer(roles ...string) {
@@ -64,18 +63,18 @@ func StartHTTPServer(roles ...string) {
 
 func registerIngestion(group *gin.RouterGroup) {
 	logger.Info("ingestion APIs registering")
-	group.PUT("/:index/_ingest", handler1.IngestHandler)
+	group.PUT("/:index/_ingest", handler.IngestHandler)
 }
 
 func registerQuery(group *gin.RouterGroup) {
 	logger.Info("query APIs registering")
-	group.POST("/:index/_search", handler3.QueryHandler)
+	group.POST("/:index/_search", handler.QueryHandler)
 }
 
 func registerMeta(group *gin.RouterGroup) {
 	logger.Info("meta APIs registering")
-	group.PUT("/:index", handler2.CreateIndexHandler)
-	group.GET("/:index", handler2.GetIndexHandler)
-	group.DELETE("/:index", handler2.DeleteIndexHandler)
-	group.HEAD("/:index", handler2.IndexExistHandler)
+	group.PUT("/:index", handler.CreateIndexHandler)
+	group.GET("/:index", handler.GetIndexHandler)
+	group.DELETE("/:index", handler.DeleteIndexHandler)
+	group.HEAD("/:index", handler.IndexExistHandler)
 }

@@ -3,18 +3,17 @@
 package bluge
 
 import (
-	"fmt"
 	"math"
 	"strconv"
 
 	"github.com/blugelabs/bluge"
-	"github.com/tatris-io/tatris/internal/common/errors"
+	"github.com/tatris-io/tatris/internal/common/errs"
 	"github.com/tatris-io/tatris/internal/indexlib"
 )
 
 func RangeQueryParse(rangeQuery *indexlib.RangeQuery) (bluge.Query, error) {
 	if len(rangeQuery.Range) <= 0 {
-		return nil, &errors.Error{Type: "parse_exception", Reason: "rangeQuery can not be empty"}
+		return nil, &errs.InvalidQueryError{Query: rangeQuery, Message: "invalid range"}
 	}
 	//numeric parse
 	field := ""
@@ -60,6 +59,6 @@ func toFloat64(v interface{}) (float64, error) {
 		}
 		return 0, nil
 	default:
-		return 0, fmt.Errorf("ToFloat64: unknown supported type %T", v)
+		return 0, &errs.UnsupportedError{Desc: "range type", Value: v}
 	}
 }

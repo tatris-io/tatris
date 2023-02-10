@@ -4,24 +4,17 @@
 package ingestion
 
 import (
-	"errors"
-	"fmt"
+	"github.com/tatris-io/tatris/internal/common/errs"
+	"github.com/tatris-io/tatris/internal/core"
+	"github.com/tatris-io/tatris/internal/protocol"
 
 	"github.com/tatris-io/tatris/internal/core/wal"
-	"github.com/tatris-io/tatris/internal/meta/metadata"
 )
 
-func IngestDocs(indexName string, docs []map[string]interface{}) error {
-	index, err := metadata.GetIndex(indexName)
-	if err != nil {
-		return err
-	}
-	if index == nil {
-		return errors.New("index not found: " + indexName)
-	}
+func IngestDocs(index *core.Index, docs []protocol.Document) error {
 	shard := index.GetShardByRouting()
 	if shard == nil {
-		return fmt.Errorf("shard not found, index=%s", indexName)
+		return &errs.NoShardError{Index: index.Name}
 	}
 	return wal.ProduceWAL(shard, docs)
 }

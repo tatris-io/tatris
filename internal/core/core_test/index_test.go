@@ -3,7 +3,6 @@
 package core_test
 
 import (
-	"fmt"
 	"math"
 	"strings"
 	"testing"
@@ -48,7 +47,7 @@ func TestIndex(t *testing.T) {
 		)
 
 		resp, err := query.SearchDocs(
-			protocol.QueryRequest{
+			index, protocol.QueryRequest{
 				Index: index.Name,
 				Query: protocol.Query{Term: protocol.Term{"name": "elasticsearch"}},
 				Size:  20,
@@ -62,12 +61,12 @@ func TestIndex(t *testing.T) {
 func TestMapping(t *testing.T) {
 	tests := []struct {
 		name  string
-		docs  []map[string]interface{}
+		docs  []protocol.Document
 		index *core.Index
 	}{
 		{
 			name: "invalid_empty_index",
-			docs: []map[string]interface{}{
+			docs: []protocol.Document{
 				{
 					"string_key": "string_value",
 					"date_key":   "2023-01-28 12:42:00",
@@ -77,7 +76,7 @@ func TestMapping(t *testing.T) {
 		},
 		{
 			name: "invalid_dynamic_mapping",
-			docs: []map[string]interface{}{
+			docs: []protocol.Document{
 				{
 					"string_key": "string_value",
 					"date_key":   "2023-01-28 12:42:00",
@@ -100,7 +99,7 @@ func TestMapping(t *testing.T) {
 		},
 		{
 			name: "valid_explicit_mapping",
-			docs: []map[string]interface{}{
+			docs: []protocol.Document{
 				{
 					"string_key": "string_value",
 					"date_key":   "2023-01-28 12:42:00",
@@ -120,7 +119,7 @@ func TestMapping(t *testing.T) {
 		},
 		{
 			name: "valid_explicit_mapping",
-			docs: []map[string]interface{}{
+			docs: []protocol.Document{
 				{
 					"string_key": "string_value",
 					"date_key":   "2023-01-28 12:42:00",
@@ -144,7 +143,7 @@ func TestMapping(t *testing.T) {
 		},
 		{
 			name: "invalid_explicit_mapping",
-			docs: []map[string]interface{}{
+			docs: []protocol.Document{
 				{
 					"string_key": "string_value",
 					"date_key":   "2023-01-28 12:42:00",
@@ -168,7 +167,7 @@ func TestMapping(t *testing.T) {
 		},
 		{
 			name: "invalid_explicit_mapping",
-			docs: []map[string]interface{}{
+			docs: []protocol.Document{
 				{
 					"string_key": "string_value",
 					"date_key":   "2023-01-28 12:42:00",
@@ -192,7 +191,7 @@ func TestMapping(t *testing.T) {
 		},
 		{
 			name: "valid_dynamic_numeric_mapping",
-			docs: []map[string]interface{}{
+			docs: []protocol.Document{
 				{
 					"long_key":    111111111111111,
 					"integer_key": 1,
@@ -211,7 +210,7 @@ func TestMapping(t *testing.T) {
 		},
 		{
 			name: "valid_explicit_numeric_mapping",
-			docs: []map[string]interface{}{
+			docs: []protocol.Document{
 				{
 					"long_key":    111111111111111,
 					"integer_key": 1,
@@ -238,7 +237,7 @@ func TestMapping(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			for i, doc := range tt.docs {
-				testErr := tt.index.CheckMapping(fmt.Sprintf("testId_%d", i), doc)
+				testErr := tt.index.CheckMapping(doc)
 				if strings.HasPrefix(tt.name, "valid_") {
 					assert.NoError(t, testErr)
 					if strings.HasPrefix(tt.name, "valid_dynamic_numeric") {

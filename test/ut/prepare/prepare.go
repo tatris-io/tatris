@@ -12,6 +12,8 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/tatris-io/tatris/internal/protocol"
+
 	"go.uber.org/zap"
 
 	"github.com/tatris-io/tatris/internal/common/log/logger"
@@ -58,7 +60,7 @@ func CreateIndex(version string) (*core.Index, error) {
 	return index, nil
 }
 
-func GetDocs() ([]map[string]interface{}, error) {
+func GetDocs() ([]protocol.Document, error) {
 	_, filename, _, _ := runtime.Caller(0)
 	docsFilePath := path.Join(path.Dir(path.Dir(filename)), "resources/docs.json")
 	jsonFile, err := os.Open(docsFilePath)
@@ -71,7 +73,7 @@ func GetDocs() ([]map[string]interface{}, error) {
 		logger.Error("read json file failed", zap.String("msg", err.Error()))
 		return nil, err
 	}
-	docs := make([]map[string]interface{}, 0)
+	docs := make([]protocol.Document, 0)
 	err = json.Unmarshal(jsonData, &docs)
 	if err != nil {
 		logger.Error("parse json failed", zap.String("msg", err.Error()))
@@ -80,7 +82,7 @@ func GetDocs() ([]map[string]interface{}, error) {
 	return docs, nil
 }
 
-func CreateIndexAndDocs(version string) (*core.Index, []map[string]interface{}, error) {
+func CreateIndexAndDocs(version string) (*core.Index, []protocol.Document, error) {
 	index, err := CreateIndex(version)
 	if err != nil {
 		return nil, nil, err
@@ -89,17 +91,17 @@ func CreateIndexAndDocs(version string) (*core.Index, []map[string]interface{}, 
 	if err != nil {
 		return nil, nil, err
 	}
-	batchDocs := make([]map[string]interface{}, 0)
+	batchDocs := make([]protocol.Document, 0)
 	for _, doc := range docs {
 		batchDocs = append(batchDocs, doc)
 		if len(batchDocs) == 10 {
-			err = ingestion.IngestDocs(index.Name, batchDocs)
+			err = ingestion.IngestDocs(index, batchDocs)
 			if err != nil {
 				logger.Error("ingest docs failed", zap.String("msg", err.Error()))
 				return index, nil, err
 			}
 			logger.Info("ingest docs", zap.Int("size", len(batchDocs)))
-			batchDocs = make([]map[string]interface{}, 0)
+			batchDocs = make([]protocol.Document, 0)
 		}
 	}
 
