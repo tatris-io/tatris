@@ -5,7 +5,6 @@ package metadata
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/tatris-io/tatris/internal/common/errs"
@@ -177,7 +176,7 @@ func checkType(paramType string) error {
 	if _, ok := consts.MappingTypes[strings.ToLower(paramType)]; ok {
 		return nil
 	}
-	return fmt.Errorf("the type %s is not supported", paramType)
+	return &errs.UnsupportedError{Desc: "field type", Value: paramType}
 }
 
 func fillKey(name string) string {

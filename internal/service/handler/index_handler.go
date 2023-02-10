@@ -46,56 +46,53 @@ func CreateIndexHandler(c *gin.Context) {
 
 func GetIndexHandler(c *gin.Context) {
 	name := c.Param("index")
-	if index, err := metadata.GetIndex(name); err != nil {
-		var notFoundErr *errs.IndexNotFoundError
-		if errors.As(err, &notFoundErr) {
-			c.JSON(
-				http.StatusNotFound,
-				protocol.Response{Code: http.StatusNotFound, Err: err},
-			)
-		} else {
-			c.JSON(http.StatusInternalServerError, protocol.Response{Code: http.StatusInternalServerError, Err: err, Message: "index get failed"})
-		}
-	} else {
+	if exist, index := CheckIndexExistence(name, c); exist {
 		c.JSON(http.StatusOK, index)
 	}
 }
 
 func IndexExistHandler(c *gin.Context) {
 	name := c.Param("index")
-	if _, err := metadata.GetIndex(name); err != nil {
-		var notFoundErr *errs.IndexNotFoundError
-		if errors.As(err, &notFoundErr) {
-			c.JSON(
-				http.StatusNotFound,
-				protocol.Response{Code: http.StatusNotFound, Err: err},
-			)
-		} else {
-			c.JSON(http.StatusInternalServerError, protocol.Response{Code: http.StatusInternalServerError, Err: err, Message: "index get failed"})
-		}
-	} else {
+	if exist, _ := CheckIndexExistence(name, c); exist {
 		c.JSON(http.StatusOK, nil)
 	}
 }
 
 func DeleteIndexHandler(c *gin.Context) {
 	name := c.Param("index")
-	if _, err := metadata.GetIndex(name); err != nil {
-		var notFoundErr *errs.IndexNotFoundError
-		if errors.As(err, &notFoundErr) {
+	if exist, index := CheckIndexExistence(name, c); exist {
+		if err := metadata.DeleteIndex(name); err != nil {
 			c.JSON(
-				http.StatusNotFound,
-				protocol.Response{Code: http.StatusNotFound, Err: err},
+				http.StatusInternalServerError,
+				protocol.Response{
+					Code:    http.StatusInternalServerError,
+					Err:     err,
+					Message: "index delete failed",
+				},
 			)
 		} else {
-			c.JSON(http.StatusInternalServerError, protocol.Response{Code: http.StatusInternalServerError, Err: err, Message: "index get failed"})
-		}
-	} else {
-		if err := metadata.DeleteIndex(name); err != nil {
-			c.JSON(http.StatusInternalServerError, protocol.Response{Code: http.StatusInternalServerError, Err: err, Message: "index delete failed"})
-		} else {
-			c.JSON(http.StatusOK, nil)
+			c.JSON(http.StatusOK, index)
 		}
 	}
+}
 
+// CheckIndexExistence encapsulates common code snippets for checking index existence
+// returns true if the index exists
+// otherwise returns false and outputs an error message to the HTTP body
+func CheckIndexExistence(name string, c *gin.Context) (bool, *core.Index) {
+	var index *core.Index
+	var err error
+	if index, err = metadata.GetIndex(name); index != nil && err == nil {
+		return true, index
+	}
+	var notFoundErr *errs.IndexNotFoundError
+	if errors.As(err, &notFoundErr) {
+		c.JSON(
+			http.StatusNotFound,
+			protocol.Response{Code: http.StatusNotFound, Err: err},
+		)
+	} else {
+		c.JSON(http.StatusInternalServerError, protocol.Response{Code: http.StatusInternalServerError, Err: err, Message: "index get failed"})
+	}
+	return false, nil
 }

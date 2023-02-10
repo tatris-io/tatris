@@ -5,30 +5,21 @@ package query
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"time"
+
+	"github.com/tatris-io/tatris/internal/core"
 
 	"github.com/tatris-io/tatris/internal/common/errs"
 
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/indexlib"
-	"github.com/tatris-io/tatris/internal/meta/metadata"
 	"github.com/tatris-io/tatris/internal/protocol"
 	"go.uber.org/zap"
 )
 
-func SearchDocs(request protocol.QueryRequest) (*protocol.QueryResponse, error) {
-	indexName := request.Index
-	index, err := metadata.GetIndex(indexName)
-	if err != nil {
-		return nil, err
-	}
-	if index == nil {
-		return nil, &errs.IndexNotFoundError{Index: indexName}
-	}
-
+func SearchDocs(index *core.Index, request protocol.QueryRequest) (*protocol.QueryResponse, error) {
 	start, end, err := timeRange(request.Query)
 	if err != nil {
 		return nil, err
@@ -106,7 +97,7 @@ func timeRange(query protocol.Query) (int64, int64, error) {
 		logger.Warn("unsupported: extract timeRange from bool query", zap.String("role", "query"))
 	}
 	if start > end {
-		return start, end, fmt.Errorf("invalid time range: %d, %d", start, end)
+		return start, end, &errs.InvalidQueryError{Query: query, Message: "invalid time range"}
 	}
 	return start, end, nil
 }

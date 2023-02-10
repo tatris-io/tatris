@@ -4,8 +4,6 @@
 package core
 
 import (
-	"fmt"
-
 	"github.com/tatris-io/tatris/internal/common/errs"
 
 	"github.com/tatris-io/tatris/internal/common/consts"
@@ -75,9 +73,9 @@ func (index *Index) GetReaderByTime(start, end int64) (indexlib.Reader, error) {
 	return manage.GetReader(config, index.Mappings, segments...)
 }
 
-func (index *Index) CheckMapping(docID string, doc protocol.Document) error {
+func (index *Index) CheckMapping(doc protocol.Document) error {
 	if index.Index == nil || index.Mappings == nil || index.Mappings.Properties == nil {
-		return fmt.Errorf("doc %s mapping can not be nil", docID)
+		return errs.ErrEmptyMappings
 	}
 
 	properties := index.Mappings.Properties
@@ -89,13 +87,7 @@ func (index *Index) CheckMapping(docID string, doc protocol.Document) error {
 		// make sure field type, explicit type or dynamic type
 		fieldType, err := getFieldType(fieldDynamic, properties, k, v)
 		if err != nil {
-			return fmt.Errorf(
-				"doc %s fail to make sure field type of %s, field dynamic: %s, for %s",
-				docID,
-				k,
-				fieldDynamic,
-				err.Error(),
-			)
+			return err
 		}
 
 		if _, ok := properties[k]; !ok && strings.EqualFold(dynamic, consts.DynamicMappingMode) {
@@ -121,15 +113,15 @@ func getFieldType(
 		if validFieldType(property, value) {
 			return property.Type, nil
 		}
-		return "", &errs.InvalidValueError{Field: fieldName, Value: value}
+		return "", &errs.InvalidValueError{Field: fieldName, Type: property.Type, Value: value}
 	}
 	switch dynamic {
 	case consts.DynamicMappingMode:
-		return getDynamicFieldType(value)
+		return getDynamicFieldType(fieldName, value)
 	case consts.IgnoreMappingMode:
 		return "", nil
 	case consts.StrictMappingMode:
-		return "", &errs.InvalidValueError{Field: fieldName, Value: value}
+		return "", &errs.InvalidValueError{Field: fieldName, Type: "_strict", Value: value}
 	default:
 		return "", &errs.UnsupportedError{Desc: "dynamic mode", Value: dynamic}
 	}
@@ -153,7 +145,7 @@ func validFieldType(property protocol.Property, value interface{}) bool {
 	}
 }
 
-func getDynamicFieldType(value interface{}) (string, error) {
+func getDynamicFieldType(field string, value interface{}) (string, error) {
 	switch v := value.(type) {
 	case string:
 		if utils.IsDateType(v) {
@@ -167,7 +159,7 @@ func getDynamicFieldType(value interface{}) (string, error) {
 	case float32, float64:
 		return "double", nil
 	default:
-		return "", fmt.Errorf("unknown field type of %s", v)
+		return "", &errs.InvalidValueError{Field: field, Value: value}
 	}
 }
 

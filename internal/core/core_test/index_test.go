@@ -3,7 +3,6 @@
 package core_test
 
 import (
-	"fmt"
 	"math"
 	"strings"
 	"testing"
@@ -48,7 +47,7 @@ func TestIndex(t *testing.T) {
 		)
 
 		resp, err := query.SearchDocs(
-			protocol.QueryRequest{
+			index, protocol.QueryRequest{
 				Index: index.Name,
 				Query: protocol.Query{Term: protocol.Term{"name": "elasticsearch"}},
 				Size:  20,
@@ -238,7 +237,7 @@ func TestMapping(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			for i, doc := range tt.docs {
-				testErr := tt.index.CheckMapping(fmt.Sprintf("testId_%d", i), doc)
+				testErr := tt.index.CheckMapping(doc)
 				if strings.HasPrefix(tt.name, "valid_") {
 					assert.NoError(t, testErr)
 					if strings.HasPrefix(tt.name, "valid_dynamic_numeric") {

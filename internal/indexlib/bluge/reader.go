@@ -6,10 +6,11 @@ package bluge
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"strings"
 	"time"
+
+	"github.com/tatris-io/tatris/internal/common/errs"
 
 	"github.com/tatris-io/tatris/internal/protocol"
 
@@ -463,7 +464,7 @@ func (b *BlugeReader) generateAggsResponse(
 		case search.DurationCalculator:
 			aggsResponse[name] = indexlib.AggsResponse{Value: value.Duration().Milliseconds()}
 		default:
-			return aggsResponse, fmt.Errorf("bluge aggregation: %s calculator type: %s not support", name, value)
+			return aggsResponse, &errs.UnsupportedError{Desc: "aggregation calculator", Value: value}
 		}
 	}
 	return aggsResponse, nil

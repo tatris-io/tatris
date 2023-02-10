@@ -3,7 +3,6 @@
 package bluge
 
 import (
-	"fmt"
 	"math"
 	"strconv"
 
@@ -60,6 +59,6 @@ func toFloat64(v interface{}) (float64, error) {
 		}
 		return 0, nil
 	default:
-		return 0, fmt.Errorf("ToFloat64: unknown supported type %T", v)
+		return 0, &errs.UnsupportedError{Desc: "range type", Value: v}
 	}
 }

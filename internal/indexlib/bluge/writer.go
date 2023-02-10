@@ -4,10 +4,11 @@ package bluge
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"strconv"
 	"time"
+
+	"github.com/tatris-io/tatris/internal/common/errs"
 
 	"github.com/tatris-io/tatris/internal/protocol"
 
@@ -187,26 +188,26 @@ func (b *BlugeWriter) addFieldByMappingType(
 		case consts.NumericMappingType:
 			numericValue, ok := value.(float64)
 			if !ok {
-				return nil, fmt.Errorf("numeric value: %s is not numerical type", value)
+				return nil, &errs.InvalidValueError{Field: key, Type: t, Value: value}
 			}
 			bfield = bluge.NewNumericField(key, numericValue)
 		case consts.KeywordMappingType:
 			keywordValue, ok := value.(string)
 			if !ok {
-				return nil, fmt.Errorf("keyword value: %s is not string", value)
+				return nil, &errs.InvalidValueError{Field: key, Type: t, Value: value}
 			}
 			bfield = bluge.NewKeywordField(key, keywordValue)
 			bfield.WithAnalyzer(generateAnalyzer("keyword"))
 		case consts.BoolMappingType:
 			boolValue, ok := value.(bool)
 			if !ok {
-				return nil, fmt.Errorf("bool value: %s is not bool", value)
+				return nil, &errs.InvalidValueError{Field: key, Type: t, Value: value}
 			}
 			bfield = bluge.NewKeywordField(key, strconv.FormatBool(boolValue))
 		case consts.TextMappingType:
 			textValue, ok := value.(string)
 			if !ok {
-				return nil, fmt.Errorf("text value: %s is not string", value)
+				return nil, &errs.InvalidValueError{Field: key, Type: t, Value: value}
 			}
 			bfield = bluge.NewTextField(key, textValue)
 			// TODO get analyzer from config
@@ -225,7 +226,7 @@ func (b *BlugeWriter) addFieldByMappingType(
 					return nil, err
 				}
 			default:
-				return nil, fmt.Errorf("date value: %s is not string/float64/int64", value)
+				return nil, &errs.InvalidValueError{Field: key, Type: t, Value: value}
 			}
 
 			bfield = bluge.NewDateTimeField(key, date)

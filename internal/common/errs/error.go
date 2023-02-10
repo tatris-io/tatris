@@ -56,11 +56,12 @@ func (e *InvalidFieldError) Error() string {
 
 type InvalidValueError struct {
 	Field string `json:"field"`
+	Type  string `json:"type"`
 	Value any    `json:"value"`
 }
 
 func (e *InvalidValueError) Error() string {
-	return fmt.Sprintf("field: %s, value: %v", e.Field, e.Value)
+	return fmt.Sprintf("field: %s, type: %s, value: %v", e.Field, e.Type, e.Value)
 }
 
 type UnsupportedError struct {

@@ -95,7 +95,7 @@ func CreateIndexAndDocs(version string) (*core.Index, []protocol.Document, error
 	for _, doc := range docs {
 		batchDocs = append(batchDocs, doc)
 		if len(batchDocs) == 10 {
-			err = ingestion.IngestDocs(index.Name, batchDocs)
+			err = ingestion.IngestDocs(index, batchDocs)
 			if err != nil {
 				logger.Error("ingest docs failed", zap.String("msg", err.Error()))
 				return index, nil, err
