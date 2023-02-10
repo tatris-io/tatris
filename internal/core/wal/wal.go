@@ -200,7 +200,7 @@ func persistDocs(shard *core.Shard,
 		zap.Int("segment", segment.SegmentID),
 		zap.Int("size", len(docs)),
 	)
-	err = writer.Batch(docs, shard.Index.Mappings)
+	err = writer.Batch(docs)
 	if err != nil {
 		return err
 	}

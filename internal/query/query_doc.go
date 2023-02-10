@@ -7,9 +7,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/tatris-io/tatris/internal/indexlib/manage"
 	"strconv"
 	"time"
+
+	"github.com/tatris-io/tatris/internal/indexlib/manage"
 
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/common/log/logger"

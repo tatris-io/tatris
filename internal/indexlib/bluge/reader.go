@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tatris-io/tatris/internal/protocol"
+
 	cfg "github.com/tatris-io/tatris/internal/core/config"
 
 	"github.com/blugelabs/bluge/search/aggregations"
@@ -21,8 +23,6 @@ import (
 	"github.com/tatris-io/tatris/internal/common/utils"
 
 	"github.com/blugelabs/bluge"
-	"github.com/blugelabs/bluge/analysis"
-	"github.com/blugelabs/bluge/analysis/analyzer"
 	"github.com/blugelabs/bluge/search"
 	qs "github.com/blugelabs/query_string"
 	"github.com/tatris-io/tatris/internal/common/consts"
@@ -32,8 +32,9 @@ import (
 
 type BlugeReader struct {
 	*indexlib.BaseConfig
-	Indexes []string
-	Readers []*bluge.Reader
+	Mappings *protocol.Mappings
+	Indexes  []string
+	Readers  []*bluge.Reader
 }
 
 type BlugeSearchResult struct {
@@ -41,8 +42,17 @@ type BlugeSearchResult struct {
 	buckets []*search.Bucket
 }
 
-func NewBlugeReader(config *indexlib.BaseConfig, index ...string) *BlugeReader {
-	return &BlugeReader{BaseConfig: config, Indexes: index, Readers: make([]*bluge.Reader, 0)}
+func NewBlugeReader(
+	config *indexlib.BaseConfig,
+	mappings *protocol.Mappings,
+	index ...string,
+) *BlugeReader {
+	return &BlugeReader{
+		BaseConfig: config,
+		Mappings:   mappings,
+		Indexes:    index,
+		Readers:    make([]*bluge.Reader, 0),
+	}
 }
 
 func (b *BlugeReader) OpenReader() error {
@@ -296,7 +306,12 @@ func (b *BlugeReader) generateMatchQuery(query *indexlib.MatchQuery) (bluge.Quer
 			q.SetOperator(bluge.MatchQueryOperatorAnd)
 		}
 	}
-	analyzer := b.generateAnalyzer(query.Analyzer)
+	// The match query does not match when the bluge keyword field value contains uppercase letters
+	// Set KEYWORD analyzer
+	if b.Mappings.Properties[query.Field].Type == consts.KeywordMappingType {
+		query.Analyzer = "KEYWORD"
+	}
+	analyzer := generateAnalyzer(query.Analyzer)
 	if analyzer != nil {
 		q.SetAnalyzer(analyzer)
 	}
@@ -320,30 +335,12 @@ func (b *BlugeReader) generateMatchPhraseQuery(
 
 func (b *BlugeReader) generateQueryString(query *indexlib.QueryString) (bluge.Query, error) {
 	options := qs.DefaultOptions()
-	analyzer := b.generateAnalyzer(query.Analyzer)
+	analyzer := generateAnalyzer(query.Analyzer)
 	if analyzer != nil {
 		options.WithDefaultAnalyzer(analyzer)
 	}
 
 	return qs.ParseQueryString(query.Query, options)
-}
-
-func (b *BlugeReader) generateAnalyzer(analyzerStr string) *analysis.Analyzer {
-	if analyzerStr != "" {
-		switch strings.ToUpper(analyzerStr) {
-		case "KEYWORD":
-			return analyzer.NewKeywordAnalyzer()
-		case "SIMPLE":
-			return analyzer.NewSimpleAnalyzer()
-		case "STANDARD":
-			return analyzer.NewStandardAnalyzer()
-		case "WEB":
-			return analyzer.NewWebAnalyzer()
-		default:
-			return analyzer.NewStandardAnalyzer()
-		}
-	}
-	return nil
 }
 
 func (b *BlugeReader) generateBoolQuery(query *indexlib.BooleanQuery) (bluge.Query, error) {

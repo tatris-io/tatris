@@ -7,6 +7,8 @@ import (
 	"errors"
 	"log"
 
+	"github.com/tatris-io/tatris/internal/protocol"
+
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/indexlib/bluge"
 )
@@ -17,7 +19,11 @@ var ErrIndexMustBeSet = errors.New("index must be set")
 // This means that changes made to the index after the reader is obtained never affect the results
 // returned by this reader. This also means that this Reader is holding onto resources and MUST be
 // closed when it is no longer needed.
-func GetReader(config *indexlib.BaseConfig, index ...string) (indexlib.Reader, error) {
+func GetReader(
+	config *indexlib.BaseConfig,
+	mappings *protocol.Mappings,
+	index ...string,
+) (indexlib.Reader, error) {
 	if len(index) == 0 {
 		return nil, ErrIndexMustBeSet
 	}
@@ -30,7 +36,7 @@ func GetReader(config *indexlib.BaseConfig, index ...string) (indexlib.Reader, e
 
 	switch config.IndexLibType {
 	case indexlib.BlugeIndexLibType:
-		blugeReader := bluge.NewBlugeReader(config, index...)
+		blugeReader := bluge.NewBlugeReader(config, mappings, index...)
 		err := blugeReader.OpenReader()
 		if err != nil {
 			log.Printf("bluge open reader error: %s", err)
@@ -46,7 +52,11 @@ func GetReader(config *indexlib.BaseConfig, index ...string) (indexlib.Reader, e
 // processes from opening a writer while this one is still open. This does not affect Readers that
 // are already open, and it does not prevent new Readers from being opened,
 // but it does mean care care should be taken to close the Writer when you done.
-func GetWriter(config *indexlib.BaseConfig, index string) (indexlib.Writer, error) {
+func GetWriter(
+	config *indexlib.BaseConfig,
+	mappings *protocol.Mappings,
+	index string,
+) (indexlib.Writer, error) {
 	if index == "" {
 		return nil, errors.New("no index specified")
 	}
@@ -54,7 +64,7 @@ func GetWriter(config *indexlib.BaseConfig, index string) (indexlib.Writer, erro
 
 	switch baseConfig.IndexLibType {
 	case indexlib.BlugeIndexLibType:
-		blugeWriter := bluge.NewBlugeWriter(baseConfig, index)
+		blugeWriter := bluge.NewBlugeWriter(baseConfig, mappings, index)
 		err := blugeWriter.OpenWriter()
 		if err != nil {
 			log.Printf("bluge open writer error: %s", err)
