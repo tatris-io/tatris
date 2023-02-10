@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/tatris-io/tatris/internal/indexlib/manage"
 	"strconv"
 	"time"
 
@@ -24,6 +25,9 @@ func SearchDocs(request protocol.QueryRequest) (*protocol.QueryResponse, error) 
 	if err != nil {
 		return nil, err
 	}
+	if index == nil {
+		return nil, errors.New("index not found: " + indexName)
+	}
 
 	start, end, err := timeRange(request.Query)
 	if err != nil {
@@ -31,6 +35,10 @@ func SearchDocs(request protocol.QueryRequest) (*protocol.QueryResponse, error) 
 	}
 	reader, err := index.GetReaderByTime(start, end)
 	if reader == nil || err != nil {
+		// no match any index, returns an appropriate response
+		if err == manage.ErrIndexMustBeSet {
+			return &protocol.QueryResponse{Hits: protocol.Hits{Hits: []protocol.Hit{}}}, nil
+		}
 		return nil, err
 	}
 	defer reader.Close()

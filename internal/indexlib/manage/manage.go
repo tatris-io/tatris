@@ -11,13 +11,15 @@ import (
 	"github.com/tatris-io/tatris/internal/indexlib/bluge"
 )
 
+var ErrIndexMustBeSet = errors.New("index must be set")
+
 // GetReader The Reader represents a stable snapshot of the index a point in time.
 // This means that changes made to the index after the reader is obtained never affect the results
 // returned by this reader. This also means that this Reader is holding onto resources and MUST be
 // closed when it is no longer needed.
 func GetReader(config *indexlib.BaseConfig, index ...string) (indexlib.Reader, error) {
 	if len(index) == 0 {
-		return nil, errors.New("index must be set")
+		return nil, ErrIndexMustBeSet
 	}
 	for _, i := range index {
 		if i == "" {

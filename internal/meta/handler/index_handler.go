@@ -22,7 +22,8 @@ func CreateIndexHandler(c *gin.Context) {
 	} else {
 		index := protocol.Index{}
 		if err := c.ShouldBind(&index); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"msg": "invalid request"})
+			c.JSON(http.StatusBadRequest, gin.H{"msg": fmt.Sprintf("invalid request: %+v", err.Error())})
+			return
 		}
 		index.Name = indexName
 		if err := metadata.CreateIndex(&core.Index{Index: &index}); err != nil {

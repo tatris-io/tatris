@@ -4,6 +4,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -15,8 +16,10 @@ func QueryHandler(c *gin.Context) {
 	indexName := c.Param("index")
 	queryRequest := protocol.QueryRequest{Size: 10}
 	if err := c.ShouldBind(&queryRequest); err != nil {
-		c.String(http.StatusBadRequest, `invalid request`)
+		c.JSON(http.StatusBadRequest, gin.H{"msg": fmt.Sprintf("invalid request: %+v", err.Error())})
+		return
 	}
+
 	queryRequest.Index = indexName
 	resp, err := query.SearchDocs(queryRequest)
 	if err != nil {
