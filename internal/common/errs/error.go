@@ -74,10 +74,10 @@ func (e *UnsupportedError) Error() string {
 }
 
 type InvalidQueryError struct {
-	Query   any    `json:"query"`
 	Message string `json:"message"`
+	Query   any    `json:"query"`
 }
 
 func (e *InvalidQueryError) Error() string {
-	return fmt.Sprintf("query: %v, message: %s", e.Query, e.Message)
+	return fmt.Sprintf("message: %s, query: %v", e.Message, e.Query)
 }
