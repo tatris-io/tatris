@@ -14,7 +14,7 @@ import (
 func IngestDocs(index *core.Index, docs []protocol.Document) error {
 	shard := index.GetShardByRouting()
 	if shard == nil {
-		return &errs.ShardNotFoundError{Index: index.Name, Shard: -1}
+		return &errs.NoShardError{Index: index.Name}
 	}
 	return wal.ProduceWAL(shard, docs)
 }

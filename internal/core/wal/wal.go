@@ -190,10 +190,9 @@ func persistDocs(shard *core.Shard,
 	shard.CheckSegments()
 	segment := shard.GetLatestSegment()
 	if segment == nil {
-		return &errs.SegmentNotFoundError{
-			Index:   shard.Index.Name,
-			Shard:   shard.ShardID,
-			Segment: shard.GetLatestSegmentID(),
+		return &errs.NoSegmentError{
+			Index: shard.Index.Name,
+			Shard: shard.ShardID,
 		}
 	}
 	writer, err := segment.GetWriter()

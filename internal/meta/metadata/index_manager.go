@@ -61,7 +61,11 @@ func GetShard(indexName string, shardID int) (*core.Shard, error) {
 	if index == nil {
 		return nil, nil
 	}
-	return index.GetShard(shardID), nil
+	shard := index.GetShard(shardID)
+	if shard == nil {
+		return nil, &errs.ShardNotFoundError{Index: indexName, Shard: shardID}
+	}
+	return shard, nil
 }
 
 func GetIndex(indexName string) (*core.Index, error) {

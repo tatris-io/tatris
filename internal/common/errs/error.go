@@ -35,6 +35,14 @@ func (e *ShardNotFoundError) Error() string {
 	return fmt.Sprintf("index: %s, shard: %d", e.Index, e.Shard)
 }
 
+type NoShardError struct {
+	Index string `json:"index"`
+}
+
+func (e *NoShardError) Error() string {
+	return fmt.Sprintf("index: %s", e.Index)
+}
+
 type SegmentNotFoundError struct {
 	Index   string `json:"index"`
 	Shard   int    `json:"shard"`
@@ -43,6 +51,15 @@ type SegmentNotFoundError struct {
 
 func (e *SegmentNotFoundError) Error() string {
 	return fmt.Sprintf("index: %s, shard: %d, segment: %d", e.Index, e.Shard, e.Segment)
+}
+
+type NoSegmentError struct {
+	Index string `json:"index"`
+	Shard int    `json:"shard"`
+}
+
+func (e *NoSegmentError) Error() string {
+	return fmt.Sprintf("index: %s, shard: %d", e.Index, e.Shard)
 }
 
 type InvalidFieldError struct {
