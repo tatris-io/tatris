@@ -16,14 +16,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/test/ut/prepare"
 )
 
 func TestQueryHandler(t *testing.T) {
 
 	// prepare
-	index, _, err := prepare.CreateIndexAndDocs(time.Now().Format(consts.VersionTimeFmt))
+	index, _, err := prepare.CreateIndexAndDocs(time.Now().Format(time.RFC3339Nano))
 	if err != nil {
 		t.Fatalf("prepare index and docs fail: %s", err.Error())
 	}

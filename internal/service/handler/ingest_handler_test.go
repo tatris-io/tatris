@@ -14,13 +14,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/test/ut/prepare"
 )
 
 func TestIngestHandler(t *testing.T) {
 	// prepare
-	index, err := prepare.CreateIndex(time.Now().Format(consts.VersionTimeFmt))
+	index, err := prepare.CreateIndex(time.Now().Format(time.RFC3339Nano))
 	if err != nil {
 		t.Fatalf("prepare index fail: %s", err.Error())
 	}

@@ -22,7 +22,7 @@ func TestIndex(t *testing.T) {
 
 	// prepare
 	start := time.Now()
-	index, docs, err := prepare.CreateIndexAndDocs(start.Format(consts.VersionTimeFmt))
+	index, docs, err := prepare.CreateIndexAndDocs(start.Format(time.RFC3339Nano))
 	if err != nil {
 		t.Fatalf("prepare docs fail: %s", err.Error())
 	}
