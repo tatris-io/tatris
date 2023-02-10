@@ -11,11 +11,9 @@ import (
 var (
 	ErrUnsupportedFieldType = errors.New("unsupported field type")
 	ErrEmptyMappings        = errors.New("empty mappings")
-
-	ErrNoSegmentMatched   = errors.New("no segment matched")
-	ErrIndexLibNotSupport = errors.New("index lib not support")
-
-	ErrSpecifyDirAsFile = errors.New("specify directory as file")
+	ErrNoSegmentMatched     = errors.New("no segment matched")
+	ErrIndexLibNotSupport   = errors.New("index lib not support")
+	ErrSpecifyDirAsFile     = errors.New("specify directory as file")
 )
 
 type IndexNotFoundError struct {
