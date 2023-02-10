@@ -5,7 +5,7 @@ package service
 import (
 	"fmt"
 
-	handler1 "github.com/tatris-io/tatris/internal/service/handler"
+	"github.com/tatris-io/tatris/internal/service/handler"
 
 	"go.uber.org/zap"
 
@@ -63,18 +63,18 @@ func StartHTTPServer(roles ...string) {
 
 func registerIngestion(group *gin.RouterGroup) {
 	logger.Info("ingestion APIs registering")
-	group.PUT("/:index/_ingest", handler1.IngestHandler)
+	group.PUT("/:index/_ingest", handler.IngestHandler)
 }
 
 func registerQuery(group *gin.RouterGroup) {
 	logger.Info("query APIs registering")
-	group.POST("/:index/_search", handler1.QueryHandler)
+	group.POST("/:index/_search", handler.QueryHandler)
 }
 
 func registerMeta(group *gin.RouterGroup) {
 	logger.Info("meta APIs registering")
-	group.PUT("/:index", handler1.CreateIndexHandler)
-	group.GET("/:index", handler1.GetIndexHandler)
-	group.DELETE("/:index", handler1.DeleteIndexHandler)
-	group.HEAD("/:index", handler1.IndexExistHandler)
+	group.PUT("/:index", handler.CreateIndexHandler)
+	group.GET("/:index", handler.GetIndexHandler)
+	group.DELETE("/:index", handler.DeleteIndexHandler)
+	group.HEAD("/:index", handler.IndexExistHandler)
 }
