@@ -15,6 +15,11 @@ var (
 	ErrSpecifyDirAsFile   = errors.New("specify directory as file")
 )
 
+func IsIndexNotFound(err error) bool {
+	var notFoundErr *IndexNotFoundError
+	return err != nil && errors.As(err, &notFoundErr)
+}
+
 type IndexNotFoundError struct {
 	Index string `json:"index"`
 }

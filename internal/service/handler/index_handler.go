@@ -17,8 +17,7 @@ import (
 
 func CreateIndexHandler(c *gin.Context) {
 	name := c.Param("index")
-	var notFoundErr *errs.IndexNotFoundError
-	if exist, err := metadata.GetIndex(name); err != nil && !errors.As(err, &notFoundErr) {
+	if exist, err := metadata.GetIndex(name); err != nil && !errs.IsIndexNotFound(err) {
 		c.JSON(
 			http.StatusInternalServerError,
 			protocol.Response{
