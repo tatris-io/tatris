@@ -4,8 +4,10 @@
 package handler
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
+
+	"github.com/tatris-io/tatris/internal/common/errs"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tatris-io/tatris/internal/ingestion"
@@ -14,22 +16,25 @@ import (
 )
 
 func IngestHandler(c *gin.Context) {
-	indexName := c.Param("index")
-	if index, err := metadata.GetIndex(indexName); err != nil {
-		c.JSON(
-			http.StatusInternalServerError,
-			gin.H{"msg": "get index fail: " + indexName + ", " + err.Error()},
-		)
-	} else if index == nil {
-		c.JSON(http.StatusNotFound, gin.H{"msg": fmt.Sprintf("index not found: %s", indexName)})
+	name := c.Param("index")
+	if _, err := metadata.GetIndex(name); err != nil {
+		var notFoundErr *errs.IndexNotFoundError
+		if errors.As(err, &notFoundErr) {
+			c.JSON(
+				http.StatusNotFound,
+				protocol.Response{Code: http.StatusNotFound, Err: err},
+			)
+		} else {
+			c.JSON(http.StatusInternalServerError, protocol.Response{Code: http.StatusInternalServerError, Err: err, Message: "index get failed"})
+		}
 	} else {
 		ingestRequest := protocol.IngestRequest{}
 		if err := c.ShouldBind(&ingestRequest); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"msg": fmt.Sprintf("invalid request: %+v", err.Error())})
+			c.JSON(http.StatusBadRequest, protocol.Response{Code: http.StatusBadRequest, Err: err, Message: "invalid request"})
 			return
 		}
-		if err := ingestion.IngestDocs(indexName, ingestRequest.Documents); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"msg": err.Error()})
+		if err := ingestion.IngestDocs(name, ingestRequest.Documents); err != nil {
+			c.JSON(http.StatusInternalServerError, protocol.Response{Code: http.StatusInternalServerError, Err: err, Message: "ingest failed"})
 		} else {
 			c.JSON(http.StatusOK, nil)
 		}

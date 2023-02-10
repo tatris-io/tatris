@@ -61,7 +61,7 @@ func _initializeWithConf() {
 	if err := yaml.Unmarshal([]byte(logConfYAML), &logConfStruct); err != nil {
 		// here we can safely use logger API. Before we initialize loggers with the user's config,
 		// there is a default underlying console logger.
-		logger.Infof("unmarshal logger config errors: %v", err)
+		logger.Infof("unmarshal logger config errs: %v", err)
 	}
 	// validate all args
 	logConfStruct.Verify()

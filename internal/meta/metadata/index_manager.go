@@ -5,9 +5,10 @@ package metadata
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/tatris-io/tatris/internal/common/errs"
 
 	"github.com/patrickmn/go-cache"
 
@@ -75,7 +76,7 @@ func GetIndex(indexName string) (*core.Index, error) {
 	if b, err := metaStore.Get(fillKey(indexName)); err != nil {
 		return nil, err
 	} else if b == nil {
-		return nil, nil
+		return nil, &errs.IndexNotFoundError{Index: indexName}
 	} else {
 		index := &core.Index{}
 		if err := json.Unmarshal(b, index); err != nil {
@@ -117,7 +118,7 @@ func buildIndex(index *core.Index) {
 func checkParam(index *protocol.Index) error {
 	mappings := index.Mappings
 	if mappings == nil {
-		return errors.New("mappings can not be empty")
+		return errs.ErrEmptyMappings
 	}
 	err := checkMapping(mappings)
 	if err != nil {
@@ -136,7 +137,7 @@ func checkMapping(mappings *protocol.Mappings) error {
 		if dynamic {
 			mappings.Properties = make(map[string]protocol.Property, 0)
 		} else {
-			return fmt.Errorf("mappings.properties can not be empty for dynamic: %s", mappings.Dynamic)
+			return errs.ErrEmptyMappings
 		}
 	}
 	err := checkReservedField(*properties)
@@ -155,7 +156,7 @@ func checkMapping(mappings *protocol.Mappings) error {
 func checkReservedField(properties map[string]protocol.Property) error {
 	_, exist := properties[consts.IDField]
 	if exist {
-		return errors.New("_id is a built-in field")
+		return &errs.InvalidFieldError{Field: consts.IDField, Message: "build-it field"}
 	}
 	properties[consts.IDField] = protocol.Property{
 		Type:    consts.KeywordMappingType,
@@ -163,7 +164,7 @@ func checkReservedField(properties map[string]protocol.Property) error {
 	}
 	_, exist = properties[consts.TimestampField]
 	if exist {
-		return errors.New("_timestamp is a built-in field")
+		return &errs.InvalidFieldError{Field: consts.TimestampField, Message: "build-it field"}
 	}
 	properties[consts.TimestampField] = protocol.Property{
 		Type:    consts.DateMappingType,

@@ -62,12 +62,12 @@ func TestIndex(t *testing.T) {
 func TestMapping(t *testing.T) {
 	tests := []struct {
 		name  string
-		docs  []map[string]interface{}
+		docs  []protocol.Document
 		index *core.Index
 	}{
 		{
 			name: "invalid_empty_index",
-			docs: []map[string]interface{}{
+			docs: []protocol.Document{
 				{
 					"string_key": "string_value",
 					"date_key":   "2023-01-28 12:42:00",
@@ -77,7 +77,7 @@ func TestMapping(t *testing.T) {
 		},
 		{
 			name: "invalid_dynamic_mapping",
-			docs: []map[string]interface{}{
+			docs: []protocol.Document{
 				{
 					"string_key": "string_value",
 					"date_key":   "2023-01-28 12:42:00",
@@ -100,7 +100,7 @@ func TestMapping(t *testing.T) {
 		},
 		{
 			name: "valid_explicit_mapping",
-			docs: []map[string]interface{}{
+			docs: []protocol.Document{
 				{
 					"string_key": "string_value",
 					"date_key":   "2023-01-28 12:42:00",
@@ -120,7 +120,7 @@ func TestMapping(t *testing.T) {
 		},
 		{
 			name: "valid_explicit_mapping",
-			docs: []map[string]interface{}{
+			docs: []protocol.Document{
 				{
 					"string_key": "string_value",
 					"date_key":   "2023-01-28 12:42:00",
@@ -144,7 +144,7 @@ func TestMapping(t *testing.T) {
 		},
 		{
 			name: "invalid_explicit_mapping",
-			docs: []map[string]interface{}{
+			docs: []protocol.Document{
 				{
 					"string_key": "string_value",
 					"date_key":   "2023-01-28 12:42:00",
@@ -168,7 +168,7 @@ func TestMapping(t *testing.T) {
 		},
 		{
 			name: "invalid_explicit_mapping",
-			docs: []map[string]interface{}{
+			docs: []protocol.Document{
 				{
 					"string_key": "string_value",
 					"date_key":   "2023-01-28 12:42:00",
@@ -192,7 +192,7 @@ func TestMapping(t *testing.T) {
 		},
 		{
 			name: "valid_dynamic_numeric_mapping",
-			docs: []map[string]interface{}{
+			docs: []protocol.Document{
 				{
 					"long_key":    111111111111111,
 					"integer_key": 1,
@@ -211,7 +211,7 @@ func TestMapping(t *testing.T) {
 		},
 		{
 			name: "valid_explicit_numeric_mapping",
-			docs: []map[string]interface{}{
+			docs: []protocol.Document{
 				{
 					"long_key":    111111111111111,
 					"integer_key": 1,

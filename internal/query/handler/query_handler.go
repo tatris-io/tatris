@@ -4,8 +4,11 @@
 package handler
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
+
+	"github.com/tatris-io/tatris/internal/common/errs"
+	"github.com/tatris-io/tatris/internal/meta/metadata"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tatris-io/tatris/internal/protocol"
@@ -13,21 +16,26 @@ import (
 )
 
 func QueryHandler(c *gin.Context) {
-	indexName := c.Param("index")
-	queryRequest := protocol.QueryRequest{Size: 10}
-	if err := c.ShouldBind(&queryRequest); err != nil {
-		c.JSON(
-			http.StatusBadRequest,
-			gin.H{"msg": fmt.Sprintf("invalid request: %+v", err.Error())},
-		)
-		return
-	}
-
-	queryRequest.Index = indexName
-	resp, err := query.SearchDocs(queryRequest)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"msg": err.Error()})
+	name := c.Param("index")
+	if _, err := metadata.GetIndex(name); err != nil {
+		var notFoundErr *errs.IndexNotFoundError
+		if errors.As(err, &notFoundErr) {
+			c.JSON(http.StatusNotFound, protocol.Response{Code: http.StatusNotFound, Err: err})
+		} else {
+			c.JSON(http.StatusInternalServerError, protocol.Response{Code: http.StatusInternalServerError, Err: err, Message: "index get failed"})
+		}
 	} else {
-		c.JSON(http.StatusOK, resp)
+		queryRequest := protocol.QueryRequest{Index: name, Size: 10}
+		if err := c.ShouldBind(&queryRequest); err != nil {
+			c.JSON(http.StatusBadRequest, protocol.Response{Code: http.StatusBadRequest, Err: err, Message: "invalid request"})
+			return
+		}
+
+		resp, err := query.SearchDocs(queryRequest)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, protocol.Response{Code: http.StatusInternalServerError, Err: err, Message: "query failed"})
+		} else {
+			c.JSON(http.StatusOK, resp)
+		}
 	}
 }

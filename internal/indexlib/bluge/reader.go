@@ -225,7 +225,7 @@ func (b *BlugeReader) generateResponse(
 		for _, doc := range result.docs {
 			var id string
 			var index string
-			var source map[string]interface{}
+			var source protocol.Document
 			var timestamp time.Time
 
 			err := doc.VisitStoredFields(func(field string, value []byte) bool {

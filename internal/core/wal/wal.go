@@ -5,11 +5,14 @@ package wal
 
 import (
 	"encoding/json"
-	"errors"
 	"math"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/tatris-io/tatris/internal/protocol"
+
+	"github.com/tatris-io/tatris/internal/common/errs"
 
 	"github.com/sourcegraph/conc/pool"
 	"github.com/tatris-io/tatris/internal/core/config"
@@ -51,7 +54,7 @@ func OpenWAL(shard *core.Shard) (log.WalLog, error) {
 	return wal, nil
 }
 
-func ProduceWAL(shard *core.Shard, docs []map[string]interface{}) error {
+func ProduceWAL(shard *core.Shard, docs []protocol.Document) error {
 	name := shard.GetName()
 	defer utils.Timerf("produce wal finish, name:%s, size:%d", name, len(docs))()
 	w, found := wals.Get(name)
@@ -140,13 +143,13 @@ func ConsumeWAL(shard *core.Shard, wal log.WalLog) error {
 		zap.Uint64("from", from),
 		zap.Uint64("to", to),
 	)
-	docs := make([]map[string]interface{}, 0)
+	docs := make([]protocol.Document, 0)
 	for i := from; i <= to; i++ {
 		l, err := wal.Read(i)
 		if err != nil {
 			return err
 		}
-		var doc map[string]interface{}
+		var doc protocol.Document
 		err = json.Unmarshal(l, &doc)
 		if err != nil {
 			return err
@@ -183,11 +186,15 @@ func ConsumeWAL(shard *core.Shard, wal log.WalLog) error {
 }
 
 func persistDocs(shard *core.Shard,
-	docs map[string]map[string]interface{}, minTime, maxTime time.Time) error {
+	docs map[string]protocol.Document, minTime, maxTime time.Time) error {
 	shard.CheckSegments()
 	segment := shard.GetLatestSegment()
 	if segment == nil {
-		return errors.New("segment not found")
+		return &errs.SegmentNotFoundError{
+			Index:   shard.Index.Name,
+			Shard:   shard.ShardID,
+			Segment: shard.GetLatestSegmentID(),
+		}
 	}
 	writer, err := segment.GetWriter()
 	if err != nil {
@@ -210,9 +217,9 @@ func persistDocs(shard *core.Shard,
 
 func buildDocs(
 	index *core.Index,
-	docs []map[string]interface{},
-) (map[string]map[string]interface{}, time.Time, time.Time, error) {
-	idDocs := make(map[string]map[string]interface{})
+	docs []protocol.Document,
+) (map[string]protocol.Document, time.Time, time.Time, error) {
+	idDocs := make(map[string]protocol.Document)
 	minTime, maxTime := time.UnixMilli(math.MaxInt64), time.UnixMilli(0)
 	for _, doc := range docs {
 		docID := ""

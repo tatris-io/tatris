@@ -3,10 +3,11 @@
 package util
 
 import (
-	"errors"
 	"os"
 	"path"
 	"strings"
+
+	"github.com/tatris-io/tatris/internal/common/errs"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -115,7 +116,7 @@ func initLogFile(logRootPath string, cfg *FileConfig) (*lumberjack.Logger, error
 	fullPath := path.Join(logRootPath, cfg.FileName)
 	if st, err := os.Stat(cfg.FileName); err == nil {
 		if st.IsDir() {
-			return nil, errors.New("can't use directory as log file name")
+			return nil, errs.ErrSpecifyDirAsFile
 		}
 	}
 	return &lumberjack.Logger{

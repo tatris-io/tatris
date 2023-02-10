@@ -3,6 +3,6 @@
 package protocol
 
 type IngestRequest struct {
-	Index     string                   `json:"index"`
-	Documents []map[string]interface{} `json:"documents"`
+	Index     string     `json:"index"`
+	Documents []Document `json:"documents"`
 }
