@@ -58,7 +58,7 @@ func (cfg *Config) IsVerified() bool {
 func (cfg *Config) doVerify() {
 	finalRootPath, err := calcLogRootPath(cfg.RootPath)
 	if err != nil {
-		panic(fmt.Errorf("calculate root path errs, mostly because of getting pwd %v", err))
+		panic(fmt.Errorf("calculate root path errors, mostly because of getting pwd %v", err))
 	}
 	cfg.RootPath = finalRootPath
 	if err := (&cfg._level).UnmarshalText([]byte(cfg.Level)); err != nil {

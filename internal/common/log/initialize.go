@@ -41,7 +41,7 @@ func _initLoggers(cfg *util.Config) {
 		encoder := util.NewTextEncoderByConfig(cfg)
 		core, err := util.CreateFileCore(cfg.RootPath, fileConf, cfg.GetLevel(), encoder)
 		if err != nil {
-			fmt.Printf("init log file errs, file-name: %s, error: %v", fileConf.FileName, err)
+			fmt.Printf("init log file errors, file-name: %s, error: %v", fileConf.FileName, err)
 			continue
 		}
 		coreSlice = append(coreSlice, core)
