@@ -31,7 +31,7 @@ func TestIndexLib(t *testing.T) {
 
 	// test
 	t.Run("test_write", func(t *testing.T) {
-		if writer, err := manage.GetWriter(&indexlib.BaseConfig{}, path.Join(consts.DefaultDataPath, index.Name)); err != nil {
+		if writer, err := manage.GetWriter(&indexlib.BaseConfig{}, index.Mappings, path.Join(consts.DefaultDataPath, index.Name)); err != nil {
 			t.Fatalf("get writer error: %s", err.Error())
 		} else {
 			defer writer.Close()
@@ -44,7 +44,7 @@ func TestIndexLib(t *testing.T) {
 					}
 					doc[consts.IDField] = docID
 				}
-				err = writer.Insert(ID, doc, index.Mappings)
+				err = writer.Insert(ID, doc)
 				if err != nil {
 					t.Fatalf("write fail: %s", err.Error())
 				}
@@ -56,6 +56,7 @@ func TestIndexLib(t *testing.T) {
 	t.Run("test_read", func(t *testing.T) {
 		reader, err := manage.GetReader(
 			&indexlib.BaseConfig{},
+			index.Mappings,
 			path.Join(consts.DefaultDataPath, index.Name),
 		)
 		if err != nil {
@@ -65,8 +66,8 @@ func TestIndexLib(t *testing.T) {
 
 		// test match query
 		matchQuery := indexlib.NewMatchQuery()
-		matchQuery.Match = "elasticsearch"
-		matchQuery.Field = "name"
+		matchQuery.Match = "Java"
+		matchQuery.Field = "lang"
 		resp, err := reader.Search(context.Background(), matchQuery, -1)
 		assert.NoError(t, err)
 		respJSON, err := json.Marshal(resp)
@@ -75,8 +76,8 @@ func TestIndexLib(t *testing.T) {
 
 		// test term query
 		termQuery := indexlib.NewTermQuery()
-		termQuery.Term = "elasticsearch"
-		termQuery.Field = "name"
+		termQuery.Term = "Java"
+		termQuery.Field = "lang"
 		termResp, err := reader.Search(context.Background(), termQuery, 10)
 		assert.NoError(t, err)
 		termRespJSON, err := json.Marshal(termResp)

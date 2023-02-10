@@ -70,7 +70,7 @@ func (index *Index) GetReaderByTime(start, end int64) (indexlib.Reader, error) {
 	config := &indexlib.BaseConfig{
 		DataPath: consts.DefaultDataPath,
 	}
-	return manage.GetReader(config, indexes...)
+	return manage.GetReader(config, index.Mappings, indexes...)
 }
 
 func (index *Index) CheckMapping(docID string, doc map[string]interface{}) error {

@@ -16,7 +16,10 @@ func QueryHandler(c *gin.Context) {
 	indexName := c.Param("index")
 	queryRequest := protocol.QueryRequest{Size: 10}
 	if err := c.ShouldBind(&queryRequest); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"msg": fmt.Sprintf("invalid request: %+v", err.Error())})
+		c.JSON(
+			http.StatusBadRequest,
+			gin.H{"msg": fmt.Sprintf("invalid request: %+v", err.Error())},
+		)
 		return
 	}
 

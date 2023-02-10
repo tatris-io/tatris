@@ -23,12 +23,17 @@ import (
 
 type BlugeWriter struct {
 	*indexlib.BaseConfig
-	Index  string
-	Writer *bluge.Writer
+	Mappings *protocol.Mappings
+	Index    string
+	Writer   *bluge.Writer
 }
 
-func NewBlugeWriter(config *indexlib.BaseConfig, index string) *BlugeWriter {
-	return &BlugeWriter{BaseConfig: config, Index: index}
+func NewBlugeWriter(
+	config *indexlib.BaseConfig,
+	mappings *protocol.Mappings,
+	index string,
+) *BlugeWriter {
+	return &BlugeWriter{BaseConfig: config, Mappings: mappings, Index: index}
 }
 
 func (b *BlugeWriter) OpenWriter() error {
@@ -53,10 +58,9 @@ func (b *BlugeWriter) OpenWriter() error {
 func (b *BlugeWriter) Insert(
 	docID string,
 	doc map[string]interface{},
-	mappings *protocol.Mappings,
 ) error {
 	defer utils.Timerf("bluge insert doc finish, index:%s, ID:%s", b.Index, docID)()
-	blugeDoc, err := b.generateBlugeDoc(docID, doc, mappings)
+	blugeDoc, err := b.generateBlugeDoc(docID, doc, b.Mappings)
 	if err != nil {
 		return err
 	}
@@ -65,12 +69,11 @@ func (b *BlugeWriter) Insert(
 
 func (b *BlugeWriter) Batch(
 	docs map[string]map[string]interface{},
-	mappings *protocol.Mappings,
 ) error {
 	defer utils.Timerf("bluge batch insert %d docs finish, index:%s", len(docs), b.Index)()
 	batch := index.NewBatch()
 	for docID, doc := range docs {
-		blugeDoc, err := b.generateBlugeDoc(docID, doc, mappings)
+		blugeDoc, err := b.generateBlugeDoc(docID, doc, b.Mappings)
 		if err != nil {
 			return err
 		}
@@ -86,6 +89,7 @@ func (b *BlugeWriter) Reader() (indexlib.Reader, error) {
 	}
 	return &BlugeReader{
 		BaseConfig: b.BaseConfig,
+		Mappings:   b.Mappings,
 		Indexes:    []string{b.Index},
 		Readers:    []*bluge.Reader{reader},
 	}, nil
@@ -192,6 +196,7 @@ func (b *BlugeWriter) addFieldByMappingType(
 				return nil, fmt.Errorf("keyword value: %s is not string", value)
 			}
 			bfield = bluge.NewKeywordField(key, keywordValue)
+			bfield.WithAnalyzer(generateAnalyzer("keyword"))
 		case consts.BoolMappingType:
 			boolValue, ok := value.(bool)
 			if !ok {
@@ -204,6 +209,8 @@ func (b *BlugeWriter) addFieldByMappingType(
 				return nil, fmt.Errorf("text value: %s is not string", value)
 			}
 			bfield = bluge.NewTextField(key, textValue)
+			// TODO get analyzer from config
+			bfield.WithAnalyzer(generateAnalyzer(""))
 		case consts.DateMappingType:
 			var date time.Time
 
