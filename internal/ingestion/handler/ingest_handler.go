@@ -25,7 +25,8 @@ func IngestHandler(c *gin.Context) {
 	} else {
 		ingestRequest := protocol.IngestRequest{}
 		if err := c.ShouldBind(&ingestRequest); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"msg": err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"msg": fmt.Sprintf("invalid request: %+v", err.Error())})
+			return
 		}
 		if err := ingestion.IngestDocs(indexName, ingestRequest.Documents); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"msg": err.Error()})

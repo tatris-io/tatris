@@ -4,6 +4,7 @@
 package ingestion
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/tatris-io/tatris/internal/core/wal"
@@ -14,6 +15,9 @@ func IngestDocs(indexName string, docs []map[string]interface{}) error {
 	index, err := metadata.GetIndex(indexName)
 	if err != nil {
 		return err
+	}
+	if index == nil {
+		return errors.New("index not found: " + indexName)
 	}
 	shard := index.GetShardByRouting()
 	if shard == nil {
