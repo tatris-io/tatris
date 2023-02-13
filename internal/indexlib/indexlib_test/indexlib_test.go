@@ -20,7 +20,7 @@ import (
 
 func TestIndexLib(t *testing.T) {
 	// prepare
-	index, err := prepare.CreateIndex(time.Now().Format(consts.VersionTimeFmt))
+	index, err := prepare.CreateIndex(time.Now().Format(time.RFC3339Nano))
 	if err != nil {
 		t.Fatalf("prepare index fail: %s", err.Error())
 	}
