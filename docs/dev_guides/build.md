@@ -1,13 +1,6 @@
-# tatris
-[![Build Status](https://github.com/tatris-io/tatris/actions/workflows/build.yml/badge.svg)](https://github.com/tatris-io/tatris/actions/workflows/build.yml)
-![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)
+# Building Tatris
 
-Time-aware storage and search system
-
-
-## Get started
-
-### Build binary from source
+## Build binary from source
 **Prerequisites**
 * Unix-like System
 * `GNU Make` and `git`
@@ -29,7 +22,7 @@ make fast-build
 ```
 All binaries lie under the `./bin` directory.
 
-### Build docker image
+## Build docker image
 **Prerequisites**
 * Unix-like System
 * `GNU Make` and `git`
@@ -41,7 +34,7 @@ git clone git@github.com:tatris-io/tatris.git
 cd tatris
 ```
 
-**Building image**
+**Build image**
 ```shell
 make docker-image
 ```
@@ -54,11 +47,5 @@ A more practical example:
 make docker-image TAG=tatris:0.1.0 TARGETPLATFORM=linux/amd64
 ```
 
-### Starting via source code
-```
-git clone git@github.com:tatris-io/tatris.git && cd tatris && make
-./bin/tatris-server --conf.logging=conf/log-conf.yml --conf.server=conf/server-conf.yml
-```
-
-### Starting via docker
-Coming soon ...
+## Configure and launch Tatris
+Get the details in [configuring guide](/docs/user_guides/configure.md)
