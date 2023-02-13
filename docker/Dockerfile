@@ -35,8 +35,7 @@ RUN mv /tmp/start_supervisorctl.sh /usr/local/bin/start_supervisorctl.sh && \
     mv /tmp/start_supervisord.sh /usr/local/bin/start_supervisord.sh && \
     mv /tmp/entrypoint.sh /usr/local/bin/entrypoint.sh && \
     mv /tmp/supervisord.conf /etc/supervisord.conf && \
-    mv /tmp/tatris.ini /etc/supervisord.d/tatris.ini && \
-    mv /tmp/start_tatris.sh /home/tatris/bin/start_tatris.sh
+    mv /tmp/tatris.ini /etc/supervisord.d/tatris.ini
 
 VOLUME /home/tatris/logs
 
@@ -44,6 +43,7 @@ VOLUME /home/tatris/logs
 RUN chown -R tatris:tatris /home/tatris
 
 COPY --from=build /go/bin /home/tatris/bin
+COPY bin/start-server.sh /home/tatris/bin
 
 USER tatris
 
