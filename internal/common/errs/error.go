@@ -13,6 +13,7 @@ var (
 	ErrNoSegmentMatched   = errors.New("no segment matched")
 	ErrIndexLibNotSupport = errors.New("index lib not support")
 	ErrSpecifyDirAsFile   = errors.New("specify directory as file")
+	ErrSegmentReadonly    = errors.New("segment is readonly")
 )
 
 func IsIndexNotFound(err error) bool {

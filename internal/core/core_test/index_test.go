@@ -39,6 +39,9 @@ func TestIndex(t *testing.T) {
 		}
 		assert.NotNil(t, index.GetShardByRouting())
 		reader, err := index.GetReaderByTime(start.Unix(), time.Now().UnixMilli())
+		if reader != nil {
+			defer reader.Close()
+		}
 		assert.NoError(t, err)
 		assert.Equal(
 			t,

@@ -66,6 +66,9 @@ func (shard *Shard) CheckSegments() {
 		if lastedSegment == nil || lastedSegment.IsMature() {
 			newID := shard.GetSegmentNum()
 			shard.addSegment(newID)
+			if lastedSegment != nil {
+				lastedSegment.onMature()
+			}
 			logger.Info(
 				"add segment",
 				zap.String("index", shard.Index.Name),
@@ -139,10 +142,8 @@ func (shard *Shard) UpdateStat(min, max time.Time, docs int64, wals uint64) {
 }
 
 func (shard *Shard) addSegment(segmentID int) {
-	segments := shard.Segments
-	if len(segments) == 0 {
-		segments = make([]*Segment, 0)
-		shard.Segments = segments
-	}
-	shard.Segments = append(segments, &Segment{Shard: shard, SegmentID: segmentID, Stat: Stat{}})
+	shard.Segments = append(
+		shard.Segments,
+		&Segment{Shard: shard, SegmentID: segmentID, Stat: Stat{}},
+	)
 }
