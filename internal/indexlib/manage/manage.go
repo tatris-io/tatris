@@ -40,7 +40,7 @@ func GetReader(
 // GetWriter Writer’s hold an exclusive-lock on their underlying directory which prevents other
 // processes from opening a writer while this one is still open. This does not affect Readers that
 // are already open, and it does not prevent new Readers from being opened,
-// but it does mean care care should be taken to close the Writer when you done.
+// but it does mean care should be taken to close the Writer when your work done.
 func GetWriter(
 	config *indexlib.BaseConfig,
 	mappings *protocol.Mappings,

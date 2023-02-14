@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/tatris-io/tatris/internal/common/errs"
+
 	"github.com/tatris-io/tatris/internal/core/config"
 
 	"github.com/tatris-io/tatris/internal/common/log/logger"
@@ -24,6 +26,7 @@ type Segment struct {
 	Stat      Stat
 	lock      sync.RWMutex
 	writer    indexlib.Writer
+	readonly  bool
 }
 
 func (segment *Segment) GetName() string {
@@ -39,6 +42,13 @@ func (segment *Segment) GetWriter() (indexlib.Writer, error) {
 	if segment.writer != nil {
 		return segment.writer, nil
 	}
+	segment.lock.Lock()
+	defer segment.lock.Unlock()
+
+	if segment.readonly {
+		return nil, errs.ErrSegmentReadonly
+	}
+
 	// open a writer
 	config := &indexlib.BaseConfig{
 		DataPath: consts.DefaultDataPath,
@@ -91,4 +101,17 @@ func (segment *Segment) UpdateStat(min, max time.Time, docs int64) {
 		zap.Int64("maxTime", segment.Stat.MaxTime),
 		zap.Int64("docNum", segment.Stat.DocNum),
 	)
+}
+
+// onMature is called when segment becomes mature.
+// It marks segment readonly and closes the underlying writer.
+func (segment *Segment) onMature() {
+	segment.lock.Lock()
+	defer segment.lock.Unlock()
+
+	segment.readonly = true
+	if segment.writer != nil {
+		segment.writer.Close()
+		segment.writer = nil
+	}
 }
