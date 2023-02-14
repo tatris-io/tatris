@@ -24,6 +24,17 @@ ifdef TAG
 DOCKER_BUILD_ARGS := -t $(TAG)  $(DOCKER_BUILD_ARGS)
 endif
 
+REVISION := $(shell git rev-parse --short HEAD 2>/dev/null)
+REVISION_DATE := $(shell git log -1 --pretty=format:'%ad' --date short 2>/dev/null)
+BUILD_TIME=$(shell date +%Y-%m-%d-%H:%M:%S)
+VERSION_PKG := github.com/tatris-io/tatris/internal/common/consts
+LDFLAGS = -s -w
+ifneq ($(strip $(REVISION)),)
+    LDFLAGS += -X $(VERSION_PKG).revision=$(REVISION) \
+           -X $(VERSION_PKG).revisionDate=$(REVISION_DATE) \
+           -X $(VERSION_PKG).buildTime=$(BUILD_TIME)
+endif
+
 check: install-tools
 	@ echo "do checks ..."
 	@ make check-license
@@ -54,8 +65,8 @@ build: check fast-build
 fast-build:
 	@ echo "building ..."
 	@ mkdir -p ./bin
-	@ go build -o ./bin/tatris-meta ./cmd/meta/...
-	@ go build -o ./bin/tatris-server ./cmd/server/...
+	@ go build -ldflags="$(LDFLAGS)" -o ./bin/tatris-meta ./cmd/meta/...
+	@ go build -ldflags="$(LDFLAGS)" -o ./bin/tatris-server ./cmd/server/...
 
 docker-image:
 	@ echo "building docker image, args: $(DOCKER_BUILD_ARGS)"

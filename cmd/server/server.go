@@ -12,6 +12,7 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/gin-gonic/gin"
+	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/common/log"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/common/log/util"
@@ -20,6 +21,8 @@ import (
 )
 
 var cli struct {
+	Version kong.VersionFlag `short:"v" help:"Print version."`
+
 	Debug bool `help:"Enable debug mode."`
 	Conf  struct {
 		Logging string `type:"existingfile" help:"Logging config file path."`
@@ -63,7 +66,15 @@ func initServer(confPath string) {
 }
 
 func main() {
-	kong.Parse(&cli)
+	kong.Parse(&cli, kong.Name("tatris-server"),
+		kong.Description("The Server of TATRIS project"),
+		kong.UsageOnError(),
+		kong.ConfigureHelp(kong.HelpOptions{
+			Compact: true,
+		}),
+		kong.Vars{
+			"version": consts.Version(),
+		})
 
 	if len(cli.Conf.Logging) != 0 {
 		initLoggers(cli.Conf.Logging)
