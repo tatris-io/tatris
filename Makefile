@@ -16,14 +16,6 @@ PACKAGE_DIRECTORIES := $(subst $(ALL_PKG)/,,$(PACKAGES))
 PACKAGES_WITHOUT_TOOLSET := $(shell go list ./... | sed '/^github.com\/tatris-io\/tatris\/toolset/d')
 PACKAGE_DIRECTORIES_WITHOUT_TOOLSET := $(subst $(ALL_PKG)/,,$(PACKAGES_WITHOUT_TOOLSET))
 
-DOCKER_BUILD_ARGS := -f docker/Dockerfile .
-ifdef TARGETPLATFORM
-DOCKER_BUILD_ARGS := --platform $(TARGETPLATFORM) $(DOCKER_BUILD_ARGS)
-endif
-ifdef TAG
-DOCKER_BUILD_ARGS := -t $(TAG)  $(DOCKER_BUILD_ARGS)
-endif
-
 REVISION := $(shell git rev-parse --short HEAD 2>/dev/null)
 REVISION_DATE := $(shell git log -1 --pretty=format:'%ad' --date short 2>/dev/null)
 BUILD_TIME=$(shell date +%Y-%m-%d-%H:%M:%S)
@@ -33,6 +25,14 @@ ifneq ($(strip $(REVISION)),)
     LDFLAGS += -X $(VERSION_PKG).revision=$(REVISION) \
            -X $(VERSION_PKG).revisionDate=$(REVISION_DATE) \
            -X $(VERSION_PKG).buildTime=$(BUILD_TIME)
+endif
+
+DOCKER_BUILD_ARGS := -f docker/Dockerfile --build-arg GOLANG_LDFLAGS="$(LDFLAGS)" .
+ifdef TARGETPLATFORM
+DOCKER_BUILD_ARGS := --platform $(TARGETPLATFORM) $(DOCKER_BUILD_ARGS)
+endif
+ifdef TAG
+DOCKER_BUILD_ARGS := -t $(TAG)  $(DOCKER_BUILD_ARGS)
 endif
 
 check: install-tools
