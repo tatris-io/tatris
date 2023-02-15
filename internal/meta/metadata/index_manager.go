@@ -97,6 +97,7 @@ func GetIndex(indexName string) (*core.Index, error) {
 				}
 			}
 		}
+		metaCache.Set(index.Name, index, cache.NoExpiration)
 		return index, nil
 	}
 }
