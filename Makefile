@@ -16,7 +16,18 @@ PACKAGE_DIRECTORIES := $(subst $(ALL_PKG)/,,$(PACKAGES))
 PACKAGES_WITHOUT_TOOLSET := $(shell go list ./... | sed '/^github.com\/tatris-io\/tatris\/toolset/d')
 PACKAGE_DIRECTORIES_WITHOUT_TOOLSET := $(subst $(ALL_PKG)/,,$(PACKAGES_WITHOUT_TOOLSET))
 
-DOCKER_BUILD_ARGS := -f docker/Dockerfile .
+REVISION := $(shell git rev-parse --short HEAD 2>/dev/null)
+REVISION_DATE := $(shell git log -1 --pretty=format:'%ad' --date short 2>/dev/null)
+BUILD_TIME=$(shell date +%Y-%m-%d-%H:%M:%S)
+VERSION_PKG := github.com/tatris-io/tatris/internal/common/consts
+LDFLAGS = -s -w
+ifneq ($(strip $(REVISION)),)
+    LDFLAGS += -X $(VERSION_PKG).revision=$(REVISION) \
+           -X $(VERSION_PKG).revisionDate=$(REVISION_DATE) \
+           -X $(VERSION_PKG).buildTime=$(BUILD_TIME)
+endif
+
+DOCKER_BUILD_ARGS := -f docker/Dockerfile --build-arg GOLANG_LDFLAGS="$(LDFLAGS)" .
 ifdef TARGETPLATFORM
 DOCKER_BUILD_ARGS := --platform $(TARGETPLATFORM) $(DOCKER_BUILD_ARGS)
 endif
@@ -54,8 +65,8 @@ build: check fast-build
 fast-build:
 	@ echo "building ..."
 	@ mkdir -p ./bin
-	@ go build -o ./bin/tatris-meta ./cmd/meta/...
-	@ go build -o ./bin/tatris-server ./cmd/server/...
+	@ go build -ldflags="$(LDFLAGS)" -o ./bin/tatris-meta ./cmd/meta/...
+	@ go build -ldflags="$(LDFLAGS)" -o ./bin/tatris-server ./cmd/server/...
 
 docker-image:
 	@ echo "building docker image, args: $(DOCKER_BUILD_ARGS)"

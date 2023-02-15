@@ -1,11 +1,12 @@
 FROM --platform=$TARGETPLATFORM golang:1.19 AS build
 
 ARG TARGETPLATFORM
+ARG GOLANG_LDFLAGS
 
 RUN --mount=target=/go/src,type=bind \
   echo "building for $TARGETPLATFORM" && \
   cd /go/src && \
-  go build -o /go/bin/tatris-server ./cmd/server/...
+  go build -ldflags="$GOLANG_LDFLAGS" -o /go/bin/tatris-server ./cmd/server/...
 
 FROM centos:centos7
 
