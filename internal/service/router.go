@@ -73,8 +73,15 @@ func registerQuery(group *gin.RouterGroup) {
 
 func registerMeta(group *gin.RouterGroup) {
 	logger.Info("meta APIs registering")
-	group.PUT("/:index", handler.CreateIndexHandler)
-	group.GET("/:index", handler.GetIndexHandler)
-	group.DELETE("/:index", handler.DeleteIndexHandler)
-	group.HEAD("/:index", handler.IndexExistHandler)
+
+	group.PUT("/_indices/:index", handler.CreateIndexHandler)
+	group.GET("/_indices/:index", handler.GetIndexHandler)
+	group.DELETE("/_indices/:index", handler.DeleteIndexHandler)
+	group.HEAD("/_indices/:index", handler.IndexExistHandler)
+
+	group.POST("/_aliases", handler.ManageAliasHandler)
+	group.GET("/_aliases", handler.GetAliasHandler)
+	group.GET("/:index/_aliases", handler.GetAliasHandler)
+	group.GET("/_aliases/:alias", handler.GetAliasHandler)
+	group.GET("/:index/_aliases/:alias", handler.GetAliasHandler)
 }

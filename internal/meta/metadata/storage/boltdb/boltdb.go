@@ -76,6 +76,26 @@ func (store *BoltMetaStore) Set(path string, val []byte) error {
 	})
 }
 
+func (store *BoltMetaStore) List(prefix string) (map[string][]byte, error) {
+	defer utils.Timerf("boltdb list finish, prefix:%s", prefix)()
+	bkt, _ := splitPath(prefix)
+	results := make(map[string][]byte)
+	err := store.db.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket(bkt)
+		if bucket == nil {
+			return nil
+		}
+		cursor := bucket.Cursor()
+		for key, val := cursor.First(); key != nil; key, val = cursor.Next() {
+			copiedVal := make([]byte, len(val))
+			copy(copiedVal, val)
+			results[string(key)] = copiedVal
+		}
+		return nil
+	})
+	return results, err
+}
+
 func (store *BoltMetaStore) Delete(path string) error {
 	defer utils.Timerf("boltdb delete finish, path:%s", path)()
 	bkt, key := splitPath(path)

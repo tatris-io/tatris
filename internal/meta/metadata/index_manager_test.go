@@ -109,7 +109,7 @@ func TestGetIndexSameInstance(t *testing.T) {
 	assert.NoErrorf(t, err, "SaveIndex")
 
 	// clear meta cache
-	metaCache.Flush()
+	IndexCache.Flush()
 
 	index1, err := GetIndex(version)
 	assert.NoError(t, err, "GetIndex 1")
