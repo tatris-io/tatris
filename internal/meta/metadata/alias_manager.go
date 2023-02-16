@@ -30,7 +30,7 @@ func AddAlias(aliasTerm *protocol.AliasTerm) error {
 		zap.Any("aliasTerms", aliasTerms),
 		zap.Any("indexTerms", indexTerms),
 	)
-	return SaveAlias(alias, aliasTerms, index, indexTerms)
+	return saveAlias(alias, aliasTerms, index, indexTerms)
 }
 
 func RemoveAlias(aliasTerm *protocol.AliasTerm) error {
@@ -51,7 +51,7 @@ func RemoveAlias(aliasTerm *protocol.AliasTerm) error {
 		zap.Any("aliasTerms", aliasTerms),
 		zap.Any("indexTerms", indexTerms),
 	)
-	return SaveAlias(alias, aliasTerms, index, indexTerms)
+	return saveAlias(alias, aliasTerms, index, indexTerms)
 }
 
 func add(terms []*protocol.AliasTerm, term *protocol.AliasTerm) []*protocol.AliasTerm {
@@ -71,7 +71,7 @@ func remove(terms []*protocol.AliasTerm, term *protocol.AliasTerm) []*protocol.A
 	return terms[:i]
 }
 
-func ListAllAliases() []*protocol.AliasTerm {
+func ListTerms() []*protocol.AliasTerm {
 	items := AliasTermsCache.Items()
 	terms := make([]*protocol.AliasTerm, 0)
 	for _, item := range items {
@@ -111,7 +111,7 @@ func GetTerm(index, alias string) *protocol.AliasTerm {
 	return nil
 }
 
-func SaveAlias(
+func saveAlias(
 	alias string,
 	aliasTerms []*protocol.AliasTerm,
 	index string,

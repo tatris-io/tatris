@@ -53,7 +53,7 @@ func GetAliasHandler(c *gin.Context) {
 	var terms []*protocol.AliasTerm
 	if indexName == "" && aliasName == "" {
 		// get all aliases terms
-		terms = metadata.ListAllAliases()
+		terms = metadata.ListTerms()
 	} else if indexName == "" {
 		// get terms by alias
 		terms = metadata.GetTermsByAlias(aliasName)
