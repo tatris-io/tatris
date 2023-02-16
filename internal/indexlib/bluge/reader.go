@@ -80,7 +80,7 @@ func (b *BlugeReader) Search(
 	limit int,
 ) (*indexlib.QueryResponse, error) {
 	defer utils.Timerf(
-		"bluge search docs finish, index:%+v, query:%+v, limit:%d",
+		"bluge search docs finish, segments:%+v, query:%+v, limit:%d",
 		b.Segments,
 		query,
 		limit,
