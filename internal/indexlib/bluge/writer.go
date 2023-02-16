@@ -173,7 +173,9 @@ func (b *BlugeWriter) addField(
 		}
 	}
 
-	bdoc.AddField(bfield)
+	if bfield != nil {
+		bdoc.AddField(bfield)
+	}
 	return nil
 }
 
