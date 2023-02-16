@@ -33,8 +33,7 @@ import (
 
 type BlugeReader struct {
 	*indexlib.BaseConfig
-	Mappings *protocol.Mappings
-	Indexes  []string
+	Segments []string
 	Readers  []*bluge.Reader
 }
 
@@ -45,13 +44,11 @@ type BlugeSearchResult struct {
 
 func NewBlugeReader(
 	config *indexlib.BaseConfig,
-	mappings *protocol.Mappings,
-	index ...string,
+	segments ...string,
 ) *BlugeReader {
 	return &BlugeReader{
 		BaseConfig: config,
-		Mappings:   mappings,
-		Indexes:    index,
+		Segments:   segments,
 		Readers:    make([]*bluge.Reader, 0),
 	}
 }
@@ -59,12 +56,12 @@ func NewBlugeReader(
 func (b *BlugeReader) OpenReader() error {
 	var cfg bluge.Config
 
-	for _, index := range b.Indexes {
+	for _, segment := range b.Segments {
 		switch b.StorageType {
 		case indexlib.FSStorageType:
-			cfg = config.GetFSConfig(b.DataPath, index)
+			cfg = config.GetFSConfig(b.DataPath, segment)
 		default:
-			cfg = config.GetFSConfig(b.DataPath, index)
+			cfg = config.GetFSConfig(b.DataPath, segment)
 		}
 
 		reader, err := bluge.OpenReader(cfg)
@@ -84,7 +81,7 @@ func (b *BlugeReader) Search(
 ) (*indexlib.QueryResponse, error) {
 	defer utils.Timerf(
 		"bluge search docs finish, index:%+v, query:%+v, limit:%d",
-		b.Indexes,
+		b.Segments,
 		query,
 		limit,
 	)()
@@ -306,11 +303,6 @@ func (b *BlugeReader) generateMatchQuery(query *indexlib.MatchQuery) (bluge.Quer
 		case "AND":
 			q.SetOperator(bluge.MatchQueryOperatorAnd)
 		}
-	}
-	// The match query does not match when the bluge keyword field value contains uppercase letters
-	// Set KEYWORD analyzer
-	if b.Mappings.Properties[query.Field].Type == consts.KeywordMappingType {
-		query.Analyzer = "KEYWORD"
 	}
 	analyzer := generateAnalyzer(query.Analyzer)
 	if analyzer != nil {

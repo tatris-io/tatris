@@ -5,7 +5,6 @@ package indexlib_test
 import (
 	"context"
 	"encoding/json"
-	"path"
 	"testing"
 	"time"
 
@@ -31,7 +30,7 @@ func TestIndexLib(t *testing.T) {
 
 	// test
 	t.Run("test_write", func(t *testing.T) {
-		if writer, err := manage.GetWriter(&indexlib.BaseConfig{}, index.Mappings, path.Join(consts.DefaultDataPath, index.Name)); err != nil {
+		if writer, err := manage.GetWriter(&indexlib.BaseConfig{DataPath: consts.DefaultDataPath}, index.Mappings, index.Name, index.Name); err != nil {
 			t.Fatalf("get writer error: %s", err.Error())
 		} else {
 			defer writer.Close()
@@ -55,9 +54,10 @@ func TestIndexLib(t *testing.T) {
 
 	t.Run("test_read", func(t *testing.T) {
 		reader, err := manage.GetReader(
-			&indexlib.BaseConfig{},
-			index.Mappings,
-			path.Join(consts.DefaultDataPath, index.Name),
+			&indexlib.BaseConfig{
+				DataPath: consts.DefaultDataPath,
+			},
+			index.Name,
 		)
 		if err != nil {
 			t.Fatalf("get reader error: %s", err.Error())

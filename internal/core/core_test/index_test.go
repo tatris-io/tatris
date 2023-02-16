@@ -38,7 +38,7 @@ func TestIndex(t *testing.T) {
 			assert.NotNil(t, index.GetShard(i))
 		}
 		assert.NotNil(t, index.GetShardByRouting())
-		reader, err := index.GetReaderByTime(start.Unix(), time.Now().UnixMilli())
+		reader, err := index.GetReadersByTime(start.Unix(), time.Now().UnixMilli())
 		if reader != nil {
 			defer reader.Close()
 		}
@@ -50,7 +50,7 @@ func TestIndex(t *testing.T) {
 		)
 
 		resp, err := query.SearchDocs(
-			index, protocol.QueryRequest{
+			[]*core.Index{index}, protocol.QueryRequest{
 				Index: index.Name,
 				Query: protocol.Query{Term: protocol.Term{"name": "elasticsearch"}},
 				Size:  20,

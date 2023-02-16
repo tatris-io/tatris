@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/tatris-io/tatris/internal/indexlib/manage"
+
 	"github.com/tatris-io/tatris/internal/core"
 
 	"github.com/tatris-io/tatris/internal/common/errs"
@@ -19,17 +21,27 @@ import (
 	"go.uber.org/zap"
 )
 
-func SearchDocs(index *core.Index, request protocol.QueryRequest) (*protocol.QueryResponse, error) {
+func SearchDocs(
+	indexes []*core.Index,
+	request protocol.QueryRequest,
+) (*protocol.QueryResponse, error) {
 	start, end, err := timeRange(request.Query)
 	if err != nil {
 		return nil, err
 	}
-	reader, err := index.GetReaderByTime(start, end)
-	if err != nil {
+	allSegments := make([]string, 0)
+	for _, index := range indexes {
+		segments := index.GetSegmentsByTime(start, end)
+		allSegments = append(allSegments, segments...)
+	}
+	if len(allSegments) == 0 {
 		// no match any segments, returns an appropriate response
-		if err == errs.ErrNoSegmentMatched {
-			return &protocol.QueryResponse{Hits: protocol.Hits{Hits: []protocol.Hit{}}}, nil
-		}
+		return &protocol.QueryResponse{Hits: protocol.Hits{Hits: []protocol.Hit{}}}, nil
+	}
+	reader, err := manage.GetReader(&indexlib.BaseConfig{
+		DataPath: consts.DefaultDataPath,
+	}, allSegments...)
+	if err != nil {
 		return nil, err
 	}
 	defer reader.Close()
@@ -37,8 +49,8 @@ func SearchDocs(index *core.Index, request protocol.QueryRequest) (*protocol.Que
 	hits := protocol.Hits{
 		Total: protocol.Total{Value: 0, Relation: "eq"},
 	}
-
-	libRequest, err := transform(request.Query)
+	// use the mappings of the first index to transform query
+	libRequest, err := transform(request.Query, indexes[0].Mappings)
 	if err != nil {
 		return nil, err
 	}
@@ -102,11 +114,11 @@ func timeRange(query protocol.Query) (int64, int64, error) {
 	return start, end, nil
 }
 
-func transform(query protocol.Query) (indexlib.QueryRequest, error) {
+func transform(query protocol.Query, mappings *protocol.Mappings) (indexlib.QueryRequest, error) {
 	if query.MatchAll != nil {
 		return transformMatchAll()
 	} else if query.Match != nil {
-		return transformMatch(query)
+		return transformMatch(query, mappings)
 	} else if query.MatchPhrase != nil {
 		return transformMatchPhrase(query)
 	} else if query.QueryString != nil {
@@ -120,7 +132,7 @@ func transform(query protocol.Query) (indexlib.QueryRequest, error) {
 	} else if query.Range != nil {
 		return transformRange(query)
 	} else if query.Bool != nil {
-		return transformBool(query)
+		return transformBool(query, mappings)
 	} else {
 		// Exposed queries allow users to specify no query, example: "{"size": xx}"
 		// Use match all query when query is nil
@@ -190,7 +202,10 @@ func transformMatchAll() (indexlib.QueryRequest, error) {
 	return indexlib.NewMatchAllQuery(), nil
 }
 
-func transformMatch(query protocol.Query) (indexlib.QueryRequest, error) {
+func transformMatch(
+	query protocol.Query,
+	mappings *protocol.Mappings,
+) (indexlib.QueryRequest, error) {
 	matches := query.Match
 	if len(matches) <= 0 {
 		return nil, &errs.InvalidQueryError{Query: query, Message: "invalid match"}
@@ -216,6 +231,11 @@ func transformMatch(query protocol.Query) (indexlib.QueryRequest, error) {
 				matchQ.Analyzer = analyzer.(string)
 			}
 		}
+	}
+	// The match query does not match when the bluge keyword field value contains uppercase letters
+	// Set KEYWORD analyzer
+	if mappings.Properties[matchQ.Field].Type == consts.KeywordMappingType {
+		matchQ.Analyzer = "KEYWORD"
 	}
 	return matchQ, nil
 }
@@ -331,13 +351,16 @@ func transformRange(query protocol.Query) (indexlib.QueryRequest, error) {
 	return rangeQ, nil
 }
 
-func transformBool(query protocol.Query) (indexlib.QueryRequest, error) {
+func transformBool(
+	query protocol.Query,
+	mappings *protocol.Mappings,
+) (indexlib.QueryRequest, error) {
 	q := indexlib.NewBooleanQuery()
 
 	if query.Bool.Must != nil {
 		q.Musts = make([]indexlib.QueryRequest, 0, len(query.Bool.Must))
 		for _, must := range query.Bool.Must {
-			queryRequest, err := transform(*must)
+			queryRequest, err := transform(*must, mappings)
 			if err != nil {
 				return nil, err
 			}
@@ -347,7 +370,7 @@ func transformBool(query protocol.Query) (indexlib.QueryRequest, error) {
 	if query.Bool.MustNot != nil {
 		q.MustNots = make([]indexlib.QueryRequest, 0, len(query.Bool.MustNot))
 		for _, mustNot := range query.Bool.MustNot {
-			queryRequest, err := transform(*mustNot)
+			queryRequest, err := transform(*mustNot, mappings)
 			if err != nil {
 				return nil, err
 			}
@@ -357,7 +380,7 @@ func transformBool(query protocol.Query) (indexlib.QueryRequest, error) {
 	if query.Bool.Should != nil {
 		q.Shoulds = make([]indexlib.QueryRequest, 0, len(query.Bool.Should))
 		for _, should := range query.Bool.Should {
-			queryRequest, err := transform(*should)
+			queryRequest, err := transform(*should, mappings)
 			if err != nil {
 				return nil, err
 			}
@@ -367,7 +390,7 @@ func transformBool(query protocol.Query) (indexlib.QueryRequest, error) {
 	if query.Bool.Filter != nil {
 		q.Filters = make([]indexlib.QueryRequest, 0, len(query.Bool.Filter))
 		for _, filter := range query.Bool.Filter {
-			queryRequest, err := transform(*filter)
+			queryRequest, err := transform(*filter, mappings)
 			if err != nil {
 				return nil, err
 			}
