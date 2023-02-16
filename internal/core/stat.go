@@ -11,5 +11,6 @@ type Stat struct {
 
 type ShardStat struct {
 	Stat
+	// WalIndex is the last consumed wal index
 	WalIndex uint64
 }

@@ -119,22 +119,48 @@ func ConsumeWALs() {
 func ConsumeWAL(shard *core.Shard, wal log.WalLog) error {
 	name := shard.GetName()
 	defer utils.Timerf("consume wal finish, name:%s", name)()
-	firstIndex, err := wal.FirstIndex()
-	if err != nil {
-		return err
-	}
+
 	lastIndex, err := wal.LastIndex()
 	if err != nil {
 		return err
 	}
-	var from, to uint64
-	if shard.Stat.WalIndex == 0 {
-		from = 1
-	} else {
-		from = uint64(math.Max(float64(firstIndex), float64(shard.Stat.WalIndex))) + 1
+
+	// no new wal to read
+	if shard.Stat.WalIndex >= lastIndex {
+		return nil
 	}
-	to = uint64(math.Min(float64(lastIndex), float64(from+consumptionLimit-1)))
-	if from >= to {
+
+	// Because we always call 'wal.TruncateFront(to)' before this func returns.
+	// So firstIndex is always the last consumed index, or firstIndex is 1 when first time wal read.
+	firstIndex, err := wal.FirstIndex()
+	if err != nil {
+		return err
+	}
+
+	// from is the first index we need to consume
+	from := shard.Stat.WalIndex + 1
+
+	// If all is OK, we have firstIndex == shard.Stat.WalIndex
+
+	if firstIndex != shard.Stat.WalIndex {
+		if firstIndex == 1 && shard.Stat.WalIndex == 0 {
+			// expected: first time wal read
+		} else if from < firstIndex {
+			// from jumps to firstIndex
+			from = firstIndex
+			logger.Warn("[wal] maybe loss wal", zap.String("shard", shard.GetName()), zap.Uint64("from", from), zap.Uint64("to", firstIndex-1))
+		} else {
+			logger.Warn("[wal] last truncate may fail", zap.String("shard", shard.GetName()), zap.Uint64("from", firstIndex), zap.Uint64("to", shard.Stat.WalIndex))
+		}
+	}
+
+	// from is the last index we need to consume
+	to := lastIndex
+	if to > from+consumptionLimit-1 {
+		to = from + consumptionLimit - 1
+	}
+
+	if from > to {
 		return nil
 	}
 	logger.Info(
@@ -170,7 +196,8 @@ func ConsumeWAL(shard *core.Shard, wal log.WalLog) error {
 	if err != nil {
 		return err
 	}
-	// The id passed to func TruncateFront cannot be greater than the last index of the stock log
+	// The id passed to func TruncateFront cannot be greater than the last index of the stock log.
+	// There is no way to clear wal. Once data is written to wal, there is always at least one entry in the wal.
 	err = wal.TruncateFront(to)
 	if err != nil {
 		return err
