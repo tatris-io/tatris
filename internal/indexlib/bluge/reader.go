@@ -85,38 +85,6 @@ func (b *BlugeReader) Search(
 		query,
 		limit,
 	)()
-	blugeQuery, err := b.generateQuery(query)
-	if err != nil {
-		return nil, err
-	}
-
-	if limit < 0 {
-		limit = 10
-	}
-	searchRequest := bluge.NewTopNSearch(limit, blugeQuery).WithStandardAggregations()
-	if querySorts := query.GetSort(); querySorts != nil {
-		sorts := make([]*search.Sort, 0, len(querySorts))
-		for _, querySort := range querySorts {
-			for k, v := range querySort {
-				sort := search.SortBy(search.Field(k))
-				if strings.EqualFold("desc", v.Order) {
-					sort.Desc()
-				}
-				if strings.EqualFold("_first", v.Missing) {
-					sort.MissingFirst()
-				}
-				sorts = append(sorts, sort)
-			}
-		}
-		searchRequest.SortByCustom(sorts)
-	}
-	if aggs := query.GetAggs(); aggs != nil {
-		blugeAggs := b.generateAggregations(aggs)
-		for name, agg := range blugeAggs {
-			searchRequest.AddAggregation(name, agg)
-		}
-	}
-
 	p := pool.NewWithResults[*BlugeSearchResult]().WithErrors().
 		WithMaxGoroutines(cfg.Cfg.Query.Parallel)
 	for _, reader := range b.Readers {
@@ -125,6 +93,10 @@ func (b *BlugeReader) Search(
 			result := &BlugeSearchResult{
 				docs:    make([]*search.DocumentMatch, 0),
 				buckets: make([]*search.Bucket, 0),
+			}
+			searchRequest, err := b.generateSearchRequest(query, limit)
+			if err != nil {
+				return nil, err
 			}
 			dmi, err := r.Search(ctx, searchRequest)
 			if err != nil {
@@ -151,6 +123,43 @@ func (b *BlugeReader) Search(
 	}
 
 	return b.generateResponse(results)
+}
+
+func (b *BlugeReader) generateSearchRequest(
+	query indexlib.QueryRequest,
+	limit int,
+) (bluge.SearchRequest, error) {
+	blugeQuery, err := b.generateQuery(query)
+	if err != nil {
+		return nil, err
+	}
+	if limit < 0 {
+		limit = 10
+	}
+	searchRequest := bluge.NewTopNSearch(limit, blugeQuery).WithStandardAggregations()
+	if querySorts := query.GetSort(); querySorts != nil {
+		sorts := make([]*search.Sort, 0, len(querySorts))
+		for _, querySort := range querySorts {
+			for k, v := range querySort {
+				sort := search.SortBy(search.Field(k))
+				if strings.EqualFold("desc", v.Order) {
+					sort.Desc()
+				}
+				if strings.EqualFold("_first", v.Missing) {
+					sort.MissingFirst()
+				}
+				sorts = append(sorts, sort)
+			}
+		}
+		searchRequest.SortByCustom(sorts)
+	}
+	if aggs := query.GetAggs(); aggs != nil {
+		blugeAggs := b.generateAggregations(aggs)
+		for name, agg := range blugeAggs {
+			searchRequest.AddAggregation(name, agg)
+		}
+	}
+	return searchRequest, nil
 }
 
 func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) (bluge.Query, error) {
