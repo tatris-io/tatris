@@ -19,13 +19,12 @@ import (
 // closed when it is no longer needed.
 func GetReader(
 	config *indexlib.BaseConfig,
-	mappings *protocol.Mappings,
-	index ...string,
+	segments ...string,
 ) (indexlib.Reader, error) {
 	indexlib.SetDefaultConfig(config)
 	switch config.IndexLibType {
 	case indexlib.BlugeIndexLibType:
-		blugeReader := bluge.NewBlugeReader(config, mappings, index...)
+		blugeReader := bluge.NewBlugeReader(config, segments...)
 		err := blugeReader.OpenReader()
 		if err != nil {
 			logger.Error("bluge open reader failed", zap.Error(err))
@@ -45,12 +44,13 @@ func GetWriter(
 	config *indexlib.BaseConfig,
 	mappings *protocol.Mappings,
 	index string,
+	segment string,
 ) (indexlib.Writer, error) {
 	baseConfig := indexlib.SetDefaultConfig(config)
 
 	switch baseConfig.IndexLibType {
 	case indexlib.BlugeIndexLibType:
-		blugeWriter := bluge.NewBlugeWriter(baseConfig, mappings, index)
+		blugeWriter := bluge.NewBlugeWriter(baseConfig, mappings, index, segment)
 		err := blugeWriter.OpenWriter()
 		if err != nil {
 			logger.Error("bluge open writer failed", zap.Error(err))

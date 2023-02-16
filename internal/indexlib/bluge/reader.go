@@ -33,8 +33,7 @@ import (
 
 type BlugeReader struct {
 	*indexlib.BaseConfig
-	Mappings *protocol.Mappings
-	Indexes  []string
+	Segments []string
 	Readers  []*bluge.Reader
 }
 
@@ -45,13 +44,11 @@ type BlugeSearchResult struct {
 
 func NewBlugeReader(
 	config *indexlib.BaseConfig,
-	mappings *protocol.Mappings,
-	index ...string,
+	segments ...string,
 ) *BlugeReader {
 	return &BlugeReader{
 		BaseConfig: config,
-		Mappings:   mappings,
-		Indexes:    index,
+		Segments:   segments,
 		Readers:    make([]*bluge.Reader, 0),
 	}
 }
@@ -59,12 +56,12 @@ func NewBlugeReader(
 func (b *BlugeReader) OpenReader() error {
 	var cfg bluge.Config
 
-	for _, index := range b.Indexes {
+	for _, segment := range b.Segments {
 		switch b.StorageType {
 		case indexlib.FSStorageType:
-			cfg = config.GetFSConfig(b.DataPath, index)
+			cfg = config.GetFSConfig(b.DataPath, segment)
 		default:
-			cfg = config.GetFSConfig(b.DataPath, index)
+			cfg = config.GetFSConfig(b.DataPath, segment)
 		}
 
 		reader, err := bluge.OpenReader(cfg)
@@ -83,43 +80,11 @@ func (b *BlugeReader) Search(
 	limit int,
 ) (*indexlib.QueryResponse, error) {
 	defer utils.Timerf(
-		"bluge search docs finish, index:%+v, query:%+v, limit:%d",
-		b.Indexes,
+		"bluge search docs finish, segments:%+v, query:%+v, limit:%d",
+		b.Segments,
 		query,
 		limit,
 	)()
-	blugeQuery, err := b.generateQuery(query)
-	if err != nil {
-		return nil, err
-	}
-
-	if limit < 0 {
-		limit = 10
-	}
-	searchRequest := bluge.NewTopNSearch(limit, blugeQuery).WithStandardAggregations()
-	if querySorts := query.GetSort(); querySorts != nil {
-		sorts := make([]*search.Sort, 0, len(querySorts))
-		for _, querySort := range querySorts {
-			for k, v := range querySort {
-				sort := search.SortBy(search.Field(k))
-				if strings.EqualFold("desc", v.Order) {
-					sort.Desc()
-				}
-				if strings.EqualFold("_first", v.Missing) {
-					sort.MissingFirst()
-				}
-				sorts = append(sorts, sort)
-			}
-		}
-		searchRequest.SortByCustom(sorts)
-	}
-	if aggs := query.GetAggs(); aggs != nil {
-		blugeAggs := b.generateAggregations(aggs)
-		for name, agg := range blugeAggs {
-			searchRequest.AddAggregation(name, agg)
-		}
-	}
-
 	p := pool.NewWithResults[*BlugeSearchResult]().WithErrors().
 		WithMaxGoroutines(cfg.Cfg.Query.Parallel)
 	for _, reader := range b.Readers {
@@ -128,6 +93,10 @@ func (b *BlugeReader) Search(
 			result := &BlugeSearchResult{
 				docs:    make([]*search.DocumentMatch, 0),
 				buckets: make([]*search.Bucket, 0),
+			}
+			searchRequest, err := b.generateSearchRequest(query, limit)
+			if err != nil {
+				return nil, err
 			}
 			dmi, err := r.Search(ctx, searchRequest)
 			if err != nil {
@@ -154,6 +123,43 @@ func (b *BlugeReader) Search(
 	}
 
 	return b.generateResponse(results)
+}
+
+func (b *BlugeReader) generateSearchRequest(
+	query indexlib.QueryRequest,
+	limit int,
+) (bluge.SearchRequest, error) {
+	blugeQuery, err := b.generateQuery(query)
+	if err != nil {
+		return nil, err
+	}
+	if limit < 0 {
+		limit = 10
+	}
+	searchRequest := bluge.NewTopNSearch(limit, blugeQuery).WithStandardAggregations()
+	if querySorts := query.GetSort(); querySorts != nil {
+		sorts := make([]*search.Sort, 0, len(querySorts))
+		for _, querySort := range querySorts {
+			for k, v := range querySort {
+				sort := search.SortBy(search.Field(k))
+				if strings.EqualFold("desc", v.Order) {
+					sort.Desc()
+				}
+				if strings.EqualFold("_first", v.Missing) {
+					sort.MissingFirst()
+				}
+				sorts = append(sorts, sort)
+			}
+		}
+		searchRequest.SortByCustom(sorts)
+	}
+	if aggs := query.GetAggs(); aggs != nil {
+		blugeAggs := b.generateAggregations(aggs)
+		for name, agg := range blugeAggs {
+			searchRequest.AddAggregation(name, agg)
+		}
+	}
+	return searchRequest, nil
 }
 
 func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) (bluge.Query, error) {
@@ -306,11 +312,6 @@ func (b *BlugeReader) generateMatchQuery(query *indexlib.MatchQuery) (bluge.Quer
 		case "AND":
 			q.SetOperator(bluge.MatchQueryOperatorAnd)
 		}
-	}
-	// The match query does not match when the bluge keyword field value contains uppercase letters
-	// Set KEYWORD analyzer
-	if b.Mappings.Properties[query.Field].Type == consts.KeywordMappingType {
-		query.Analyzer = "KEYWORD"
 	}
 	analyzer := generateAnalyzer(query.Analyzer)
 	if analyzer != nil {

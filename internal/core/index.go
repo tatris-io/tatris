@@ -47,7 +47,17 @@ func (index *Index) GetShardByRouting() *Shard {
 	return nil
 }
 
-func (index *Index) GetReaderByTime(start, end int64) (indexlib.Reader, error) {
+func (index *Index) GetReadersByTime(start, end int64) (indexlib.Reader, error) {
+	segments := index.GetSegmentsByTime(start, end)
+	if len(segments) == 0 {
+		return nil, errs.ErrNoSegmentMatched
+	}
+	return manage.GetReader(&indexlib.BaseConfig{
+		DataPath: consts.DefaultDataPath,
+	}, segments...)
+}
+
+func (index *Index) GetSegmentsByTime(start, end int64) []string {
 	segments := make([]string, 0)
 	for _, shard := range index.Shards {
 		for _, segment := range shard.Segments {
@@ -57,20 +67,14 @@ func (index *Index) GetReaderByTime(start, end int64) (indexlib.Reader, error) {
 		}
 	}
 	logger.Info(
-		"find readers",
+		"find segments",
 		zap.String("index", index.Name),
 		zap.Int64("start", start),
 		zap.Int64("end", end),
 		zap.Int("size", len(segments)),
 		zap.Any("segments", segments),
 	)
-	if len(segments) == 0 {
-		return nil, errs.ErrNoSegmentMatched
-	}
-	config := &indexlib.BaseConfig{
-		DataPath: consts.DefaultDataPath,
-	}
-	return manage.GetReader(config, index.Mappings, segments...)
+	return segments
 }
 
 func (index *Index) CheckMapping(doc protocol.Document) error {

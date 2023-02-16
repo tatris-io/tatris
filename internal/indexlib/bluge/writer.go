@@ -26,6 +26,7 @@ type BlugeWriter struct {
 	*indexlib.BaseConfig
 	Mappings *protocol.Mappings
 	Index    string
+	Segment  string
 	Writer   *bluge.Writer
 }
 
@@ -33,8 +34,9 @@ func NewBlugeWriter(
 	config *indexlib.BaseConfig,
 	mappings *protocol.Mappings,
 	index string,
+	segment string,
 ) *BlugeWriter {
-	return &BlugeWriter{BaseConfig: config, Mappings: mappings, Index: index}
+	return &BlugeWriter{BaseConfig: config, Mappings: mappings, Index: index, Segment: segment}
 }
 
 func (b *BlugeWriter) OpenWriter() error {
@@ -42,9 +44,9 @@ func (b *BlugeWriter) OpenWriter() error {
 
 	switch b.StorageType {
 	case indexlib.FSStorageType:
-		cfg = config.GetFSConfig(b.DataPath, b.Index)
+		cfg = config.GetFSConfig(b.DataPath, b.Segment)
 	default:
-		cfg = config.GetFSConfig(b.DataPath, b.Index)
+		cfg = config.GetFSConfig(b.DataPath, b.Segment)
 	}
 
 	writer, err := bluge.OpenWriter(cfg)
@@ -60,7 +62,7 @@ func (b *BlugeWriter) Insert(
 	docID string,
 	doc protocol.Document,
 ) error {
-	defer utils.Timerf("bluge insert doc finish, index:%s, ID:%s", b.Index, docID)()
+	defer utils.Timerf("bluge insert doc finish, segment:%s, ID:%s", b.Segment, docID)()
 	blugeDoc, err := b.generateBlugeDoc(docID, doc, b.Mappings)
 	if err != nil {
 		return err
@@ -71,7 +73,7 @@ func (b *BlugeWriter) Insert(
 func (b *BlugeWriter) Batch(
 	docs map[string]protocol.Document,
 ) error {
-	defer utils.Timerf("bluge batch insert %d docs finish, index:%s", len(docs), b.Index)()
+	defer utils.Timerf("bluge batch insert %d docs finish, segment:%s", len(docs), b.Segment)()
 	batch := index.NewBatch()
 	for docID, doc := range docs {
 		blugeDoc, err := b.generateBlugeDoc(docID, doc, b.Mappings)
@@ -90,8 +92,7 @@ func (b *BlugeWriter) Reader() (indexlib.Reader, error) {
 	}
 	return &BlugeReader{
 		BaseConfig: b.BaseConfig,
-		Mappings:   b.Mappings,
-		Indexes:    []string{b.Index},
+		Segments:   []string{b.Segment},
 		Readers:    []*bluge.Reader{reader},
 	}, nil
 }

@@ -5,10 +5,11 @@ package metadata
 
 import (
 	"encoding/json"
-	"github.com/tatris-io/tatris/internal/core"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/tatris-io/tatris/internal/core"
 
 	"github.com/tatris-io/tatris/internal/common/consts"
 

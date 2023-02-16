@@ -53,7 +53,12 @@ func (segment *Segment) GetWriter() (indexlib.Writer, error) {
 	config := &indexlib.BaseConfig{
 		DataPath: consts.DefaultDataPath,
 	}
-	writer, err := manage.GetWriter(config, segment.Shard.Index.Mappings, segment.GetName())
+	writer, err := manage.GetWriter(
+		config,
+		segment.Shard.Index.Mappings,
+		segment.Shard.Index.GetName(),
+		segment.GetName(),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +70,7 @@ func (segment *Segment) GetReader() (indexlib.Reader, error) {
 	config := &indexlib.BaseConfig{
 		DataPath: consts.DefaultDataPath,
 	}
-	return manage.GetReader(config, segment.Shard.Index.Mappings, segment.GetName())
+	return manage.GetReader(config, segment.GetName())
 }
 
 func (segment *Segment) IsMature() bool {
