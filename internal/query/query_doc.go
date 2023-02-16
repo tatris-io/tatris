@@ -12,8 +12,6 @@ import (
 	"github.com/tatris-io/tatris/internal/common/utils"
 	"github.com/xhit/go-str2duration/v2"
 
-	"github.com/tatris-io/tatris/internal/indexlib/manage"
-
 	"github.com/tatris-io/tatris/internal/core"
 
 	"github.com/tatris-io/tatris/internal/common/errs"
@@ -33,7 +31,7 @@ func SearchDocs(
 	if err != nil {
 		return nil, err
 	}
-	allSegments := make([]string, 0)
+	var allSegments []*core.Segment
 	for _, index := range indexes {
 		segments := index.GetSegmentsByTime(start, end)
 		allSegments = append(allSegments, segments...)
@@ -42,7 +40,7 @@ func SearchDocs(
 		// no match any segments, returns an appropriate response
 		return &protocol.QueryResponse{Hits: protocol.Hits{Hits: []protocol.Hit{}}}, nil
 	}
-	reader, err := manage.GetReader(&indexlib.BaseConfig{
+	reader, err := core.MergeSegmentReader(&indexlib.BaseConfig{
 		DataPath: consts.DefaultDataPath,
 	}, allSegments...)
 	if err != nil {

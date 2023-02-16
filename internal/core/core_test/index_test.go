@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/tatris-io/tatris/internal/common/errs"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/core"
@@ -260,4 +262,41 @@ func TestMapping(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSegmentReader(t *testing.T) {
+	// prepare
+	start := time.Now()
+	index, _, err := prepare.CreateIndexAndDocs(start.Format(time.RFC3339Nano))
+	if err != nil {
+		t.Fatalf("prepare docs fail: %s", err.Error())
+	}
+	segment := index.Shards[0].GetLatestSegment()
+
+	writer, err := segment.GetWriter()
+	assert.NoError(t, err)
+	assert.NotNil(t, writer)
+
+	reader1, err := segment.GetReader()
+	assert.NoError(t, err)
+	assert.NotNil(t, reader1)
+
+	reader2, err := segment.GetReader()
+	assert.NoError(t, err)
+	assert.NotNil(t, reader2)
+
+	assert.Equal(t, core.SegmentStatusWritable, segment.Status())
+
+	index.Shards[0].ForceAddSegment()
+	assert.True(t, segment.Readonly())
+
+	_, err = segment.GetWriter()
+	assert.Same(t, err, errs.ErrSegmentReadonly)
+
+	assert.Equal(t, core.SegmentStatusReadonly, segment.Status())
+
+	reader1.Close()
+	reader2.Close()
+
+	assert.Equal(t, core.SegmentStatusReadonly, segment.Status())
 }

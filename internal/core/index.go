@@ -4,13 +4,12 @@
 package core
 
 import (
-	"github.com/tatris-io/tatris/internal/common/errs"
-
+	"github.com/pkg/errors"
 	"github.com/tatris-io/tatris/internal/common/consts"
+	"github.com/tatris-io/tatris/internal/common/errs"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/common/utils"
 	"github.com/tatris-io/tatris/internal/indexlib"
-	"github.com/tatris-io/tatris/internal/indexlib/manage"
 	"github.com/tatris-io/tatris/internal/protocol"
 	"go.uber.org/zap"
 
@@ -52,17 +51,21 @@ func (index *Index) GetReadersByTime(start, end int64) (indexlib.Reader, error) 
 	if len(segments) == 0 {
 		return nil, errs.ErrNoSegmentMatched
 	}
-	return manage.GetReader(&indexlib.BaseConfig{
+	merged, err := MergeSegmentReader(&indexlib.BaseConfig{
 		DataPath: consts.DefaultDataPath,
 	}, segments...)
+	if err != nil {
+		return nil, errors.Wrap(err, "fail to merge multiple segment readers")
+	}
+	return merged, nil
 }
 
-func (index *Index) GetSegmentsByTime(start, end int64) []string {
-	segments := make([]string, 0)
+func (index *Index) GetSegmentsByTime(start, end int64) []*Segment {
+	var segments []*Segment
 	for _, shard := range index.Shards {
 		for _, segment := range shard.Segments {
 			if segment.MatchTime(start, end) {
-				segments = append(segments, segment.GetName())
+				segments = append(segments, segment)
 			}
 		}
 	}
@@ -72,7 +75,6 @@ func (index *Index) GetSegmentsByTime(start, end int64) []string {
 		zap.Int64("start", start),
 		zap.Int64("end", end),
 		zap.Int("size", len(segments)),
-		zap.Any("segments", segments),
 	)
 	return segments
 }

@@ -4,13 +4,20 @@
 package manage
 
 import (
-	"github.com/tatris-io/tatris/internal/protocol"
-
 	"github.com/tatris-io/tatris/internal/common/errs"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/indexlib/bluge"
+	"github.com/tatris-io/tatris/internal/protocol"
 	"go.uber.org/zap"
+)
+
+var (
+	defaultReaderCache = newReaderCache(
+		defaultExpireTime,
+		defaultExpireCheckInterval,
+		defaultCloseDelay,
+	)
 )
 
 // GetReader The Reader represents a stable snapshot of the index a point in time.
@@ -21,6 +28,8 @@ func GetReader(
 	config *indexlib.BaseConfig,
 	segments ...string,
 ) (indexlib.Reader, error) {
+	// TODO: when we support update mappings when an index running, segments(represented by 'index'
+	// var here) of the index may have different mappings
 	indexlib.SetDefaultConfig(config)
 	switch config.IndexLibType {
 	case indexlib.BlugeIndexLibType:
@@ -34,6 +43,32 @@ func GetReader(
 	default:
 		return nil, errs.ErrIndexLibNotSupport
 	}
+}
+
+// GetReaderUsingCache tries to get reader from cache firstly, or open a new reader and cache it.
+func GetReaderUsingCache(config *indexlib.BaseConfig, index string) (indexlib.Reader, error) {
+	// TODO: Here we didn't lock across 'defaultReaderCache.Get()' and
+	// 'defaultReaderCache.PutIfAbsent()'
+	// Because 'GetReader' is a heavy operation, which takes long time.
+	// Attention: When this func is called with same 'index' arg many times in a short time, it
+	// causes 'Cache Breakdown'.
+	// If this does matter, extra optimizations are required.
+
+	if reader, ok := defaultReaderCache.Get(index); ok {
+		return reader, nil
+	}
+
+	reader, err := GetReader(config, index)
+	if err != nil {
+		return nil, err
+	}
+
+	finalReader, put := defaultReaderCache.PutIfAbsent(index, reader)
+	if !put {
+		// There is already a reader(ref by finalReader) in the cache. Close the redundant one.
+		reader.Close()
+	}
+	return finalReader, nil
 }
 
 // GetWriter Writer’s hold an exclusive-lock on their underlying directory which prevents other

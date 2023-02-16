@@ -6,6 +6,7 @@ package bluge
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"strings"
 	"time"
@@ -36,12 +37,18 @@ type BlugeReader struct {
 	*indexlib.BaseConfig
 	Segments []string
 	Readers  []*bluge.Reader
+	// closeHook will be called in 'Close' func of BlugeReader if it is not nil
+	closeHook func(*BlugeReader)
 }
 
 type BlugeSearchResult struct {
 	docs    []*search.DocumentMatch
 	buckets []*search.Bucket
 }
+
+var (
+	errNotBlugeReader = errors.New("not a bluge reader")
+)
 
 func NewBlugeReader(
 	config *indexlib.BaseConfig,
@@ -55,6 +62,11 @@ func NewBlugeReader(
 }
 
 func (b *BlugeReader) OpenReader() error {
+	if len(b.Readers) > 0 {
+		// opened
+		return nil
+	}
+
 	var cfg bluge.Config
 
 	for _, segment := range b.Segments {
@@ -491,10 +503,44 @@ func (b *BlugeReader) Count() int {
 }
 
 func (b *BlugeReader) Close() {
+	if b.closeHook != nil {
+		b.closeHook(b)
+		return
+	}
+
 	for _, reader := range b.Readers {
 		err := reader.Close()
 		if err != nil {
 			log.Printf("fail to close bluge reader for: %s", err)
 		}
 	}
+}
+
+// MergeReader multiple readers into one BlugeReader.
+// The readers(or their underlying readers) must be type of BlugeReader.
+func MergeReader(config *indexlib.BaseConfig, readers ...indexlib.Reader) (*BlugeReader, error) {
+	// 99% case readers has 1 index and 1 reader, so the slice capacity is set to len(readers)
+	blugeReaders := make([]*bluge.Reader, 0, len(readers))
+
+	for _, reader := range readers {
+		unwrap := indexlib.UnwrapReader(reader)
+		if unwrap == nil {
+			return nil, errNotBlugeReader
+		}
+		converted, ok := unwrap.(*BlugeReader)
+		if !ok {
+			return nil, errNotBlugeReader
+		}
+		blugeReaders = append(blugeReaders, converted.Readers...)
+	}
+
+	return &BlugeReader{
+		BaseConfig: config,
+		Readers:    blugeReaders,
+		closeHook: func(_ *BlugeReader) {
+			for _, reader := range readers {
+				reader.Close()
+			}
+		},
+	}, nil
 }

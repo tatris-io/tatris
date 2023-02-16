@@ -79,6 +79,25 @@ func (shard *Shard) CheckSegments() {
 	}
 }
 
+// ForceAddSegment forces adding a segment to current shard
+func (shard *Shard) ForceAddSegment() {
+	shard.lock.Lock()
+	defer shard.lock.Unlock()
+
+	lastedSegment := shard.GetLatestSegment()
+	newID := shard.GetSegmentNum()
+	shard.addSegment(newID)
+	if lastedSegment != nil {
+		lastedSegment.onMature()
+	}
+	logger.Info(
+		"add segment",
+		zap.String("index", shard.Index.Name),
+		zap.Int("shard", shard.ShardID),
+		zap.Int("segment", newID),
+	)
+}
+
 func (shard *Shard) OpenWAL() (log.WalLog, error) {
 	shard.lock.Lock()
 	defer shard.lock.Unlock()
