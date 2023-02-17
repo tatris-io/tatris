@@ -143,14 +143,15 @@ func ConsumeWAL(shard *core.Shard, wal log.WalLog) error {
 	// If all is OK, we have firstIndex == shard.Stat.WalIndex
 
 	if firstIndex != shard.Stat.WalIndex {
-		if firstIndex == 1 && shard.Stat.WalIndex == 0 {
-			// expected: first time wal read
-		} else if from < firstIndex {
-			// from jumps to firstIndex
-			from = firstIndex
-			logger.Warn("[wal] maybe loss wal", zap.String("shard", shard.GetName()), zap.Uint64("from", from), zap.Uint64("to", firstIndex-1))
-		} else {
-			logger.Warn("[wal] last truncate may fail", zap.String("shard", shard.GetName()), zap.Uint64("from", firstIndex), zap.Uint64("to", shard.Stat.WalIndex))
+		// (firstIndex == 1 && shard.Stat.WalIndex == 0) is expected when first time wal read
+		if !(firstIndex == 1 && shard.Stat.WalIndex == 0) {
+			if from < firstIndex {
+				// from jumps to firstIndex
+				from = firstIndex
+				logger.Warn("[wal] maybe loss wal", zap.String("shard", shard.GetName()), zap.Uint64("from", from), zap.Uint64("to", firstIndex-1))
+			} else {
+				logger.Warn("[wal] last truncate may fail", zap.String("shard", shard.GetName()), zap.Uint64("from", firstIndex), zap.Uint64("to", shard.Stat.WalIndex))
+			}
 		}
 	}
 
