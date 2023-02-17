@@ -64,8 +64,7 @@ func GetIndex(indexName string) (*core.Index, error) {
 		return index, nil
 	}
 	// load
-	key := prefix(indexName)
-	if b, err := MStore.Get(key); err != nil {
+	if b, err := MStore.Get(prefix(indexName)); err != nil {
 		return nil, err
 	} else if b == nil {
 		return nil, &errs.IndexNotFoundError{Index: indexName}
