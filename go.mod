@@ -18,6 +18,7 @@ require (
 	github.com/sourcegraph/conc v0.2.0
 	github.com/stretchr/testify v1.8.1
 	github.com/tidwall/wal v1.1.7
+	github.com/xhit/go-str2duration/v2 v2.1.0
 	go.etcd.io/bbolt v1.3.6
 	go.uber.org/atomic v1.10.0
 	go.uber.org/zap v1.24.0

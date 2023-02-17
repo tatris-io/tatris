@@ -21,6 +21,9 @@
       },
       "forks": {
         "Type": "integer"
+      },
+      "start_time": {
+        "Type": "date"
       }
     }
   },

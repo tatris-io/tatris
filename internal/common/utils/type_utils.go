@@ -13,7 +13,7 @@ func IsDateType(value interface{}) bool {
 	case string:
 		_, err := now.Parse(value)
 		return err == nil
-	case time.Time:
+	case time.Time, float64, int64:
 		return true
 	default:
 		return false

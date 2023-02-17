@@ -5,8 +5,12 @@ package query
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"time"
+
+	"github.com/tatris-io/tatris/internal/common/utils"
+	"github.com/xhit/go-str2duration/v2"
 
 	"github.com/tatris-io/tatris/internal/indexlib/manage"
 
@@ -55,7 +59,11 @@ func SearchDocs(
 		return nil, err
 	}
 	if aggs := request.Aggs; aggs != nil {
-		libRequest.SetAggs(transformAggs(aggs))
+		agg, err := transformAggs(aggs)
+		if err != nil {
+			return nil, err
+		}
+		libRequest.SetAggs(agg)
 	}
 	if sort := request.Sort; sort != nil {
 		libRequest.SetSort(transformSort(sort))
@@ -140,18 +148,24 @@ func transform(query protocol.Query, mappings *protocol.Mappings) (indexlib.Quer
 	}
 }
 
-func transformAggs(aggs map[string]protocol.Aggs) map[string]indexlib.Aggs {
+func transformAggs(aggs map[string]protocol.Aggs) (map[string]indexlib.Aggs, error) {
 	result := make(map[string]indexlib.Aggs, len(aggs))
 
 	for name, agg := range aggs {
-		indexlibAggs := indexlib.Aggs{}
+		indexlibAggs := &indexlib.Aggs{}
 		if agg.Terms != nil {
+			if agg.Terms.Field == "" {
+				return nil, errs.ErrEmptyField
+			}
 			if agg.Terms.Size == 0 {
 				agg.Terms.Size = 10
 			}
 
 			indexlibAggs.Terms = &indexlib.AggTerms{Field: agg.Terms.Field, Size: agg.Terms.Size}
 		} else if agg.NumericRange != nil {
+			if agg.NumericRange.Field == "" {
+				return nil, errs.ErrEmptyField
+			}
 			indexLibRanges := make([]indexlib.NumericRange, 0, len(agg.NumericRange.Ranges))
 			if ranges := agg.NumericRange.Ranges; ranges != nil {
 				for _, r := range ranges {
@@ -160,31 +174,58 @@ func transformAggs(aggs map[string]protocol.Aggs) map[string]indexlib.Aggs {
 			}
 			indexlibAggs.NumericRange = &indexlib.AggNumericRange{Field: agg.NumericRange.Field, Ranges: indexLibRanges, Keyed: agg.NumericRange.Keyed}
 		} else if agg.Sum != nil {
+			if agg.Sum.Field == "" {
+				return nil, errs.ErrEmptyField
+			}
 			indexlibAggs.Sum = &indexlib.AggMetric{Field: agg.Sum.Field}
 		} else if agg.Min != nil {
+			if agg.Min.Field == "" {
+				return nil, errs.ErrEmptyField
+			}
 			indexlibAggs.Min = &indexlib.AggMetric{Field: agg.Min.Field}
 		} else if agg.Max != nil {
+			if agg.Max.Field == "" {
+				return nil, errs.ErrEmptyField
+			}
 			indexlibAggs.Max = &indexlib.AggMetric{Field: agg.Max.Field}
 		} else if agg.Avg != nil {
+			if agg.Avg.Field == "" {
+				return nil, errs.ErrEmptyField
+			}
 			indexlibAggs.Avg = &indexlib.AggMetric{Field: agg.Avg.Field}
 		} else if agg.WeightedAvg != nil {
+			if agg.WeightedAvg.Value.Field == "" {
+				return nil, errs.ErrEmptyField
+			}
 			indexlibAggs.WeightedAvg = &indexlib.AggWeightedAvg{
 				Value:  &indexlib.AggMetric{Field: agg.WeightedAvg.Value.Field},
 				Weight: &indexlib.AggMetric{Field: agg.WeightedAvg.Weight.Field},
 			}
 		} else if agg.Cardinality != nil {
+			if agg.Cardinality.Field == "" {
+				return nil, errs.ErrEmptyField
+			}
 			indexlibAggs.Cardinality = &indexlib.AggMetric{Field: agg.Cardinality.Field}
+		} else if agg.DateHistogram != nil {
+			err := transformDateHistogramAgg(agg.DateHistogram, indexlibAggs)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		// nested aggs
 		if agg.Aggs != nil {
-			indexlibAggs.Aggs = transformAggs(agg.Aggs)
+			var err error
+			indexlibAggs.Aggs, err = transformAggs(agg.Aggs)
+			if err != nil {
+				return nil, err
+			}
 		}
 
-		result[name] = indexlibAggs
+		result[name] = *indexlibAggs
 	}
 
-	return result
+	return result, nil
 }
 
 func transformSort(sort protocol.Sort) indexlib.Sort {
@@ -405,4 +446,51 @@ func transformBool(
 		q.MinShould = minShould
 	}
 	return q, nil
+}
+
+func transformDateHistogramAgg(d *protocol.AggDateHistogram, indexlibAggs *indexlib.Aggs) error {
+	if d.Field == "" {
+		return errs.ErrEmptyField
+	}
+	if d.Interval != "" && d.FixedInterval == "" {
+		d.FixedInterval = d.Interval
+	}
+	if d.FixedInterval == "" && d.CalendarInterval == "" {
+		return errors.New(
+			"required one of fields [fixed_interval, calendar_interval], but none were specified",
+		)
+	}
+	var fixedInterval time.Duration
+	if d.FixedInterval != "" {
+		var err error
+		fixedInterval, err = str2duration.ParseDuration(d.FixedInterval)
+		if err != nil {
+			return err
+		}
+	}
+
+	var extendedBounds *indexlib.HistogramBound
+	if d.ExtendedBounds != nil {
+		extendedBounds = &indexlib.HistogramBound{
+			Min: utils.Timestamp2Unix(int64(d.ExtendedBounds.Min)).UnixNano(),
+			Max: utils.Timestamp2Unix(int64(d.ExtendedBounds.Max)).UnixNano(),
+		}
+	}
+	var hardBounds *indexlib.HistogramBound
+	if d.HardBounds != nil {
+		hardBounds = &indexlib.HistogramBound{
+			Min: utils.Timestamp2Unix(int64(d.HardBounds.Min)).UnixNano(),
+			Max: utils.Timestamp2Unix(int64(d.HardBounds.Max)).UnixNano(),
+		}
+	}
+
+	indexlibAggs.DateHistogram = &indexlib.AggDateHistogram{
+		Field: d.Field, CalendarInterval: d.CalendarInterval,
+		FixedInterval: int64(fixedInterval), Format: d.Format,
+		TimeZone: d.TimeZone, Offset: d.Offset, MinDocCount: d.MinDocCount,
+		Keyed: d.Keyed, Missing: d.Missing,
+		ExtendedBounds: extendedBounds,
+		HardBounds:     hardBounds,
+	}
+	return nil
 }

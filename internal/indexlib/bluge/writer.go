@@ -220,9 +220,9 @@ func (b *BlugeWriter) addFieldByMappingType(
 
 			switch v := value.(type) {
 			case float64:
-				date = time.Unix(int64(v), 0)
+				date = utils.Timestamp2Unix(int64(v))
 			case int64:
-				date = time.Unix(v, 0)
+				date = utils.Timestamp2Unix(v)
 			case string:
 				date, err = time.Parse(time.RFC3339, v)
 				if err != nil {

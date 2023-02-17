@@ -214,5 +214,33 @@ func queryCases() []QueryCase {
                    ]
                  }`,
 		},
+		{
+			name: "date_histogram",
+			req: `
+				{
+				  "size": 0,
+				  "aggs": {
+					"histogram": {
+					  "date_histogram": {
+						"field": "start_time",
+						"fixed_interval": "1m",
+						"min_doc_count": 1,
+						"extended_bounds": {
+							"min": 1676513640000,
+							"max": 1676600220000
+						}
+					}, 
+					"aggs": {
+						"sum_forks": {
+						  "sum": {
+							"field": "forks"
+						  }
+						}
+ 					}
+				  }
+				}
+			  }
+			`,
+		},
 	}
 }

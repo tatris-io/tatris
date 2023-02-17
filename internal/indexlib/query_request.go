@@ -137,15 +137,16 @@ type RangeVal struct {
 }
 
 type Aggs struct {
-	Terms        *AggTerms
-	NumericRange *AggNumericRange
-	Sum          *AggMetric
-	Min          *AggMetric
-	Max          *AggMetric
-	Avg          *AggMetric
-	Cardinality  *AggMetric
-	WeightedAvg  *AggWeightedAvg
-	Aggs         map[string]Aggs
+	Terms         *AggTerms
+	NumericRange  *AggNumericRange
+	Sum           *AggMetric
+	Min           *AggMetric
+	Max           *AggMetric
+	Avg           *AggMetric
+	Cardinality   *AggMetric
+	WeightedAvg   *AggWeightedAvg
+	DateHistogram *AggDateHistogram
+	Aggs          map[string]Aggs
 }
 
 type AggMetric struct {
@@ -178,4 +179,23 @@ type Sort []map[string]SortTerm
 type SortTerm struct {
 	Order   string
 	Missing string
+}
+
+type AggDateHistogram struct {
+	Field            string
+	FixedInterval    int64 // nanos
+	CalendarInterval string
+	Format           string
+	TimeZone         string
+	Offset           string
+	MinDocCount      int
+	Keyed            bool
+	Missing          string
+	ExtendedBounds   *HistogramBound
+	HardBounds       *HistogramBound
+}
+
+type HistogramBound struct {
+	Min int64 `json:"min"` // nanos
+	Max int64 `json:"max"` // nanos
 }

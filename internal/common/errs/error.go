@@ -14,6 +14,7 @@ var (
 	ErrIndexLibNotSupport = errors.New("index lib not support")
 	ErrSpecifyDirAsFile   = errors.New("specify directory as file")
 	ErrSegmentReadonly    = errors.New("segment is readonly")
+	ErrEmptyField         = errors.New("invalid field specified, must be non-null and non-empty")
 )
 
 func IsIndexNotFound(err error) bool {
