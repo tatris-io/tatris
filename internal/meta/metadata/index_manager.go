@@ -20,6 +20,8 @@ import (
 	"github.com/tatris-io/tatris/internal/protocol"
 )
 
+var IndexCache = cache.New(cache.NoExpiration, cache.NoExpiration)
+
 func CreateIndex(index *core.Index) error {
 	err := checkParam(index.Index)
 	buildIndex(index)

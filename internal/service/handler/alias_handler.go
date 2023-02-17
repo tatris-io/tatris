@@ -71,9 +71,9 @@ func handleAliasTerm(c *gin.Context, action string, term *protocol.AliasTerm) bo
 	if term.Index == "" || term.Alias == "" {
 		var msg string
 		if term.Index == "" {
-			msg = fmt.Sprintf("One of [index] or [indices] is required")
+			msg = "One of [index] or [indices] is required"
 		} else {
-			msg = fmt.Sprintf("One of [alias] or [aliases] is required")
+			msg = "One of [alias] or [aliases] is required"
 		}
 		c.JSON(
 			http.StatusBadRequest,
