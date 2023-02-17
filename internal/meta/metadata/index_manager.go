@@ -38,7 +38,7 @@ func SaveIndex(index *core.Index) error {
 		return err
 	}
 	indexCache.Set(index.Name, index, cache.NoExpiration)
-	return MStore.Set(prefix(index.Name), json)
+	return MStore.Set(indexPrefix(index.Name), json)
 }
 
 func GetShard(indexName string, shardID int) (*core.Shard, error) {
@@ -64,7 +64,7 @@ func GetIndex(indexName string) (*core.Index, error) {
 		return index, nil
 	}
 	// load
-	if b, err := MStore.Get(prefix(indexName)); err != nil {
+	if b, err := MStore.Get(indexPrefix(indexName)); err != nil {
 		return nil, err
 	} else if b == nil {
 		return nil, &errs.IndexNotFoundError{Index: indexName}
@@ -92,7 +92,7 @@ func GetIndex(indexName string) (*core.Index, error) {
 
 func DeleteIndex(indexName string) error {
 	indexCache.Delete(indexName)
-	return MStore.Delete(prefix(indexName))
+	return MStore.Delete(indexPrefix(indexName))
 }
 
 func buildIndex(index *core.Index) {
@@ -172,6 +172,6 @@ func checkType(paramType string) error {
 	return &errs.UnsupportedError{Desc: "field type", Value: paramType}
 }
 
-func prefix(name string) string {
+func indexPrefix(name string) string {
 	return IndexPath + name
 }
