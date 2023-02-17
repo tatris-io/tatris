@@ -135,6 +135,6 @@ type AggDateHistogram struct {
 }
 
 type HistogramBound struct {
-	Min float64 `json:"min"` // minimum
-	Max float64 `json:"max"` // maximum
+	Min float64 `json:"min"` // second/millis/micros/nanos
+	Max float64 `json:"max"` // second/millis/micros/nanos
 }
