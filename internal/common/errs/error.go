@@ -102,11 +102,3 @@ type InvalidQueryError struct {
 func (e *InvalidQueryError) Error() string {
 	return fmt.Sprintf("message: %s, query: %v", e.Message, e.Query)
 }
-
-type AliasMissingError struct {
-	Alias string `json:"alias"`
-}
-
-func (e *AliasMissingError) Error() string {
-	return fmt.Sprintf("alias [%s] missing", e.Alias)
-}

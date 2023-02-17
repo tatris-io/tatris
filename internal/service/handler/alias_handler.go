@@ -3,6 +3,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -23,22 +24,7 @@ func ManageAliasHandler(c *gin.Context) {
 	actions := req.Actions
 	for _, action := range actions {
 		for name, term := range action {
-			if exist, _ := CheckIndexExistence(term.Index, c); !exist {
-				return
-			}
-			var err error
-			code := http.StatusInternalServerError
-			switch name {
-			case "add":
-				err = metadata.AddAlias(term)
-			case "remove":
-				err = metadata.RemoveAlias(term)
-			default:
-				err = &errs.UnsupportedError{Desc: "alias action", Value: name}
-				code = http.StatusBadRequest
-			}
-			if err != nil {
-				c.JSON(code, protocol.Response{Code: code, Err: err})
+			if !handleAliasTerm(c, name, term) {
 				return
 			}
 		}
@@ -71,14 +57,72 @@ func GetAliasHandler(c *gin.Context) {
 			if term != nil {
 				terms = append(terms, term)
 			}
-		}
-		if len(terms) == 0 {
-			c.JSON(http.StatusNotFound, protocol.Response{Code: http.StatusNotFound, Err: &errs.AliasMissingError{Alias: aliasName}})
-			return
+			if len(terms) == 0 {
+				c.JSON(http.StatusNotFound, protocol.Response{Code: http.StatusNotFound, Message: fmt.Sprintf("alias [%s] missing", aliasName)})
+				return
+			}
 		}
 	}
 	resp = aliasResponse(terms...)
 	c.JSON(http.StatusOK, resp)
+}
+
+func handleAliasTerm(c *gin.Context, action string, term *protocol.AliasTerm) bool {
+	if term.Index == "" || term.Alias == "" {
+		var msg string
+		if term.Index == "" {
+			msg = fmt.Sprintf("One of [index] or [indices] is required")
+		} else {
+			msg = fmt.Sprintf("One of [alias] or [aliases] is required")
+		}
+		c.JSON(
+			http.StatusBadRequest,
+			protocol.Response{
+				Code:    http.StatusBadRequest,
+				Message: msg,
+			},
+		)
+		return false
+	}
+	if exist, _ := CheckIndexExistence(term.Index, c); !exist {
+		return false
+	}
+	if exist, err := metadata.GetIndex(term.Alias); err != nil && !errs.IsIndexNotFound(err) {
+		c.JSON(
+			http.StatusInternalServerError,
+			protocol.Response{
+				Code: http.StatusInternalServerError,
+				Err:  err,
+			},
+		)
+		return false
+	} else if exist != nil {
+		c.JSON(
+			http.StatusBadRequest,
+			protocol.Response{
+				Code:    http.StatusBadRequest,
+				Message: fmt.Sprintf("Invalid alias name [%s]: an index or data stream exists with the same name as the alias", term.Alias),
+			},
+		)
+		return false
+	} else {
+		var err error
+		code := http.StatusInternalServerError
+		switch action {
+		case "add":
+			err = metadata.AddAlias(term)
+		case "remove":
+			err = metadata.RemoveAlias(term)
+		default:
+			err = &errs.UnsupportedError{Desc: "alias action", Value: action}
+			code = http.StatusBadRequest
+		}
+		if err != nil {
+			c.JSON(code, protocol.Response{Code: code, Err: err})
+			return false
+		}
+	}
+	return true
 }
 
 func aliasResponse(aliasTerms ...*protocol.AliasTerm) protocol.AliasGetResponse {

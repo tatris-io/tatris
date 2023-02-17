@@ -12,6 +12,18 @@ import (
 	"go.uber.org/zap"
 )
 
+func ResolveIndexes(name string) []string {
+	terms := GetTermsByAlias(name)
+	if len(terms) == 0 {
+		return []string{name}
+	}
+	indexes := make([]string, len(terms))
+	for i, t := range terms {
+		indexes[i] = t.Index
+	}
+	return indexes
+}
+
 func AddAlias(aliasTerm *protocol.AliasTerm) error {
 
 	index := aliasTerm.Index
