@@ -15,13 +15,13 @@ import (
 )
 
 var (
-	// AliasTermsCache caches { alias -> []AliasTerm }
-	AliasTermsCache = cache.New(
+	// aliasTermsCache caches { alias -> []AliasTerm }
+	aliasTermsCache = cache.New(
 		cache.NoExpiration,
 		cache.NoExpiration,
 	)
-	// IndexTermsCache caches { index -> []AliasTerm }
-	IndexTermsCache = cache.New(
+	// indexTermsCache caches { index -> []AliasTerm }
+	indexTermsCache = cache.New(
 		cache.NoExpiration,
 		cache.NoExpiration,
 	)
@@ -47,7 +47,7 @@ func LoadAliases() error {
 		return err
 	}
 	for alias, terms := range groupByAlias {
-		AliasTermsCache.Set(alias, terms, cache.NoExpiration)
+		aliasTermsCache.Set(alias, terms, cache.NoExpiration)
 	}
 	groupByIndex, err := slices.Group(terms, func(t *protocol.AliasTerm) (string, error) {
 		return t.Index, nil
@@ -56,7 +56,7 @@ func LoadAliases() error {
 		return err
 	}
 	for index, terms := range groupByIndex {
-		IndexTermsCache.Set(index, terms, cache.NoExpiration)
+		indexTermsCache.Set(index, terms, cache.NoExpiration)
 	}
 	return nil
 }
@@ -133,7 +133,7 @@ func remove(terms []*protocol.AliasTerm, term *protocol.AliasTerm) []*protocol.A
 }
 
 func ListTerms() []*protocol.AliasTerm {
-	items := AliasTermsCache.Items()
+	items := aliasTermsCache.Items()
 	terms := make([]*protocol.AliasTerm, 0)
 	for _, item := range items {
 		terms = append(terms, item.Object.([]*protocol.AliasTerm)...)
@@ -143,7 +143,7 @@ func ListTerms() []*protocol.AliasTerm {
 
 func GetTermsByAlias(alias string) []*protocol.AliasTerm {
 	var terms []*protocol.AliasTerm
-	cached, found := AliasTermsCache.Get(alias)
+	cached, found := aliasTermsCache.Get(alias)
 	if found {
 		terms = cached.([]*protocol.AliasTerm)
 	}
@@ -152,7 +152,7 @@ func GetTermsByAlias(alias string) []*protocol.AliasTerm {
 
 func GetTermsByIndex(index string) []*protocol.AliasTerm {
 	terms := make([]*protocol.AliasTerm, 0)
-	cached, found := IndexTermsCache.Get(index)
+	cached, found := indexTermsCache.Get(index)
 	if found {
 		terms = cached.([]*protocol.AliasTerm)
 	}
@@ -178,8 +178,8 @@ func saveAlias(
 	index string,
 	indexTerms []*protocol.AliasTerm,
 ) error {
-	AliasTermsCache.Set(alias, aliasTerms, cache.NoExpiration)
-	IndexTermsCache.Set(index, indexTerms, cache.NoExpiration)
+	aliasTermsCache.Set(alias, aliasTerms, cache.NoExpiration)
+	indexTermsCache.Set(index, indexTerms, cache.NoExpiration)
 
 	indexTermsJSON, err := json.Marshal(indexTerms)
 	if err != nil {

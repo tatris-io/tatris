@@ -20,7 +20,7 @@ import (
 	"github.com/tatris-io/tatris/internal/protocol"
 )
 
-var IndexCache = cache.New(cache.NoExpiration, cache.NoExpiration)
+var indexCache = cache.New(cache.NoExpiration, cache.NoExpiration)
 
 func CreateIndex(index *core.Index) error {
 	err := checkParam(index.Index)
@@ -37,7 +37,7 @@ func SaveIndex(index *core.Index) error {
 	if err != nil {
 		return err
 	}
-	IndexCache.Set(index.Name, index, cache.NoExpiration)
+	indexCache.Set(index.Name, index, cache.NoExpiration)
 	return MStore.Set(prefix(index.Name), json)
 }
 
@@ -58,7 +58,7 @@ func GetShard(indexName string, shardID int) (*core.Shard, error) {
 
 func GetIndex(indexName string) (*core.Index, error) {
 	var index *core.Index
-	cachedIndex, found := IndexCache.Get(indexName)
+	cachedIndex, found := indexCache.Get(indexName)
 	if found {
 		index = cachedIndex.(*core.Index)
 		return index, nil
@@ -86,13 +86,13 @@ func GetIndex(indexName string) (*core.Index, error) {
 				}
 			}
 		}
-		IndexCache.Set(index.Name, index, cache.NoExpiration)
+		indexCache.Set(index.Name, index, cache.NoExpiration)
 		return index, nil
 	}
 }
 
 func DeleteIndex(indexName string) error {
-	IndexCache.Delete(indexName)
+	indexCache.Delete(indexName)
 	return MStore.Delete(prefix(indexName))
 }
 
