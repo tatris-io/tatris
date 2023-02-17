@@ -3,15 +3,14 @@
 package wal_test
 
 import (
-	"testing"
-	"time"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/tatris-io/tatris/internal/core"
 	"github.com/tatris-io/tatris/internal/ingestion"
 	"github.com/tatris-io/tatris/internal/protocol"
 	"github.com/tatris-io/tatris/internal/query"
 	"github.com/tatris-io/tatris/test/ut/prepare"
+	"testing"
+	"time"
 )
 
 func TestWal(t *testing.T) {
