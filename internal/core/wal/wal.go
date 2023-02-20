@@ -6,9 +6,17 @@ package wal
 import (
 	"encoding/json"
 	"math"
+	"os"
+	"path"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/tatris-io/tatris/internal/core"
+
+	"github.com/tatris-io/tatris/internal/core/wal/tidwall"
+	"github.com/tidwall/wal"
 
 	"github.com/tatris-io/tatris/internal/protocol"
 
@@ -21,7 +29,6 @@ import (
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/common/utils"
-	"github.com/tatris-io/tatris/internal/core"
 	"github.com/tatris-io/tatris/internal/core/wal/log"
 	"github.com/tatris-io/tatris/internal/meta/metadata"
 	"go.uber.org/zap"
@@ -31,7 +38,10 @@ const (
 	consumptionLimit = 5000
 )
 
-var wals *cache.Cache
+var (
+	wals *cache.Cache
+	lock sync.Mutex
+)
 
 func init() {
 	wals = cache.New(cache.NoExpiration, cache.NoExpiration)
@@ -46,26 +56,52 @@ func init() {
 func OpenWAL(shard *core.Shard) (log.WalLog, error) {
 	name := shard.GetName()
 	defer utils.Timerf("open wal finish, name:%s", name)()
-	wal, err := shard.OpenWAL()
+
+	options := config.Cfg.Wal
+	p := path.Join(consts.DefaultWALPath, name)
+	logger.Info("open wal", zap.String("name", name), zap.Any("options", options))
+	twalLog := &tidwall.TWalLog{}
+	twalOptions := &wal.Options{}
+	twalOptions.NoSync = options.NoSync
+	twalOptions.SegmentSize = options.SegmentSize
+	if options.LogFormat == 1 {
+		twalOptions.LogFormat = wal.JSON
+	} else {
+		twalOptions.LogFormat = wal.Binary
+	}
+	twalOptions.SegmentCacheSize = options.SegmentCacheSize
+	twalOptions.NoCopy = options.NoCopy
+	twalOptions.DirPerms = options.DirPerms
+	twalOptions.FilePerms = options.FilePerms
+
+	l, err := wal.Open(p, twalOptions)
 	if err != nil {
 		return nil, err
 	}
-	wals.Set(name, wal, cache.NoExpiration)
-	return wal, nil
+	twalLog.Log = l
+	shard.Wal = twalLog
+
+	if err != nil {
+		return nil, err
+	}
+	wals.Set(name, twalLog, cache.NoExpiration)
+	return twalLog, nil
 }
 
 func ProduceWAL(shard *core.Shard, docs []protocol.Document) error {
 	name := shard.GetName()
 	defer utils.Timerf("produce wal finish, name:%s, size:%d", name, len(docs))()
-	w, found := wals.Get(name)
-	var wal log.WalLog
+	wal := shard.Wal
 	var err error
-	if found {
-		wal = w.(log.WalLog)
-	} else {
-		if wal, err = OpenWAL(shard); err != nil {
-			return err
+	if wal == nil {
+		lock.Lock()
+		wal = shard.Wal
+		if wal == nil {
+			if wal, err = OpenWAL(shard); err != nil {
+				return err
+			}
 		}
+		lock.Unlock()
 	}
 	datas := make([][]byte, 0)
 	for _, doc := range docs {
@@ -80,8 +116,10 @@ func ProduceWAL(shard *core.Shard, docs []protocol.Document) error {
 
 func ConsumeWALs() {
 	p := pool.New().WithMaxGoroutines(config.Cfg.Wal.Parallel)
+	defer utils.Timerf("consume wals finish")()
+	lock.Lock()
+	defer lock.Unlock()
 	items := wals.Items()
-	defer utils.Timerf("consume wals finish, size:%d", len(items))()
 	for name, wal := range items {
 		n := name
 		w := wal
@@ -97,12 +135,29 @@ func ConsumeWALs() {
 				)
 				return
 			}
+			wallog := w.Object.(log.WalLog)
 			shard, err := metadata.GetShard(i, s)
-			if shard == nil || err != nil {
-				logger.Error("get shard failed", zap.String("name", n), zap.Error(err))
+			if err != nil {
+				if errs.IsIndexNotFound(err) || errs.IsShardNotFound(err) {
+					// index or shard has been deleted, clear wal
+					wals.Delete(n)
+					wallog.Close()
+					var p string
+					if errs.IsIndexNotFound(err) {
+						p = path.Join(consts.DefaultWALPath, i)
+					} else {
+						p = path.Join(consts.DefaultWALPath, n)
+					}
+					err = os.RemoveAll(p)
+					if err != nil {
+						logger.Error("clean wal failed", zap.String("name", n), zap.Error(err))
+					}
+				} else {
+					logger.Error("get shard failed", zap.String("name", n), zap.Error(err))
+				}
 				return
 			}
-			err = ConsumeWAL(shard, w.Object.(log.WalLog))
+			err = ConsumeWAL(shard, wallog)
 			if err != nil {
 				logger.Error(
 					"consume shard wal failed",

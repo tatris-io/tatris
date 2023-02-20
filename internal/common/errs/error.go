@@ -30,6 +30,11 @@ func (e *IndexNotFoundError) Error() string {
 	return fmt.Sprintf("index: %s", e.Index)
 }
 
+func IsShardNotFound(err error) bool {
+	var notFoundErr *ShardNotFoundError
+	return err != nil && errors.As(err, &notFoundErr)
+}
+
 type ShardNotFoundError struct {
 	Index string `json:"index"`
 	Shard int    `json:"shard"`

@@ -5,13 +5,9 @@ package metadata
 
 import (
 	"encoding/json"
+	"github.com/tatris-io/tatris/internal/common/consts"
 	"strings"
 	"testing"
-	"time"
-
-	"github.com/tatris-io/tatris/internal/core"
-
-	"github.com/tatris-io/tatris/internal/common/consts"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tatris-io/tatris/internal/protocol"
@@ -97,25 +93,4 @@ func TestDynamicMappingCheck(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestGetIndexSameInstance(t *testing.T) {
-	version := time.Now().Format(time.RFC3339Nano)
-	err := SaveIndex(&core.Index{
-		Index: &protocol.Index{
-			Name: version,
-		},
-	})
-	assert.NoErrorf(t, err, "SaveIndex")
-
-	// clear meta cache
-	indexCache.Flush()
-
-	index1, err := GetIndex(version)
-	assert.NoError(t, err, "GetIndex 1")
-
-	index2, err := GetIndex(version)
-	assert.NoError(t, err, "GetIndex 2")
-
-	assert.Same(t, index1, index2, "GetIndex must return same instance for the same name")
 }

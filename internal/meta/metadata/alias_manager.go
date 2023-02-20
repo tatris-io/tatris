@@ -115,6 +115,16 @@ func RemoveAlias(aliasTerm *protocol.AliasTerm) error {
 	return saveAlias(alias, aliasTerms, index, indexTerms)
 }
 
+func RemoveAliasesByIndex(index string) error {
+	terms := GetTermsByIndex(index)
+	for _, term := range terms {
+		if err := RemoveAlias(term); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func add(terms []*protocol.AliasTerm, term *protocol.AliasTerm) []*protocol.AliasTerm {
 	newTerms := remove(terms, term)
 	newTerms = append(newTerms, term)

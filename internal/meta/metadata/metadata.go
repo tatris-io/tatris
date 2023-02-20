@@ -21,6 +21,10 @@ func init() {
 		logger.Panic("init metastore failed", zap.Error(err))
 	}
 
+	if err := LoadIndexes(); err != nil {
+		logger.Panic("load indexes failed", zap.Error(err))
+	}
+
 	if err := LoadAliases(); err != nil {
 		logger.Panic("load alias failed", zap.Error(err))
 	}

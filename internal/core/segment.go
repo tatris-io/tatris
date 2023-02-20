@@ -205,3 +205,9 @@ func (segment *Segment) onMature() {
 		segment.writer = nil
 	}
 }
+
+func (segment *Segment) Close() {
+	// set the status to SegmentStatusReadonly,
+	// so immature segment can also close its writer after the last reader is closed
+	segment.status = SegmentStatusReadonly
+}

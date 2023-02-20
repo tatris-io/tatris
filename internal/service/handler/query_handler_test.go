@@ -118,7 +118,6 @@ func TestAliasQuery(t *testing.T) {
 		time.Sleep(time.Nanosecond * 1000)
 	}
 	indexes := make([]*core.Index, count)
-	//docses := make([]protocol.Document, count)
 	indexNames := make([]string, count)
 	aliasNames := make([]string, 0)
 	var err error
