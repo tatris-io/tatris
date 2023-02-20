@@ -4,16 +4,10 @@ package core
 
 import (
 	"fmt"
-	"path"
 	"sync"
 	"time"
 
-	"github.com/tatris-io/tatris/internal/common/consts"
-	"github.com/tatris-io/tatris/internal/core/config"
 	"github.com/tatris-io/tatris/internal/core/wal/log"
-	"github.com/tatris-io/tatris/internal/core/wal/tidwall"
-	"github.com/tidwall/wal"
-
 	"go.uber.org/zap"
 
 	"github.com/tatris-io/tatris/internal/common/log/logger"
@@ -25,7 +19,7 @@ type Shard struct {
 	ShardID  int
 	Segments []*Segment
 	Stat     ShardStat
-	wal      log.WalLog
+	Wal      log.WalLog `json:"-"`
 	lock     sync.RWMutex
 }
 
@@ -98,37 +92,6 @@ func (shard *Shard) ForceAddSegment() {
 	)
 }
 
-func (shard *Shard) OpenWAL() (log.WalLog, error) {
-	shard.lock.Lock()
-	defer shard.lock.Unlock()
-	if shard.wal == nil {
-		options := config.Cfg.Wal
-		name := shard.GetName()
-		p := path.Join(consts.DefaultWALPath, name)
-		logger.Info("open wal", zap.String("name", name), zap.Any("options", options))
-		twalLog := &tidwall.TWalLog{}
-		twalOptions := &wal.Options{}
-		twalOptions.NoSync = options.NoSync
-		twalOptions.SegmentSize = options.SegmentSize
-		if options.LogFormat == 1 {
-			twalOptions.LogFormat = wal.JSON
-		} else {
-			twalOptions.LogFormat = wal.Binary
-		}
-		twalOptions.SegmentCacheSize = options.SegmentCacheSize
-		twalOptions.NoCopy = options.NoCopy
-		twalOptions.DirPerms = options.DirPerms
-		twalOptions.FilePerms = options.FilePerms
-		l, err := wal.Open(p, twalOptions)
-		if err != nil {
-			return nil, err
-		}
-		twalLog.Log = l
-		shard.wal = twalLog
-	}
-	return shard.wal, nil
-}
-
 func (shard *Shard) UpdateStat(min, max time.Time, docs int64, wals uint64) {
 	mint := min.UnixMilli()
 	maxt := max.UnixMilli()
@@ -158,6 +121,12 @@ func (shard *Shard) UpdateStat(min, max time.Time, docs int64, wals uint64) {
 		zap.Int64("docNum", shard.Stat.DocNum),
 		zap.Uint64("walIndex", shard.Stat.WalIndex),
 	)
+}
+
+func (shard *Shard) Close() {
+	for _, segment := range shard.Segments {
+		segment.Close()
+	}
 }
 
 func (shard *Shard) addSegment(segmentID int) {

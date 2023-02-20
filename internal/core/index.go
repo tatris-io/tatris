@@ -4,6 +4,9 @@
 package core
 
 import (
+	"os"
+	"path"
+
 	"github.com/pkg/errors"
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/common/errs"
@@ -107,6 +110,15 @@ func (index *Index) CheckMapping(doc protocol.Document) error {
 	}
 	index.Mappings.Properties = properties
 	return nil
+}
+
+func (index *Index) Close() error {
+	for _, shard := range index.Shards {
+		shard.Close()
+	}
+	// clear data
+	p := path.Join(consts.DefaultDataPath, index.Name)
+	return os.RemoveAll(p)
 }
 
 func getFieldType(

@@ -22,6 +22,33 @@ import (
 
 var indexCache = cache.New(cache.NoExpiration, cache.NoExpiration)
 
+func LoadIndexes() error {
+	bytesMap, err := MStore.List(IndexPath)
+	if err != nil {
+		return err
+	}
+	for _, bytes := range bytesMap {
+		index := &core.Index{}
+		if err := json.Unmarshal(bytes, index); err != nil {
+			return err
+		}
+		shards := index.Shards
+		if len(shards) > 0 {
+			for _, shard := range shards {
+				shard.Index = index
+				segments := shard.Segments
+				if len(segments) > 0 {
+					for _, segment := range segments {
+						segment.Shard = shard
+					}
+				}
+			}
+		}
+		indexCache.Set(index.Name, index, cache.NoExpiration)
+	}
+	return nil
+}
+
 func CreateIndex(index *core.Index) error {
 	err := checkParam(index.Index)
 	buildIndex(index)
@@ -63,35 +90,27 @@ func GetIndex(indexName string) (*core.Index, error) {
 		index = cachedIndex.(*core.Index)
 		return index, nil
 	}
-	// load
-	if b, err := MStore.Get(indexPrefix(indexName)); err != nil {
-		return nil, err
-	} else if b == nil {
-		return nil, &errs.IndexNotFoundError{Index: indexName}
-	} else {
-		index := &core.Index{}
-		if err := json.Unmarshal(b, index); err != nil {
-			return nil, err
-		}
-		shards := index.Shards
-		if len(shards) > 0 {
-			for _, shard := range shards {
-				shard.Index = index
-				segments := shard.Segments
-				if len(segments) > 0 {
-					for _, segment := range segments {
-						segment.Shard = shard
-					}
-				}
-			}
-		}
-		indexCache.Set(index.Name, index, cache.NoExpiration)
-		return index, nil
-	}
+	return nil, &errs.IndexNotFoundError{Index: indexName}
 }
 
 func DeleteIndex(indexName string) error {
+	index, err := GetIndex(indexName)
+	if err != nil {
+		return err
+	}
+	// first set the cache disable, then all requests for this index will get a 404
 	indexCache.Delete(indexName)
+	// close the index and its components (shards, segments, wals ...)
+	err = index.Close()
+	if err != nil {
+		return err
+	}
+	// remove aliases
+	err = RemoveAliasesByIndex(indexName)
+	if err != nil {
+		return err
+	}
+	// remove the index from metastore
 	return MStore.Delete(indexPrefix(indexName))
 }
 
