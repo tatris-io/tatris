@@ -62,6 +62,14 @@ func (e *SegmentNotFoundError) Error() string {
 	return fmt.Sprintf("index: %s, shard: %d, segment: %d", e.Index, e.Shard, e.Segment)
 }
 
+type IndexTemplateNotFoundError struct {
+	IndexTemplate string `json:"index_template"`
+}
+
+func (e *IndexTemplateNotFoundError) Error() string {
+	return fmt.Sprintf("index_template: %s", e.IndexTemplate)
+}
+
 type NoSegmentError struct {
 	Index string `json:"index"`
 	Shard int    `json:"shard"`

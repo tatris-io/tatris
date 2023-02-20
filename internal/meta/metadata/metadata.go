@@ -11,6 +11,7 @@ import (
 
 const AliasPath = "/_alias/"
 const IndexPath = "/_index/"
+const IndexTemplatePath = "/_index_template/"
 
 var MStore storage.MetaStore
 
