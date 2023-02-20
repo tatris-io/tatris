@@ -4,21 +4,24 @@
     "lang": "Java",
     "desc": "Free and Open, Distributed, RESTful Search Engine",
     "stars": 62411,
-    "forks": 22629
+    "forks": 22629,
+    "start_time": 1676081829000
   },
   {
     "name": "meilisearch",
     "lang": "Rust",
     "desc": "A lightning-fast search engine that fits effortlessly into your apps, websites, and workflow.",
     "stars": 31923,
-    "forks": 1162
+    "forks": 1162,
+    "start_time": 1676513718580
   },
   {
     "name": "cosmos",
     "lang": "C++",
     "desc": "World's largest Contributor driven code dataset | Used in Quark Search Engine, @OpenGenus IQ, OpenGenus Visual Project",
     "stars": 13300,
-    "forks": 3620
+    "forks": 3620,
+    "start_time": 1676513818480
   },
   {
     "name": "typesense",
@@ -26,6 +29,7 @@
     "desc": "Open Source alternative to Algolia and an Easier-to-Use alternative to ElasticSearch ⚡ 🔍 ✨ Fast, typo tolerant, in-memory fuzzy Search Engine for building delightful search experiences",
     "stars": 12089,
     "forks": 355
+  ,"start_time": 1676513818480
   },
   {
     "name": "chat-gpt-google-extension",
@@ -33,6 +37,7 @@
     "desc": "A browser extension to display ChatGPT response alongside search engine results",
     "stars": 8494,
     "forks": 554
+  ,"start_time": 1676513818480
   },
   {
     "name": "tantivy",
@@ -40,6 +45,7 @@
     "desc": "Tantivy is a full-text search engine library inspired by Apache Lucene and written in Rust",
     "stars": 7485,
     "forks": 447
+  ,"start_time": 1676513818480
   },
   {
     "name": "OpenSearch",
@@ -47,6 +53,7 @@
     "desc": "🔎 Open source distributed and RESTful search engine.",
     "stars": 6262,
     "forks": 860
+  ,"start_time": 1676513818480
   },
   {
     "name": "riot",
@@ -54,6 +61,7 @@
     "desc": "Go Open Source, Distributed, Simple and efficient Search Engine; Warning: This is V1 and beta version, because of big memory consume, and the V2 will be rewrite all code.",
     "stars": 6078,
     "forks": 485
+  ,"start_time": 1676513818480
   },
   {
     "name": "lyra",
@@ -61,6 +69,7 @@
     "desc": "🌌  Fast, in-memory, typo-tolerant, full-text search engine written in TypeScript.",
     "stars": 5156,
     "forks": 119
+  ,"start_time": 1676513818480
   },
   {
     "name": "awesome-hacker-search-engines",
@@ -68,6 +77,7 @@
     "desc": "A curated list of awesome search engines useful during Penetration testing, Vulnerability assessments, Red Team operations, Bug Bounty and more",
     "stars": 4100,
     "forks": 316
+  ,"start_time": 1676513818480
   },
   {
     "name": "RediSearch",
@@ -75,6 +85,7 @@
     "desc": "A query and indexing engine for Redis, providing secondary indexing, full-text search, and aggregations. ",
     "stars": 4045,
     "forks": 433
+  ,"start_time": 1676513818480
   },
   {
     "name": "searxng",
@@ -82,6 +93,7 @@
     "desc": "SearXNG is a free internet metasearch engine which aggregates results from various search services and databases. Users are neither tracked nor profiled.",
     "stars": 3854,
     "forks": 602
+  ,"start_time": 1676513818480
   },
   {
     "name": "Toshi",
@@ -89,6 +101,7 @@
     "desc": "A full-text search engine in rust",
     "stars": 3801,
     "forks": 121
+  ,"start_time": 1676513818480
   },
   {
     "name": "opengrok",
@@ -96,6 +109,7 @@
     "desc": "OpenGrok is a fast and usable source code search and cross reference engine, written in Java",
     "stars": 3779,
     "forks": 691
+  ,"start_time": 1676513818480
   },
   {
     "name": "qdrant",
@@ -103,6 +117,7 @@
     "desc": "Qdrant - Vector Search Engine and Database for the next generation of AI applications. Also available in the cloud https://qdrant.to/cloud",
     "stars": 3667,
     "forks": 168
+  ,"start_time": 1676513818480
   },
   {
     "name": "weaviate",
@@ -110,6 +125,7 @@
     "desc": "Weaviate is an open source vector search engine that stores both objects and vectors, allowing for combining vector search with structured filtering with the fault-tolerance and scalability of a cloud-native database, all accessible through GraphQL, REST, and various language clients.",
     "stars": 3161,
     "forks": 181
+  ,"start_time": 1676513818480
   },
   {
     "name": "tntsearch",
@@ -117,6 +133,7 @@
     "desc": "A fully featured full text search engine written in PHP",
     "stars": 2890,
     "forks": 265
+  ,"start_time": 1676513818480
   },
   {
     "name": "quickwit",
@@ -124,6 +141,7 @@
     "desc": "Cloud-native search engine for log management \u0026 analytics",
     "stars": 2889,
     "forks": 149
+  ,"start_time": 1676513818480
   },
   {
     "name": "magnetico",
@@ -131,6 +149,7 @@
     "desc": "Autonomous (self-hosted) BitTorrent DHT search engine suite.",
     "stars": 2873,
     "forks": 351
+  ,"start_time": 1676513818480
   },
   {
     "name": "yacy_search_server",
@@ -138,6 +157,7 @@
     "desc": "Distributed Peer-to-Peer Web Search Engine and Intranet Search Appliance",
     "stars": 2867,
     "forks": 386
+  ,"start_time": 1676513818480
   },
   {
     "name": "Jets.js",
@@ -145,6 +165,7 @@
     "desc": "Native CSS search engine",
     "stars": 2805,
     "forks": 119
+  ,"start_time": 1676513818480
   },
   {
     "name": "meta-tags",
@@ -152,6 +173,7 @@
     "desc": "Search Engine Optimization (SEO) for Ruby on Rails applications.",
     "stars": 2555,
     "forks": 285
+  ,"start_time": 1676513818480
   },
   {
     "name": "GoogleScraper",
@@ -159,6 +181,7 @@
     "desc": "A Python module to scrape several search engines (like Google, Yandex, Bing, Duckduckgo, ...). Including asynchronous networking support.",
     "stars": 2449,
     "forks": 715
+  ,"start_time": 1676513818480
   },
   {
     "name": "tinysearch",
@@ -166,6 +189,7 @@
     "desc": "🔍 Tiny, full-text search engine for static websites built with Rust and Wasm",
     "stars": 2208,
     "forks": 81
+  ,"start_time": 1676513818480
   },
   {
     "name": "minisearch",
@@ -173,6 +197,7 @@
     "desc": "Tiny and powerful JavaScript full-text search engine for browser and Node",
     "stars": 2057,
     "forks": 72
+  ,"start_time": 1676513818480
   },
   {
     "name": "search-engine-optimization",
@@ -180,6 +205,7 @@
     "desc": ":mag: A helpful checklist/collection of Search Engine Optimization (SEO) tips and techniques.",
     "stars": 2053,
     "forks": 298
+  ,"start_time": 1676513818480
   },
   {
     "name": "ambar",
@@ -187,6 +213,7 @@
     "desc": ":mag: Ambar: Document Search Engine",
     "stars": 1913,
     "forks": 366
+  ,"start_time": 1676513818480
   },
   {
     "name": "poseidon",
@@ -194,6 +221,7 @@
     "desc": "A search engine which can hold 100 trillion lines of log data.",
     "stars": 1880,
     "forks": 433
+  ,"start_time": 1676513818480
   },
   {
     "name": "retire",
@@ -201,6 +229,7 @@
     "desc": "A rich Ruby API and DSL for the Elasticsearch search engine",
     "stars": 1877,
     "forks": 541
+  ,"start_time": 1676513818480
   },
   {
     "name": "uBlock-Origin-dev-filter",
@@ -208,6 +237,7 @@
     "desc": "Filters to block and remove copycat-websites from DuckDuckGo, Google and other search engines. Specific to dev websites like StackOverflow or GitHub.",
     "stars": 1741,
     "forks": 42
+  ,"start_time": 1676513818480
   },
   {
     "name": "susper.com",
@@ -215,6 +245,7 @@
     "desc": "Susper Decentralised Search Engine https://susper.com",
     "stars": 1735,
     "forks": 311
+  ,"start_time": 1676513818480
   },
   {
     "name": "query-server",
@@ -222,6 +253,7 @@
     "desc": "Query Server Search Engines https://query-server.herokuapp.com",
     "stars": 1654,
     "forks": 266
+  ,"start_time": 1676513818480
   },
   {
     "name": "metarank",
@@ -229,6 +261,7 @@
     "desc": "A low code Machine Learning peersonalized ranking service for articles, listings, search results, recommendations that boosts user engagement. A friendly Learn-to-Rank engine",
     "stars": 1646,
     "forks": 61
+  ,"start_time": 1676513818480
   },
   {
     "name": "uncover",
@@ -236,6 +269,7 @@
     "desc": "Quickly discover exposed hosts on the internet using multiple search engines.",
     "stars": 1541,
     "forks": 129
+  ,"start_time": 1676513818480
   },
   {
     "name": "jekyll-seo-tag",
@@ -243,6 +277,7 @@
     "desc": "A Jekyll plugin to add metadata tags for search engines and social networks to better index and display your site's content.",
     "stars": 1475,
     "forks": 289
+  ,"start_time": 1676513818480
   },
   {
     "name": "open-source-search-engine",
@@ -250,6 +285,7 @@
     "desc": "Nov 20 2017 -- A distributed open source search engine and spider/crawler written in C/C++ for Linux on Intel/AMD. From gigablast dot com, which has binaries for download. See the README.md file at the very bottom of this page for instructions.",
     "stars": 1401,
     "forks": 444
+  ,"start_time": 1676513818480
   },
   {
     "name": "apollo",
@@ -257,6 +293,7 @@
     "desc": "A Unix-style personal search engine and web crawler for your digital footprint.",
     "stars": 1308,
     "forks": 48
+  ,"start_time": 1676513818480
   },
   {
     "name": "Dorks-collections-list",
@@ -264,6 +301,7 @@
     "desc": "List of Github repositories and articles with list of dorks for different search engines",
     "stars": 1245,
     "forks": 170
+  ,"start_time": 1676513818480
   },
   {
     "name": "monocle",
@@ -271,6 +309,7 @@
     "desc": "Universal personal search engine, powered by a full text search algorithm written in pure Ink, indexing Linus's blogs and private note archives, contacts, tweets, and over a decade of journals.",
     "stars": 1244,
     "forks": 30
+  ,"start_time": 1676513818480
   },
   {
     "name": "diskover-community",
@@ -278,6 +317,7 @@
     "desc": "Diskover Community Edition - Open source file indexer, file search engine and data management and analytics powered by Elasticsearch",
     "stars": 1239,
     "forks": 151
+  ,"start_time": 1676513818480
   },
   {
     "name": "orange",
@@ -285,6 +325,7 @@
     "desc": "Cross-platform local file search engine.",
     "stars": 1232,
     "forks": 95
+  ,"start_time": 1676513818480
   },
   {
     "name": "rats-search",
@@ -292,6 +333,7 @@
     "desc": "BitTorrent P2P multi-platform search engine for Desktop and Web servers with integrated torrent client.",
     "stars": 1207,
     "forks": 148
+  ,"start_time": 1676513818480
   },
   {
     "name": "ElasticPress",
@@ -299,6 +341,7 @@
     "desc": "A fast and flexible search and query engine for WordPress.",
     "stars": 1161,
     "forks": 298
+  ,"start_time": 1676513818480
   },
   {
     "name": "spyglass",
@@ -306,6 +349,7 @@
     "desc": "A personal search engine, crawl \u0026 index websites/files you want with a simple set of rules",
     "stars": 1156,
     "forks": 19
+  ,"start_time": 1676513818480
   },
   {
     "name": "vald",
@@ -313,6 +357,7 @@
     "desc": "Vald.  A Highly Scalable Distributed Vector Search Engine",
     "stars": 1026,
     "forks": 57
+  ,"start_time": 1676513818480
   },
   {
     "name": "torrent-net",
@@ -320,6 +365,7 @@
     "desc": "Distributed search engines using BitTorrent and SQLite",
     "stars": 1006,
     "forks": 43
+  ,"start_time": 1676513818480
   },
   {
     "name": "opensse",
@@ -327,6 +373,7 @@
     "desc": "Open Sketch Search Engine－ 3D object retrieval based on sketch image as nput",
     "stars": 938,
     "forks": 167
+  ,"start_time": 1676513818480
   },
   {
     "name": "filterrific",
@@ -334,6 +381,7 @@
     "desc": "Filterrific is a Rails Engine plugin that makes it easy to filter, search, and sort your ActiveRecord lists.",
     "stars": 891,
     "forks": 117
+  ,"start_time": 1676513818480
   },
   {
     "name": "search-deflector",
@@ -341,13 +389,15 @@
     "desc": "A small program that forwards searches from Cortana to your preferred browser and search engine.",
     "stars": 885,
     "forks": 53
+  ,"start_time": 1676513818480
   },
   {
     "name": "SCANNER-INURLBR",
     "lang": "PHP",
     "desc": "Advanced search in search engines, enables analysis provided to exploit GET / POST capturing emails \u0026 urls, with an internal custom validation junction for each target / url found.",
     "stars": 845,
-    "forks": 408
+    "forks": 408,
+    "start_time": 1676513818480
   },
   {
     "name": "search_cop",
@@ -355,6 +405,7 @@
     "desc": "Search engine like fulltext query support for ActiveRecord",
     "stars": 776,
     "forks": 37
+  ,"start_time": 1676513818480
   },
   {
     "name": "ipfs-search",
@@ -362,6 +413,7 @@
     "desc": "Search engine for the Interplanetary Filesystem.",
     "stars": 758,
     "forks": 96
+  ,"start_time": 1676513818480
   },
   {
     "name": "tiefvision",
@@ -369,6 +421,7 @@
     "desc": "End-to-end deep learning image-similarity search engine",
     "stars": 755,
     "forks": 191
+  ,"start_time": 1676513818480
   },
   {
     "name": "lnx",
@@ -376,6 +429,7 @@
     "desc": "⚡ Insanely fast, 🌟 Feature-rich searching. lnx is the adaptable, typo tollerant deployment of the tantivy search engine.  Standing on the shoulders of giants.",
     "stars": 729,
     "forks": 31
+  ,"start_time": 1676513818480
   },
   {
     "name": "elasticsuite",
@@ -383,6 +437,7 @@
     "desc": "Smile ElasticSuite - Magento 2 merchandising and search engine built on ElasticSearch",
     "stars": 726,
     "forks": 325
+  ,"start_time": 1676513818480
   },
   {
     "name": "groonga",
@@ -390,6 +445,7 @@
     "desc": "An embeddable fulltext search engine. Groonga is the successor project to Senna.",
     "stars": 725,
     "forks": 116
+  ,"start_time": 1676513818480
   },
   {
     "name": "torrentinim",
@@ -397,6 +453,7 @@
     "desc": "A very low memory-footprint, self hosted API-only torrent search engine. Sonarr + Radarr Compatible, native support for Linux, Mac and Windows.",
     "stars": 719,
     "forks": 34
+  ,"start_time": 1676513818480
   },
   {
     "name": "serpbear",
@@ -404,6 +461,7 @@
     "desc": "Search Engine Position Rank Tracking App",
     "stars": 703,
     "forks": 38
+  ,"start_time": 1676513818480
   },
   {
     "name": "OnionSearch",
@@ -411,6 +469,7 @@
     "desc": "OnionSearch is a script that scrapes urls on different .onion search engines. ",
     "stars": 703,
     "forks": 108
+  ,"start_time": 1676513818480
   },
   {
     "name": "open-semantic-search",
@@ -418,6 +477,7 @@
     "desc": "Open Source research tool to search, browse, analyze and explore large document collections by Semantic Search Engine and Open Source Text Mining \u0026 Text Analytics platform (Integrates ETL for document processing, OCR for images \u0026 PDF, named entity recognition for persons, organizations \u0026 locations, metadata management by thesaurus \u0026 ontologies, search user interface \u0026 search apps for fulltext search, faceted search \u0026 knowledge graph)",
     "stars": 687,
     "forks": 129
+  ,"start_time": 1676513818480
   },
   {
     "name": "CrossLinked",
@@ -425,6 +485,7 @@
     "desc": "LinkedIn enumeration tool to extract valid employee names from an organization through search engine scraping",
     "stars": 671,
     "forks": 132
+  ,"start_time": 1676513818480
   },
   {
     "name": "fullproof",
@@ -432,6 +493,7 @@
     "desc": "javascript fulltext search engine library",
     "stars": 666,
     "forks": 48
+  ,"start_time": 1676513818480
   },
   {
     "name": "LucenePlusPlus",
@@ -439,6 +501,7 @@
     "desc": "Lucene++ is an up to date C++ port of the popular Java Lucene library, a high-performance, full-featured text search engine. ",
     "stars": 666,
     "forks": 221
+  ,"start_time": 1676513818480
   },
   {
     "name": "hoogle",
@@ -446,6 +509,7 @@
     "desc": "Haskell API search engine",
     "stars": 653,
     "forks": 120
+  ,"start_time": 1676513818480
   },
   {
     "name": "sis",
@@ -453,6 +517,7 @@
     "desc": "Simple image search engine",
     "stars": 649,
     "forks": 216
+  ,"start_time": 1676513818480
   },
   {
     "name": "cider",
@@ -460,6 +525,7 @@
     "desc": "\"Content Integration Framework: Document Extraction and Retrieval\" - A document parser framework that stores parsed entities into jena ( http://jena.sourceforge.net/ ) RDF vocabularies and provides knowledge-base enhanced semantic ananlysis of content. Annotated content can be used by search engines to present content navigation which will be implemented in the YaCy Search Engine",
     "stars": 646,
     "forks": 7
+  ,"start_time": 1676513818480
   },
   {
     "name": "macrobase",
@@ -467,6 +533,7 @@
     "desc": "MacroBase: A Search Engine for Fast Data",
     "stars": 643,
     "forks": 131
+  ,"start_time": 1676513818480
   },
   {
     "name": "mwmbl",
@@ -474,6 +541,7 @@
     "desc": "An open source, non-profit search engine implemented in python",
     "stars": 643,
     "forks": 20
+  ,"start_time": 1676513818480
   },
   {
     "name": "pastec",
@@ -481,6 +549,7 @@
     "desc": "Image recognition open source index and search engine",
     "stars": 610,
     "forks": 176
+  ,"start_time": 1676513818480
   },
   {
     "name": "ghostHunter",
@@ -488,6 +557,7 @@
     "desc": "A Ghost blog search engine",
     "stars": 605,
     "forks": 125
+  ,"start_time": 1676513818480
   },
   {
     "name": "quark",
@@ -495,6 +565,7 @@
     "desc": "Stay happy while offline | World's first offline search engine. ",
     "stars": 601,
     "forks": 119
+  ,"start_time": 1676513818480
   },
   {
     "name": "awesome-seo",
@@ -502,6 +573,7 @@
     "desc": ":star2: A curated list of SEO (Search Engine Optimization) links.",
     "stars": 561,
     "forks": 62
+  ,"start_time": 1676513818480
   },
   {
     "name": "resin",
@@ -509,6 +581,7 @@
     "desc": "Hardware-accelerated vector space search engine. Available as a HTTP service or as an embedded library.",
     "stars": 555,
     "forks": 41
+  ,"start_time": 1676513818480
   },
   {
     "name": "unigraph-dev",
@@ -516,6 +589,7 @@
     "desc": "A local-first and universal knowledge graph, personal search engine, and workspace for your life.",
     "stars": 553,
     "forks": 34
+  ,"start_time": 1676513818480
   },
   {
     "name": "Ferret",
@@ -523,6 +597,7 @@
     "desc": "An optimized substring search engine written in Go",
     "stars": 545,
     "forks": 29
+  ,"start_time": 1676513818480
   },
   {
     "name": "liqe",
@@ -530,6 +605,7 @@
     "desc": "Lightweight and performant Lucene-like parser, serializer and search engine.",
     "stars": 530,
     "forks": 11
+  ,"start_time": 1676513818480
   },
   {
     "name": "se-scraper",
@@ -537,6 +613,7 @@
     "desc": "Javascript scraping module based on puppeteer for many different search engines...",
     "stars": 509,
     "forks": 121
+  ,"start_time": 1676513818480
   },
   {
     "name": "personfinder",
@@ -544,6 +621,7 @@
     "desc": "Person Finder is a searchable missing person database written in Python and hosted on App Engine.",
     "stars": 504,
     "forks": 209
+  ,"start_time": 1676513818480
   },
   {
     "name": "opensearchserver",
@@ -551,6 +629,7 @@
     "desc": "Open-source Enterprise Grade Search Engine Software",
     "stars": 476,
     "forks": 187
+  ,"start_time": 1676513818480
   },
   {
     "name": "wwsearch",
@@ -558,6 +637,7 @@
     "desc": "A full-text search engine supporting massive users, real-time updating, fast fuzzy matching and flexible table splitting.",
     "stars": 456,
     "forks": 86
+  ,"start_time": 1676513818480
   },
   {
     "name": "Goopt",
@@ -565,6 +645,7 @@
     "desc": "🔍 Search Engine for a Procedural Simulation of the Web with GPT-3.",
     "stars": 456,
     "forks": 29
+  ,"start_time": 1676513818480
   },
   {
     "name": "picky",
@@ -572,6 +653,7 @@
     "desc": "Picky is an easy to use and fast Ruby semantic search engine that helps your users find what they are looking for.",
     "stars": 445,
     "forks": 47
+  ,"start_time": 1676513818480
   },
   {
     "name": "milli",
@@ -579,6 +661,7 @@
     "desc": "Search engine library for Meilisearch ⚡️",
     "stars": 441,
     "forks": 88
+  ,"start_time": 1676513818480
   },
   {
     "name": "visual_search",
@@ -586,6 +669,7 @@
     "desc": "A visual search engine based on Elasticsearch and Tensorflow",
     "stars": 438,
     "forks": 128
+  ,"start_time": 1676513818480
   },
   {
     "name": "chatGPT-search-engine-extension",
@@ -593,6 +677,7 @@
     "desc": "A browser extension to display ChatGPT response alongside Search Engine results",
     "stars": 430,
     "forks": 50
+  ,"start_time": 1676513818480
   },
   {
     "name": "obsidian-omnisearch",
@@ -600,6 +685,7 @@
     "desc": "A search engine that \"just works\" for Obsidian. Includes OCR and PDF indexing.",
     "stars": 416,
     "forks": 22
+  ,"start_time": 1676513818480
   },
   {
     "name": "haystack",
@@ -607,6 +693,7 @@
     "desc": "Search engine for developers | Coming soon...",
     "stars": 415,
     "forks": 7
+  ,"start_time": 1676513818480
   },
   {
     "name": "learn-x-by-doing-y",
@@ -614,6 +701,7 @@
     "desc": "🛠️ Learn a technology X by doing a project  - Search engine of project-based learning",
     "stars": 413,
     "forks": 37
+  ,"start_time": 1676513818480
   },
   {
     "name": "PermissiveResearch",
@@ -621,6 +709,7 @@
     "desc": "An iOS search engine that allows mistakes in the searched element. ",
     "stars": 411,
     "forks": 32
+  ,"start_time": 1676513818480
   },
   {
     "name": "searchlinkfix",
@@ -628,6 +717,7 @@
     "desc": "DISCONTINUED: Browser extension that prevents Google and Yandex search pages from modifying search result links when you click them. This is useful when copying links but it also helps privacy by preventing the search engines from recording your clicks.",
     "stars": 406,
     "forks": 41
+  ,"start_time": 1676513818480
   },
   {
     "name": "amazon-autocomplete",
@@ -635,6 +725,7 @@
     "desc": "🚀  Unlock the full power of the Amazon autocompletion engine right into your search input. JavaScript Plugin.",
     "stars": 393,
     "forks": 45
+  ,"start_time": 1676513818480
   },
   {
     "name": "Gochiusearch",
@@ -642,6 +733,7 @@
     "desc": "A Fast Scene Search Engine for Anime Series 'Gochuumon wa Usagi Desuka?'",
     "stars": 393,
     "forks": 23
+  ,"start_time": 1676513818480
   },
   {
     "name": "iffse",
@@ -649,6 +741,7 @@
     "desc": "Facial Feature Search Engine for Some Photo Sharing Website",
     "stars": 373,
     "forks": 60
+  ,"start_time": 1676513818480
   },
   {
     "name": "pouchdb-quick-search",
@@ -656,6 +749,7 @@
     "desc": "Full-text search engine on top of PouchDB",
     "stars": 371,
     "forks": 86
+  ,"start_time": 1676513818480
   },
   {
     "name": "simplefts",
@@ -663,6 +757,7 @@
     "desc": "Simple Full-Text Search engine",
     "stars": 369,
     "forks": 37
+  ,"start_time": 1676513818480
   },
   {
     "name": "search-engine-parser",
@@ -670,6 +765,7 @@
     "desc": "Lightweight package to query popular search engines and scrape for result titles, links and descriptions",
     "stars": 368,
     "forks": 74
+  ,"start_time": 1676513818480
   },
   {
     "name": "Xapiand",
@@ -677,6 +773,7 @@
     "desc": "Xapiand: A RESTful Search Engine",
     "stars": 365,
     "forks": 32
+  ,"start_time": 1676513818480
   },
   {
     "name": "BitFunnel",
@@ -684,6 +781,7 @@
     "desc": "A signature-based search engine",
     "stars": 362,
     "forks": 37
+  ,"start_time": 1676513818480
   },
   {
     "name": "minsql",
@@ -691,6 +789,7 @@
     "desc": "High-performance log search engine.",
     "stars": 359,
     "forks": 30
+  ,"start_time": 1676513818480
   },
   {
     "name": "librex",

@@ -67,15 +67,16 @@ type Bool struct {
 }
 
 type Aggs struct {
-	Terms        *AggTerms        `json:"terms,omitempty"`
-	NumericRange *AggNumericRange `json:"range"`
-	Sum          *AggMetric       `json:"sum,omitempty"`
-	Min          *AggMetric       `json:"min,omitempty"`
-	Max          *AggMetric       `json:"max,omitempty"`
-	Avg          *AggMetric       `json:"avg,omitempty"`
-	Cardinality  *AggMetric       `json:"cardinality,omitempty"`
-	WeightedAvg  *AggWeightedAvg  `json:"weighted_avg,omitempty"`
-	Aggs         map[string]Aggs  `json:"aggs,omitempty"`
+	Terms         *AggTerms         `json:"terms,omitempty"`
+	DateHistogram *AggDateHistogram `json:"date_histogram,omitempty"`
+	NumericRange  *AggNumericRange  `json:"range"`
+	Sum           *AggMetric        `json:"sum,omitempty"`
+	Min           *AggMetric        `json:"min,omitempty"`
+	Max           *AggMetric        `json:"max,omitempty"`
+	Avg           *AggMetric        `json:"avg,omitempty"`
+	Cardinality   *AggMetric        `json:"cardinality,omitempty"`
+	WeightedAvg   *AggWeightedAvg   `json:"weighted_avg,omitempty"`
+	Aggs          map[string]Aggs   `json:"aggs,omitempty"`
 }
 
 type AggMetric struct {
@@ -108,4 +109,32 @@ type Sort []map[string]SortTerm
 type SortTerm struct {
 	Order   string `json:"order"`
 	Missing string `json:"missing"`
+}
+
+type AggDateHistogram struct {
+	Field            string      `json:"field"`             // only support date type
+	Interval         string      `json:"interval"`          // combined interval field is deprecated since elasticsearch7.x
+	FixedInterval    string      `json:"fixed_interval"`    // milliseconds (ms)/seconds (s)/minutes (m)/hours (h)/days (d)
+	CalendarInterval string      `json:"calendar_interval"` // minute, 1m/hour, 1h/day, 1d/week, 1w/month, 1M/quarter, 1q/year, 1y
+	TimeZone         string      `json:"time_zone"`         // +0100/+01:00, -0100/-01:00, UTC, Asia/Shanghai...
+	MinDocCount      int         `json:"min_doc_count"`     // min_doc_count: 0, Zero filling
+	Format           string      `json:"format"`            // TODO
+	Offset           string      `json:"offset"`            // TODO
+	Keyed            bool        `json:"keyed"`             // TODO
+	Order            interface{} `json:"order"`             // TODO
+	Missing          string      `json:"missing"`           // TODO
+	// With extended_bounds setting, you now can "force" the histogram aggregation to start building
+	// buckets on a specific min value and also keep on building buckets up to a max value (even if
+	// there are no documents anymore). Using extended_bounds only makes sense when min_doc_count is
+	// 0 (the empty buckets will never be returned if min_doc_count is greater than 0).
+	ExtendedBounds *HistogramBound `json:"extended_bounds"`
+	// The hard_bounds is a counterpart of extended_bounds and can limit the range of buckets in the
+	// histogram. It is particularly useful in the case of open data ranges that can result in a
+	// very large number of buckets.
+	HardBounds *HistogramBound `json:"hard_bounds"`
+}
+
+type HistogramBound struct {
+	Min float64 `json:"min"` // second/millis/micros/nanos
+	Max float64 `json:"max"` // second/millis/micros/nanos
 }

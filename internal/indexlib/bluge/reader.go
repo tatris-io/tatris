@@ -28,6 +28,7 @@ import (
 	qs "github.com/blugelabs/query_string"
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/indexlib"
+	custom_aggregations "github.com/tatris-io/tatris/internal/indexlib/bluge/aggregations"
 	"github.com/tatris-io/tatris/internal/indexlib/bluge/config"
 )
 
@@ -411,6 +412,20 @@ func (b *BlugeReader) generateAggregations(
 				}
 			}
 			result[name] = termsAggregation
+		} else if d := agg.DateHistogram; d != nil {
+			dateHistogramAggregation := custom_aggregations.NewDateHistogramAggregation(
+				search.Field(d.Field), d.CalendarInterval,
+				d.FixedInterval, d.Format, d.TimeZone, d.Offset,
+				d.ExtendedBounds, d.HardBounds, d.MinDocCount,
+			)
+			// nested aggregation (bucket aggregation need support)
+			if len(agg.Aggs) > 0 {
+				subAggs := b.generateAggregations(agg.Aggs)
+				for k, v := range subAggs {
+					dateHistogramAggregation.AddAggregation(k, v)
+				}
+			}
+			result[name] = dateHistogramAggregation
 		} else if agg.NumericRange != nil {
 			ranges := aggregations.Ranges(search.Field(agg.NumericRange.Field))
 			for _, value := range agg.NumericRange.Ranges {

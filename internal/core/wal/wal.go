@@ -148,7 +148,12 @@ func ConsumeWAL(shard *core.Shard, wal log.WalLog) error {
 			if from < firstIndex {
 				// from jumps to firstIndex
 				from = firstIndex
-				logger.Warn("[wal] maybe loss wal", zap.String("shard", shard.GetName()), zap.Uint64("from", from), zap.Uint64("to", firstIndex-1))
+				logger.Warn(
+					"[wal] maybe loss wal",
+					zap.String("shard", shard.GetName()),
+					zap.Uint64("from", from),
+					zap.Uint64("to", firstIndex-1),
+				)
 			} else {
 				logger.Warn("[wal] last truncate may fail", zap.String("shard", shard.GetName()), zap.Uint64("from", firstIndex), zap.Uint64("to", shard.Stat.WalIndex))
 			}
@@ -198,7 +203,8 @@ func ConsumeWAL(shard *core.Shard, wal log.WalLog) error {
 		return err
 	}
 	// The id passed to func TruncateFront cannot be greater than the last index of the stock log.
-	// There is no way to clear wal. Once data is written to wal, there is always at least one entry in the wal.
+	// There is no way to clear wal. Once data is written to wal, there is always at least one entry
+	// in the wal.
 	err = wal.TruncateFront(to)
 	if err != nil {
 		return err
