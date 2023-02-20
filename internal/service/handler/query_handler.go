@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/tatris-io/tatris/internal/meta/metadata"
+
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/core"
 
@@ -30,10 +32,13 @@ func QueryHandler(c *gin.Context) {
 		)
 		return
 	}
-
-	indexes := make([]*core.Index, len(names))
-	for i, name := range names {
-		if exist, index := CheckIndexExistence(name, c); exist {
+	indexNames := make([]string, 0)
+	for _, n := range names {
+		indexNames = append(indexNames, metadata.ResolveIndexes(n)...)
+	}
+	indexes := make([]*core.Index, len(indexNames))
+	for i, indexName := range indexNames {
+		if exist, index := CheckIndexExistence(indexName, c); exist {
 			indexes[i] = index
 		} else {
 			return

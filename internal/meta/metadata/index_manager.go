@@ -17,22 +17,10 @@ import (
 
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/core"
-	"github.com/tatris-io/tatris/internal/meta/metadata/storage"
-	"github.com/tatris-io/tatris/internal/meta/metadata/storage/boltdb"
 	"github.com/tatris-io/tatris/internal/protocol"
 )
 
-var metaStore storage.MetaStore
-var metaCache *cache.Cache
-
-func init() {
-	var err error
-	metaStore, err = boltdb.Open()
-	if err != nil {
-		panic("init metastore fail: " + err.Error())
-	}
-	metaCache = cache.New(cache.NoExpiration, cache.NoExpiration)
-}
+var indexCache = cache.New(cache.NoExpiration, cache.NoExpiration)
 
 func CreateIndex(index *core.Index) error {
 	err := checkParam(index.Index)
@@ -49,8 +37,8 @@ func SaveIndex(index *core.Index) error {
 	if err != nil {
 		return err
 	}
-	metaCache.Set(index.Name, index, cache.NoExpiration)
-	return metaStore.Set(fillKey(index.Name), json)
+	indexCache.Set(index.Name, index, cache.NoExpiration)
+	return MStore.Set(indexPrefix(index.Name), json)
 }
 
 func GetShard(indexName string, shardID int) (*core.Shard, error) {
@@ -70,13 +58,13 @@ func GetShard(indexName string, shardID int) (*core.Shard, error) {
 
 func GetIndex(indexName string) (*core.Index, error) {
 	var index *core.Index
-	cachedIndex, found := metaCache.Get(indexName)
+	cachedIndex, found := indexCache.Get(indexName)
 	if found {
 		index = cachedIndex.(*core.Index)
 		return index, nil
 	}
 	// load
-	if b, err := metaStore.Get(fillKey(indexName)); err != nil {
+	if b, err := MStore.Get(indexPrefix(indexName)); err != nil {
 		return nil, err
 	} else if b == nil {
 		return nil, &errs.IndexNotFoundError{Index: indexName}
@@ -97,14 +85,14 @@ func GetIndex(indexName string) (*core.Index, error) {
 				}
 			}
 		}
-		metaCache.Set(index.Name, index, cache.NoExpiration)
+		indexCache.Set(index.Name, index, cache.NoExpiration)
 		return index, nil
 	}
 }
 
 func DeleteIndex(indexName string) error {
-	metaCache.Delete(indexName)
-	return metaStore.Delete(fillKey(indexName))
+	indexCache.Delete(indexName)
+	return MStore.Delete(indexPrefix(indexName))
 }
 
 func buildIndex(index *core.Index) {
@@ -184,6 +172,6 @@ func checkType(paramType string) error {
 	return &errs.UnsupportedError{Desc: "field type", Value: paramType}
 }
 
-func fillKey(name string) string {
-	return "/index/" + name
+func indexPrefix(name string) string {
+	return IndexPath + name
 }

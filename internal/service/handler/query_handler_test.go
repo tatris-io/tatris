@@ -4,6 +4,7 @@ package handler
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +12,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/tatris-io/tatris/internal/protocol"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -29,7 +32,7 @@ func TestQuerySingleIndex(t *testing.T) {
 		t.Fatalf("prepare index and docs fail: %s", err.Error())
 	}
 
-	for _, tt := range queryCases() {
+	for _, tt := range createQueryCases(index.Name) {
 		t.Run(tt.name, func(t *testing.T) {
 			gin.SetMode(gin.ReleaseMode)
 			w := httptest.NewRecorder()
@@ -40,7 +43,7 @@ func TestQuerySingleIndex(t *testing.T) {
 			}
 			c.Request = httpRequest
 			p := gin.Params{}
-			p = append(p, gin.Param{Key: "index", Value: index.Name})
+			p = append(p, gin.Param{Key: "index", Value: tt.index})
 			c.Params = p
 			c.Request.Header.Set("Content-Type", "application/json;charset=utf-8")
 			c.Request.Body = io.NopCloser(bytes.NewBufferString(tt.req))
@@ -48,6 +51,7 @@ func TestQuerySingleIndex(t *testing.T) {
 			logger.Info(
 				"test query handler",
 				zap.String("name", tt.name),
+				zap.String("index", tt.index),
 				zap.Int("code", w.Code),
 				zap.Any("resp", w.Body),
 			)
@@ -76,7 +80,7 @@ func TestQueryMultipleIndexes(t *testing.T) {
 		indexNames[i] = indexes[i].Name
 	}
 
-	for _, tt := range queryCases() {
+	for _, tt := range createQueryCases(indexNames...) {
 		t.Run(tt.name, func(t *testing.T) {
 			gin.SetMode(gin.ReleaseMode)
 			w := httptest.NewRecorder()
@@ -87,7 +91,7 @@ func TestQueryMultipleIndexes(t *testing.T) {
 			}
 			c.Request = httpRequest
 			p := gin.Params{}
-			p = append(p, gin.Param{Key: "index", Value: strings.Join(indexNames, consts.Comma)})
+			p = append(p, gin.Param{Key: "index", Value: tt.index})
 			c.Params = p
 			c.Request.Header.Set("Content-Type", "application/json;charset=utf-8")
 			c.Request.Body = io.NopCloser(bytes.NewBufferString(tt.req))
@@ -95,6 +99,7 @@ func TestQueryMultipleIndexes(t *testing.T) {
 			logger.Info(
 				"test multi query",
 				zap.String("name", tt.name),
+				zap.String("index", tt.index),
 				zap.Int("code", w.Code),
 				zap.Any("resp", w.Body),
 			)
@@ -103,16 +108,120 @@ func TestQueryMultipleIndexes(t *testing.T) {
 	}
 }
 
-type QueryCase struct {
-	name string
-	req  string
+func TestAliasQuery(t *testing.T) {
+
+	// prepare index and docs
+	count := 5
+	versions := make([]string, count)
+	for i := 0; i < count; i++ {
+		versions[i] = time.Now().Format(time.RFC3339Nano)
+		time.Sleep(time.Nanosecond * 1000)
+	}
+	indexes := make([]*core.Index, count)
+	//docses := make([]protocol.Document, count)
+	indexNames := make([]string, count)
+	aliasNames := make([]string, 0)
+	var err error
+	for i := 0; i < count; i++ {
+		indexes[i], _, err = prepare.CreateIndexAndDocs(versions[i])
+		if err != nil {
+			t.Fatalf("prepare index and docs fail: %s", err.Error())
+		}
+		indexNames[i] = indexes[i].Name
+	}
+
+	// prepare aliases
+	t.Run("add_alias", func(t *testing.T) {
+		actions := make([]protocol.Action, 0)
+		for i := 0; i < count; i++ {
+			for j := 0; j <= i; j++ {
+				indexName := indexes[i].Name
+				aliasName := fmt.Sprintf("alias_%s", versions[j])
+				aliasNames = append(aliasNames, aliasName)
+				actions = append(actions, map[string]*protocol.AliasTerm{
+					"add": {
+						Index: indexName,
+						Alias: aliasName,
+					},
+				},
+				)
+			}
+		}
+		ManageAlias(t, actions)
+	})
+
+	// test
+	for _, aliasName := range aliasNames {
+		for _, tt := range createQueryCases(aliasName) {
+			t.Run(tt.name, func(t *testing.T) {
+				gin.SetMode(gin.ReleaseMode)
+				w := httptest.NewRecorder()
+				c, _ := gin.CreateTestContext(w)
+				httpRequest := &http.Request{
+					URL:    &url.URL{},
+					Header: make(http.Header),
+				}
+				c.Request = httpRequest
+				p := gin.Params{}
+				p = append(p, gin.Param{Key: "index", Value: tt.index})
+				c.Params = p
+				c.Request.Header.Set("Content-Type", "application/json;charset=utf-8")
+				c.Request.Body = io.NopCloser(bytes.NewBufferString(tt.req))
+				QueryHandler(c)
+				logger.Info(
+					"test alias query",
+					zap.String("name", tt.name),
+					zap.String("index", tt.index),
+					zap.Int("code", w.Code),
+					zap.Any("resp", w.Body),
+				)
+				assert.Equal(t, http.StatusOK, w.Code)
+			})
+		}
+	}
+
+	// prepare aliases
+	t.Run("remove_alias", func(t *testing.T) {
+		actions := make([]protocol.Action, 0)
+		for i := 0; i < count; i++ {
+			for j := 0; j <= i; j++ {
+				indexName := indexes[i].Name
+				aliasName := fmt.Sprintf("alias_%s", versions[j])
+				aliasNames = append(aliasNames, aliasName)
+				actions = append(actions, map[string]*protocol.AliasTerm{
+					"remove": {
+						Index: indexName,
+						Alias: aliasName,
+					},
+				},
+				)
+			}
+		}
+		ManageAlias(t, actions)
+	})
 }
 
-func queryCases() []QueryCase {
-	return []QueryCase{
-		{
-			name: "query",
-			req: `
+type QueryCase struct {
+	name  string
+	index string
+	req   string
+}
+
+func createQueryCases(names ...string) []QueryCase {
+	queryCases := make([]QueryCase, 0)
+	for _, c := range cases {
+		queryCases = append(
+			queryCases,
+			QueryCase{name: c.name, index: strings.Join(names, consts.Comma), req: c.req},
+		)
+	}
+	return queryCases
+}
+
+var cases = []QueryCase{
+	{
+		name: "query",
+		req: `
                  {
                    "size": 20,
                    "query": {
@@ -145,10 +254,10 @@ func queryCases() []QueryCase {
                      }
                    }
                  }`,
-		},
-		{
-			name: "agg",
-			req: `
+	},
+	{
+		name: "agg",
+		req: `
                  {
                    "size": 20,
                    "aggs": {
@@ -191,10 +300,10 @@ func queryCases() []QueryCase {
                      }
                    }
                  }`,
-		},
-		{
-			name: "sort",
-			req: `
+	},
+	{
+		name: "sort",
+		req: `
                  {
                    "size": 20,
                    "query": {
@@ -213,10 +322,10 @@ func queryCases() []QueryCase {
                      }
                    ]
                  }`,
-		},
-		{
-			name: "date_histogram",
-			req: `
+	},
+	{
+		name: "date_histogram",
+		req: `
 				{
 				  "size": 0,
 				  "aggs": {
@@ -241,6 +350,5 @@ func queryCases() []QueryCase {
 				}
 			  }
 			`,
-		},
-	}
+	},
 }
