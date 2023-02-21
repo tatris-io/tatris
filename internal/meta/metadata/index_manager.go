@@ -134,7 +134,7 @@ func DeleteIndex(indexName string) error {
 func BuildIndex(index *core.Index, template *protocol.IndexTemplate) {
 	mappings := &protocol.Mappings{
 		Dynamic:    consts.DynamicMappingMode,
-		Properties: make(map[string]protocol.Property),
+		Properties: make(map[string]*protocol.Property),
 	}
 	settings := &protocol.Settings{
 		NumberOfShards:   DefaultNumberOfShards,
@@ -148,7 +148,7 @@ func BuildIndex(index *core.Index, template *protocol.IndexTemplate) {
 					mappings.Dynamic = template.Template.Mappings.Dynamic
 				}
 				for n, p := range template.Template.Mappings.Properties {
-					mappings.Properties[n] = protocol.Property{Type: p.Type, Dynamic: p.Dynamic}
+					mappings.Properties[n] = &protocol.Property{Type: p.Type, Dynamic: p.Dynamic}
 				}
 			}
 			if template.Template.Settings != nil {
@@ -163,7 +163,7 @@ func BuildIndex(index *core.Index, template *protocol.IndexTemplate) {
 			mappings.Dynamic = index.Mappings.Dynamic
 		}
 		for n, p := range index.Mappings.Properties {
-			property := protocol.Property{Type: p.Type}
+			property := &protocol.Property{Type: p.Type}
 			if p.Dynamic != "" {
 				property.Dynamic = p.Dynamic
 			} else {
@@ -233,19 +233,18 @@ func CheckMappings(mappings *protocol.Mappings) error {
 		return errs.ErrEmptyMappings
 	}
 	dynamic := strings.EqualFold(mappings.Dynamic, consts.DynamicMappingMode)
-	properties := &mappings.Properties
-	if *properties == nil {
+	if mappings.Properties == nil {
 		if dynamic {
-			mappings.Properties = make(map[string]protocol.Property, 0)
+			mappings.Properties = make(map[string]*protocol.Property, 0)
 		} else {
 			return errs.ErrEmptyMappings
 		}
 	}
-	err := checkReservedField(*properties)
+	err := checkReservedField(mappings.Properties)
 	if err != nil {
 		return err
 	}
-	for _, property := range *properties {
+	for _, property := range mappings.Properties {
 		err = checkType(property.Type)
 		if err != nil {
 			return err
@@ -254,7 +253,7 @@ func CheckMappings(mappings *protocol.Mappings) error {
 	return nil
 }
 
-func checkReservedField(properties map[string]protocol.Property) error {
+func checkReservedField(properties map[string]*protocol.Property) error {
 	IDField, exist := properties[consts.IDField]
 	if exist {
 		if !strings.EqualFold(IDField.Type, consts.KeywordMappingType) {
@@ -268,7 +267,7 @@ func checkReservedField(properties map[string]protocol.Property) error {
 			}
 		}
 	} else {
-		IDField = protocol.Property{
+		IDField = &protocol.Property{
 			Type: consts.KeywordMappingType,
 		}
 		properties[consts.IDField] = IDField
@@ -288,7 +287,7 @@ func checkReservedField(properties map[string]protocol.Property) error {
 			}
 		}
 	} else {
-		TimestampField = protocol.Property{
+		TimestampField = &protocol.Property{
 			Type: consts.DateMappingType,
 		}
 		properties[consts.TimestampField] = TimestampField

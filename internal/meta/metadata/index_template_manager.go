@@ -89,7 +89,7 @@ func FillTemplateAsDefault(template *protocol.IndexTemplate) {
 		template.Template.Mappings = &protocol.Mappings{}
 	}
 	if template.Template.Mappings.Properties == nil {
-		template.Template.Mappings.Properties = make(map[string]protocol.Property)
+		template.Template.Mappings.Properties = make(map[string]*protocol.Property)
 	}
 	if template.Template.Mappings.Dynamic == "" {
 		template.Template.Mappings.Dynamic = consts.DynamicMappingMode

@@ -85,7 +85,7 @@ func TestDynamicMappingCheck(t *testing.T) {
 			name: "valid_explicit_mapping",
 			mappings: &protocol.Mappings{
 				Dynamic:    consts.IgnoreMappingMode,
-				Properties: map[string]protocol.Property{},
+				Properties: map[string]*protocol.Property{},
 			},
 		},
 	}

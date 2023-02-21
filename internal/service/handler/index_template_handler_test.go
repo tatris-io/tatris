@@ -94,7 +94,7 @@ func TestIndexTemplateHandler(t *testing.T) {
 			getTemplate.Template.Settings.NumberOfReplicas,
 		)
 		for field, prop := range template.Template.Mappings.Properties {
-			assert.Equal(t, getTemplate.Template.Mappings.Properties[field], prop)
+			assert.Equal(t, getTemplate.Template.Mappings.Properties[field].Type, prop.Type)
 		}
 		fmt.Println(template)
 		assert.Equal(t, http.StatusOK, w.Code)

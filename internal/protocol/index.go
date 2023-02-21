@@ -31,7 +31,7 @@ type Mappings struct {
 	// rejected. New fields must be explicitly added to the mapping.
 	Dynamic string `json:"dynamic,omitempty"`
 	// Type mappings, object fields and nested fields contain sub-fields, called properties.
-	Properties map[string]Property `json:"properties,omitempty"`
+	Properties map[string]*Property `json:"properties,omitempty"`
 }
 
 type Property struct {
