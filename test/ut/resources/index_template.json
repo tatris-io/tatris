@@ -1,0 +1,36 @@
+{
+  "name": "search-engine",
+  "index_patterns": [
+    "search-engine_*"
+  ],
+  "priority": 1,
+  "template": {
+    "settings": {
+      "number_of_shards": 3,
+      "number_of_replicas": 1
+    },
+    "mappings": {
+      "dynamic": "false",
+      "properties": {
+        "name": {
+          "Type": "keyword"
+        },
+        "desc": {
+          "Type": "text"
+        },
+        "lang": {
+          "Type": "keyword"
+        },
+        "stars": {
+          "Type": "integer"
+        },
+        "forks": {
+          "Type": "integer"
+        },
+        "start_time": {
+          "Type": "date"
+        }
+      }
+    }
+  }
+}

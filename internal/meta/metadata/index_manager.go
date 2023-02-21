@@ -20,6 +20,11 @@ import (
 	"github.com/tatris-io/tatris/internal/protocol"
 )
 
+const (
+	MaxNumberOfShards   = 100
+	MaxNumberOfReplicas = 5
+)
+
 var indexCache = cache.New(cache.NoExpiration, cache.NoExpiration)
 
 func LoadIndexes() error {
@@ -50,11 +55,11 @@ func LoadIndexes() error {
 }
 
 func CreateIndex(index *core.Index) error {
-	err := checkParam(index.Index)
-	buildIndex(index)
-	if err != nil {
+	FillIndexAsDefault(index.Index)
+	if err := CheckIndexValid(index); err != nil {
 		return err
 	}
+	buildIndex(index)
 	logger.Info("create index", zap.Any("index", index))
 	return SaveIndex(index)
 }
@@ -126,21 +131,56 @@ func buildIndex(index *core.Index) {
 	index.Shards = shards
 }
 
-func checkParam(index *protocol.Index) error {
-	mappings := index.Mappings
-	if mappings == nil {
-		return errs.ErrEmptyMappings
+func FillIndexAsDefault(index *protocol.Index) {
+	if index.Mappings == nil {
+		index.Mappings = &protocol.Mappings{}
 	}
-	err := checkMapping(mappings)
+	if index.Mappings.Dynamic == "" {
+		index.Mappings.Dynamic = consts.DynamicMappingMode
+	}
+	if index.Settings == nil {
+		index.Settings = &protocol.Settings{NumberOfShards: 1, NumberOfReplicas: 1}
+	}
+}
+
+func CheckIndexValid(index *core.Index) error {
+	err := CheckSettings(index.Index.Settings)
+	if err != nil {
+		return err
+	}
+	err = CheckMappings(index.Index.Mappings)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func checkMapping(mappings *protocol.Mappings) error {
-	if mappings.Dynamic == "" {
-		mappings.Dynamic = consts.DynamicMappingMode
+func CheckSettings(settings *protocol.Settings) error {
+	if settings == nil {
+		return errs.ErrEmptySettings
+	}
+	if settings.NumberOfShards <= 0 || settings.NumberOfShards > MaxNumberOfShards {
+		return &errs.InvalidRangeError{
+			Desc:  "settings.NumberOfShards",
+			Value: settings.NumberOfShards,
+			Left:  1,
+			Right: MaxNumberOfShards,
+		}
+	}
+	if settings.NumberOfReplicas <= 0 || settings.NumberOfReplicas > MaxNumberOfReplicas {
+		return &errs.InvalidRangeError{
+			Desc:  "settings.NumberOfReplicas",
+			Value: settings.NumberOfReplicas,
+			Left:  1,
+			Right: MaxNumberOfReplicas,
+		}
+	}
+	return nil
+}
+
+func CheckMappings(mappings *protocol.Mappings) error {
+	if mappings == nil {
+		return errs.ErrEmptyMappings
 	}
 	dynamic := strings.EqualFold(mappings.Dynamic, consts.DynamicMappingMode)
 	properties := &mappings.Properties
@@ -167,7 +207,7 @@ func checkMapping(mappings *protocol.Mappings) error {
 func checkReservedField(properties map[string]protocol.Property) error {
 	_, exist := properties[consts.IDField]
 	if exist {
-		return &errs.InvalidFieldError{Field: consts.IDField, Message: "build-it field"}
+		return &errs.InvalidFieldError{Field: consts.IDField, Message: "build-in field"}
 	}
 	properties[consts.IDField] = protocol.Property{
 		Type:    consts.KeywordMappingType,
@@ -175,7 +215,7 @@ func checkReservedField(properties map[string]protocol.Property) error {
 	}
 	_, exist = properties[consts.TimestampField]
 	if exist {
-		return &errs.InvalidFieldError{Field: consts.TimestampField, Message: "build-it field"}
+		return &errs.InvalidFieldError{Field: consts.TimestampField, Message: "build-in field"}
 	}
 	properties[consts.TimestampField] = protocol.Property{
 		Type:    consts.DateMappingType,

@@ -27,6 +27,10 @@ func init() {
 	}
 
 	if err := LoadAliases(); err != nil {
-		logger.Panic("load alias failed", zap.Error(err))
+		logger.Panic("load aliases failed", zap.Error(err))
+	}
+
+	if err := LoadIndexTemplates(); err != nil {
+		logger.Panic("load index templates failed", zap.Error(err))
 	}
 }

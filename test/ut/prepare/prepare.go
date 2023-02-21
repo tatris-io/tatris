@@ -6,7 +6,6 @@ package prepare
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"path"
 	"runtime"
@@ -25,13 +24,7 @@ import (
 func GetIndex(version string) (*core.Index, error) {
 	_, filename, _, _ := runtime.Caller(0)
 	indexFilePath := path.Join(path.Dir(path.Dir(filename)), "resources/index.json")
-	jsonFile, err := os.Open(indexFilePath)
-	if err != nil {
-		logger.Error("open json file failed", zap.String("msg", err.Error()))
-		return nil, err
-	}
-	defer jsonFile.Close()
-	jsonData, err := io.ReadAll(jsonFile)
+	jsonData, err := os.ReadFile(indexFilePath)
 	if err != nil {
 		logger.Error("read json file failed", zap.String("msg", err.Error()))
 		return nil, err
@@ -63,12 +56,7 @@ func CreateIndex(version string) (*core.Index, error) {
 func GetDocs() ([]protocol.Document, error) {
 	_, filename, _, _ := runtime.Caller(0)
 	docsFilePath := path.Join(path.Dir(path.Dir(filename)), "resources/docs.json")
-	jsonFile, err := os.Open(docsFilePath)
-	if err != nil {
-		logger.Error("open json file failed", zap.String("msg", err.Error()))
-	}
-	defer jsonFile.Close()
-	jsonData, err := io.ReadAll(jsonFile)
+	jsonData, err := os.ReadFile(docsFilePath)
 	if err != nil {
 		logger.Error("read json file failed", zap.String("msg", err.Error()))
 		return nil, err
@@ -113,4 +101,22 @@ func CreateIndexAndDocs(version string) (*core.Index, []protocol.Document, error
 	time.Sleep(time.Second * 3)
 	logger.Info("ingest docs", zap.Int("size", len(docs)))
 	return index, docs, nil
+}
+
+func GetIndexTemplate(version string) (*protocol.IndexTemplate, error) {
+	_, filename, _, _ := runtime.Caller(0)
+	templateFilePath := path.Join(path.Dir(path.Dir(filename)), "resources/index_template.json")
+	jsonData, err := os.ReadFile(templateFilePath)
+	if err != nil {
+		logger.Error("read json file failed", zap.String("msg", err.Error()))
+		return nil, err
+	}
+	template := &protocol.IndexTemplate{}
+	err = json.Unmarshal(jsonData, &template)
+	if err != nil {
+		logger.Error("parse json failed", zap.String("msg", err.Error()))
+		return nil, err
+	}
+	template.Name = fmt.Sprintf("%s_%s", template.Name, version)
+	return template, nil
 }

@@ -9,6 +9,7 @@ import (
 )
 
 var (
+	ErrEmptySettings      = errors.New("empty settings")
 	ErrEmptyMappings      = errors.New("empty mappings")
 	ErrNoSegmentMatched   = errors.New("no segment matched")
 	ErrIndexLibNotSupport = errors.New("index lib not support")
@@ -62,6 +63,11 @@ func (e *SegmentNotFoundError) Error() string {
 	return fmt.Sprintf("index: %s, shard: %d, segment: %d", e.Index, e.Shard, e.Segment)
 }
 
+func IsIndexTemplateNotFound(err error) bool {
+	var notFoundErr *IndexTemplateNotFoundError
+	return err != nil && errors.As(err, &notFoundErr)
+}
+
 type IndexTemplateNotFoundError struct {
 	IndexTemplate string `json:"index_template"`
 }
@@ -105,6 +111,35 @@ type UnsupportedError struct {
 
 func (e *UnsupportedError) Error() string {
 	return fmt.Sprintf("desc: %s, value: %v", e.Desc, e.Value)
+}
+
+type InvalidRangeError struct {
+	Desc         string `json:"desc"`
+	Value        any    `json:"value"`
+	Left         any    `json:"left"`
+	LeftExclude  bool   `json:"left_exclude"`
+	Right        any    `json:"right"`
+	RightExclude bool   `json:"right_exclude"`
+}
+
+func (e *InvalidRangeError) Error() string {
+	lParenthesis := "["
+	if e.LeftExclude {
+		lParenthesis = "("
+	}
+	rParenthesis := "["
+	if e.RightExclude {
+		rParenthesis = "("
+	}
+	return fmt.Sprintf(
+		"invalid %s: %v, should between %s%v, %v%s",
+		e.Desc,
+		e.Value,
+		lParenthesis,
+		e.Left,
+		e.Right,
+		rParenthesis,
+	)
 }
 
 type InvalidQueryError struct {
