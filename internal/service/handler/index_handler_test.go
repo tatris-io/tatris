@@ -86,7 +86,7 @@ func TestIndexHandler(t *testing.T) {
 		assert.Equal(t, index.Settings.NumberOfShards, getIndex.Settings.NumberOfShards)
 		assert.Equal(t, index.Settings.NumberOfReplicas, getIndex.Settings.NumberOfReplicas)
 		for field, prop := range index.Mappings.Properties {
-			assert.Equal(t, getIndex.Mappings.Properties[field], prop)
+			assert.Equal(t, getIndex.Mappings.Properties[field].Type, prop.Type)
 		}
 		fmt.Println(index)
 		assert.Equal(t, http.StatusOK, w.Code)

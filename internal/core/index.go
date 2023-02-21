@@ -82,7 +82,7 @@ func (index *Index) GetSegmentsByTime(start, end int64) []*Segment {
 	return segments
 }
 
-func (index *Index) CheckMappings(doc protocol.Document) error {
+func (index *Index) CheckMapping(doc protocol.Document) error {
 	if index.Index == nil || index.Mappings == nil || index.Mappings.Properties == nil {
 		return errs.ErrEmptyMappings
 	}

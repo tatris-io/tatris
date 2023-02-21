@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"math"
 
+	"github.com/minio/pkg/wildcard"
+
 	"github.com/patrickmn/go-cache"
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/common/errs"
@@ -51,6 +53,22 @@ func SaveIndexTemplate(template *protocol.IndexTemplate) error {
 	return MStore.Set(indexTemplatePrefix(template.Name), json)
 }
 
+func FindTemplates(indexName string) *protocol.IndexTemplate {
+	var template *protocol.IndexTemplate
+	for _, item := range templateCache.Items() {
+		t := item.Object.(*protocol.IndexTemplate)
+		for _, pattern := range t.IndexPatterns {
+			if wildcard.Match(pattern, indexName) {
+				if template == nil || t.Priority > template.Priority {
+					template = t
+				}
+				break
+			}
+		}
+	}
+	return template
+}
+
 func GetIndexTemplate(templateName string) (*protocol.IndexTemplate, error) {
 	var template *protocol.IndexTemplate
 	cachedTemplate, found := templateCache.Get(templateName)
@@ -70,11 +88,22 @@ func FillTemplateAsDefault(template *protocol.IndexTemplate) {
 	if template.Template.Mappings == nil {
 		template.Template.Mappings = &protocol.Mappings{}
 	}
+	if template.Template.Mappings.Properties == nil {
+		template.Template.Mappings.Properties = make(map[string]protocol.Property)
+	}
 	if template.Template.Mappings.Dynamic == "" {
 		template.Template.Mappings.Dynamic = consts.DynamicMappingMode
 	}
+	for _, p := range template.Template.Mappings.Properties {
+		if p.Dynamic == "" {
+			p.Dynamic = template.Template.Mappings.Dynamic
+		}
+	}
 	if template.Template.Settings == nil {
-		template.Template.Settings = &protocol.Settings{NumberOfShards: 1, NumberOfReplicas: 1}
+		template.Template.Settings = &protocol.Settings{
+			NumberOfShards:   DefaultNumberOfShards,
+			NumberOfReplicas: DefaultNumberOfReplicas,
+		}
 	}
 }
 

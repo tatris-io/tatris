@@ -332,7 +332,7 @@ func buildDocs(
 		}
 		doc[consts.IDField] = docID
 		doc[consts.TimestampField] = docTimestamp
-		err := index.CheckMappings(doc)
+		err := index.CheckMapping(doc)
 		if err != nil {
 			return idDocs, minTime, maxTime, err
 		}

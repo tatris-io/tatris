@@ -5,6 +5,7 @@ package metadata
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/tatris-io/tatris/internal/common/errs"
@@ -21,8 +22,10 @@ import (
 )
 
 const (
-	MaxNumberOfShards   = 100
-	MaxNumberOfReplicas = 5
+	DefaultNumberOfShards   = 1
+	MaxNumberOfShards       = 100
+	DefaultNumberOfReplicas = 1
+	MaxNumberOfReplicas     = 5
 )
 
 var indexCache = cache.New(cache.NoExpiration, cache.NoExpiration)
@@ -55,11 +58,20 @@ func LoadIndexes() error {
 }
 
 func CreateIndex(index *core.Index) error {
-	FillIndexAsDefault(index.Index)
+	template := FindTemplates(index.Name)
+	BuildIndex(index, template)
+	if template != nil && template.Template != nil && template.Template.Aliases != nil {
+		for alias, term := range template.Template.Aliases {
+			term.Index = index.Name
+			term.Alias = alias
+			if err := AddAlias(term); err != nil {
+				return err
+			}
+		}
+	}
 	if err := CheckIndexValid(index); err != nil {
 		return err
 	}
-	buildIndex(index)
 	logger.Info("create index", zap.Any("index", index))
 	return SaveIndex(index)
 }
@@ -119,28 +131,66 @@ func DeleteIndex(indexName string) error {
 	return MStore.Delete(indexPrefix(indexName))
 }
 
-func buildIndex(index *core.Index) {
-	numberOfShards := index.Settings.NumberOfShards
-	shards := make([]*core.Shard, numberOfShards)
-	for i := 0; i < numberOfShards; i++ {
+func BuildIndex(index *core.Index, template *protocol.IndexTemplate) {
+	mappings := &protocol.Mappings{
+		Dynamic:    consts.DynamicMappingMode,
+		Properties: make(map[string]protocol.Property),
+	}
+	settings := &protocol.Settings{
+		NumberOfShards:   DefaultNumberOfShards,
+		NumberOfReplicas: DefaultNumberOfReplicas,
+	}
+	// first, initialize mappings and settings with a template if it exists
+	if template != nil {
+		if template.Template != nil {
+			if template.Template.Mappings != nil {
+				if template.Template.Mappings.Dynamic != "" {
+					mappings.Dynamic = template.Template.Mappings.Dynamic
+				}
+				for n, p := range template.Template.Mappings.Properties {
+					mappings.Properties[n] = protocol.Property{Type: p.Type, Dynamic: p.Dynamic}
+				}
+			}
+			if template.Template.Settings != nil {
+				settings.NumberOfShards = template.Template.Settings.NumberOfShards
+				settings.NumberOfReplicas = template.Template.Settings.NumberOfReplicas
+			}
+		}
+	}
+	// then, use the passed index to assign the real value
+	if index.Mappings != nil {
+		if index.Mappings.Dynamic != "" {
+			mappings.Dynamic = index.Mappings.Dynamic
+		}
+		for n, p := range index.Mappings.Properties {
+			property := protocol.Property{Type: p.Type}
+			if p.Dynamic != "" {
+				property.Dynamic = p.Dynamic
+			} else {
+				property.Dynamic = mappings.Dynamic
+			}
+			mappings.Properties[n] = property
+		}
+	}
+	if index.Settings != nil {
+		if index.Settings.NumberOfShards != 0 {
+			settings.NumberOfShards = index.Settings.NumberOfShards
+		}
+		if index.Settings.NumberOfReplicas != 0 {
+			settings.NumberOfReplicas = index.Settings.NumberOfReplicas
+		}
+	}
+	index.Mappings = mappings
+	index.Settings = settings
+	// finally, build shards
+	shards := make([]*core.Shard, index.Settings.NumberOfShards)
+	for i := 0; i < index.Settings.NumberOfShards; i++ {
 		shards[i] = &core.Shard{}
 		shards[i].ShardID = i
 		shards[i].Index = index
 		shards[i].Stat = core.ShardStat{}
 	}
 	index.Shards = shards
-}
-
-func FillIndexAsDefault(index *protocol.Index) {
-	if index.Mappings == nil {
-		index.Mappings = &protocol.Mappings{}
-	}
-	if index.Mappings.Dynamic == "" {
-		index.Mappings.Dynamic = consts.DynamicMappingMode
-	}
-	if index.Settings == nil {
-		index.Settings = &protocol.Settings{NumberOfShards: 1, NumberOfReplicas: 1}
-	}
 }
 
 func CheckIndexValid(index *core.Index) error {
@@ -205,22 +255,45 @@ func CheckMappings(mappings *protocol.Mappings) error {
 }
 
 func checkReservedField(properties map[string]protocol.Property) error {
-	_, exist := properties[consts.IDField]
+	IDField, exist := properties[consts.IDField]
 	if exist {
-		return &errs.InvalidFieldError{Field: consts.IDField, Message: "build-in field"}
+		if !strings.EqualFold(IDField.Type, consts.KeywordMappingType) {
+			return &errs.InvalidFieldError{
+				Field: consts.IDField,
+				Message: fmt.Sprintf(
+					"%s must be %s type",
+					consts.IDField,
+					consts.KeywordMappingType,
+				),
+			}
+		}
+	} else {
+		IDField = protocol.Property{
+			Type: consts.KeywordMappingType,
+		}
+		properties[consts.IDField] = IDField
 	}
-	properties[consts.IDField] = protocol.Property{
-		Type:    consts.KeywordMappingType,
-		Dynamic: consts.StrictMappingMode,
-	}
-	_, exist = properties[consts.TimestampField]
+	IDField.Dynamic = consts.StrictMappingMode
+
+	TimestampField, exist := properties[consts.TimestampField]
 	if exist {
-		return &errs.InvalidFieldError{Field: consts.TimestampField, Message: "build-in field"}
+		if !strings.EqualFold(TimestampField.Type, consts.DateMappingType) {
+			return &errs.InvalidFieldError{
+				Field: consts.TimestampField,
+				Message: fmt.Sprintf(
+					"%s must be %s type",
+					consts.TimestampField,
+					consts.DateMappingType,
+				),
+			}
+		}
+	} else {
+		TimestampField = protocol.Property{
+			Type: consts.DateMappingType,
+		}
+		properties[consts.TimestampField] = TimestampField
 	}
-	properties[consts.TimestampField] = protocol.Property{
-		Type:    consts.DateMappingType,
-		Dynamic: consts.StrictMappingMode,
-	}
+	TimestampField.Dynamic = consts.StrictMappingMode
 	return nil
 }
 

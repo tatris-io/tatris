@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/tatris-io/tatris/internal/core"
+
 	"github.com/tatris-io/tatris/internal/common/consts"
 
 	"github.com/stretchr/testify/assert"
@@ -43,7 +45,7 @@ func TestManager(t *testing.T) {
 			return
 		}
 		for i, item := range items {
-			FillIndexAsDefault(item.Index)
+			BuildIndex(&core.Index{Index: item.Index}, nil)
 			err := CheckSettings(item.Index.Settings)
 			if err == nil {
 				err = CheckMappings(item.Index.Mappings)

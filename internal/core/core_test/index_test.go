@@ -242,7 +242,7 @@ func TestMapping(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			for i, doc := range tt.docs {
-				testErr := tt.index.CheckMappings(doc)
+				testErr := tt.index.CheckMapping(doc)
 				if strings.HasPrefix(tt.name, "valid_") {
 					assert.NoError(t, testErr)
 					if strings.HasPrefix(tt.name, "valid_dynamic_numeric") {

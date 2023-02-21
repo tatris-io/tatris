@@ -16,7 +16,7 @@ type IndexTemplate struct {
 }
 
 type Template struct {
-	Settings *Settings `json:"settings"`
-	Mappings *Mappings `json:"mappings"`
-	Aliases  *Aliases  `json:"aliases"`
+	Settings *Settings             `json:"settings"`
+	Mappings *Mappings             `json:"mappings"`
+	Aliases  map[string]*AliasTerm `json:"aliases"`
 }
