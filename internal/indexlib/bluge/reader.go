@@ -155,7 +155,7 @@ func (b *BlugeReader) dealMultiResults(
 	var bucket *search.Bucket
 	for _, result := range results {
 		docs = append(docs, result.docs...)
-		// mere bucket
+		// merge bucket
 		for _, b := range result.buckets {
 			if bucket == nil {
 				bucket = b
@@ -522,7 +522,7 @@ func (b *BlugeReader) generateAggsResponse(
 			buckets := value.Buckets()
 			count := len(buckets)
 			// limit bucket result
-			if limit, ok := bucketLimitDoc[name]; ok {
+			if limit, ok := bucketLimitDoc[name]; ok && limit < count {
 				count = limit
 			}
 
