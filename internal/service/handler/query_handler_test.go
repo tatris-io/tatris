@@ -79,7 +79,6 @@ func TestQueryMultipleIndexes(t *testing.T) {
 		}
 		indexNames[i] = indexes[i].Name
 	}
-	time.Sleep(time.Second * 5)
 	for _, tt := range createQueryCases(indexNames...) {
 		t.Run(tt.name, func(t *testing.T) {
 			gin.SetMode(gin.ReleaseMode)
