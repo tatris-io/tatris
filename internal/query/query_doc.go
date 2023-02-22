@@ -273,7 +273,7 @@ func transformMatch(
 	}
 	// The match query does not match when the bluge keyword field value contains uppercase letters
 	// Set KEYWORD analyzer
-	if mappings.Properties[matchQ.Field].Type == consts.KeywordMappingType {
+	if mappings.Properties[matchQ.Field].Type == consts.LibFieldTypeKeyword {
 		matchQ.Analyzer = "KEYWORD"
 	}
 	return matchQ, nil
@@ -470,15 +470,15 @@ func transformDateHistogramAgg(d *protocol.AggDateHistogram, indexlibAggs *index
 	var extendedBounds *indexlib.HistogramBound
 	if d.ExtendedBounds != nil {
 		extendedBounds = &indexlib.HistogramBound{
-			Min: utils.Timestamp2Unix(int64(d.ExtendedBounds.Min)).UnixNano(),
-			Max: utils.Timestamp2Unix(int64(d.ExtendedBounds.Max)).UnixNano(),
+			Min: utils.UnixToTime(int64(d.ExtendedBounds.Min)).UnixNano(),
+			Max: utils.UnixToTime(int64(d.ExtendedBounds.Max)).UnixNano(),
 		}
 	}
 	var hardBounds *indexlib.HistogramBound
 	if d.HardBounds != nil {
 		hardBounds = &indexlib.HistogramBound{
-			Min: utils.Timestamp2Unix(int64(d.HardBounds.Min)).UnixNano(),
-			Max: utils.Timestamp2Unix(int64(d.HardBounds.Max)).UnixNano(),
+			Min: utils.UnixToTime(int64(d.HardBounds.Min)).UnixNano(),
+			Max: utils.UnixToTime(int64(d.HardBounds.Max)).UnixNano(),
 		}
 	}
 

@@ -53,7 +53,7 @@ func TestQuerySingleIndex(t *testing.T) {
 				zap.String("name", tt.name),
 				zap.String("index", tt.index),
 				zap.Int("code", w.Code),
-				zap.Any("resp", w.Body),
+				//zap.Any("resp", w.Body),
 			)
 			assert.Equal(t, http.StatusOK, w.Code)
 		})
@@ -101,7 +101,7 @@ func TestQueryMultipleIndexes(t *testing.T) {
 				zap.String("name", tt.name),
 				zap.String("index", tt.index),
 				zap.Int("code", w.Code),
-				zap.Any("resp", w.Body),
+				//zap.Any("resp", w.Body),
 			)
 			assert.Equal(t, http.StatusOK, w.Code)
 		})
@@ -172,7 +172,7 @@ func TestAliasQuery(t *testing.T) {
 					zap.String("name", tt.name),
 					zap.String("index", tt.index),
 					zap.Int("code", w.Code),
-					zap.Any("resp", w.Body),
+					//zap.Any("resp", w.Body),
 				)
 				assert.Equal(t, http.StatusOK, w.Code)
 			})

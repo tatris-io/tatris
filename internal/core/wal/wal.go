@@ -244,16 +244,7 @@ func ConsumeWAL(shard *core.Shard, wal log.WalLog) error {
 		docs = append(docs, doc)
 	}
 
-	idDocs, minTime, maxTime, err := buildDocs(shard.Index, docs)
-	if err != nil {
-		return err
-	}
-	err = persistDocs(shard, idDocs, minTime, maxTime)
-	if err != nil {
-		return err
-	}
-	shard.UpdateStat(minTime, maxTime, int64(len(docs)), to)
-	err = metadata.SaveIndex(shard.Index)
+	err = persistDocuments(shard, docs, to)
 	if err != nil {
 		return err
 	}
@@ -274,8 +265,8 @@ func ConsumeWAL(shard *core.Shard, wal log.WalLog) error {
 	return nil
 }
 
-func persistDocs(shard *core.Shard,
-	docs map[string]protocol.Document, minTime, maxTime time.Time) error {
+func persistDocuments(shard *core.Shard,
+	docs []protocol.Document, walIndex uint64) error {
 	shard.CheckSegments()
 	segment := shard.GetLatestSegment()
 	if segment == nil {
@@ -288,41 +279,13 @@ func persistDocs(shard *core.Shard,
 	if err != nil {
 		return err
 	}
-	logger.Info(
-		"ready to persist docs",
-		zap.String("index", shard.Index.Name),
-		zap.Int("shard", shard.ShardID),
-		zap.Int("segment", segment.SegmentID),
-		zap.Int("size", len(docs)),
-	)
-	err = writer.Batch(docs)
-	if err != nil {
-		return err
-	}
-	segment.UpdateStat(minTime, maxTime, int64(len(docs)))
-	return nil
-}
-
-func buildDocs(
-	index *core.Index,
-	docs []protocol.Document,
-) (map[string]protocol.Document, time.Time, time.Time, error) {
-	idDocs := make(map[string]protocol.Document)
 	minTime, maxTime := time.UnixMilli(math.MaxInt64), time.UnixMilli(0)
+	idDocs := make(map[string]protocol.Document)
 	for _, doc := range docs {
-		docID := ""
-		docTimestamp := time.Now()
-		if id, ok := doc[consts.IDField]; ok && id != nil && id != "" {
-			docID = id.(string)
-		} else {
-			genID, err := utils.GenerateID()
-			if err != nil {
-				return idDocs, minTime, maxTime, err
-			}
-			docID = genID
-		}
-		if timestamp, ok := doc[consts.TimestampField]; ok && timestamp != nil {
-			docTimestamp = timestamp.(time.Time)
+		docID := doc[consts.IDField].(string)
+		docTimestamp, err := utils.ParseTime(doc[consts.TimestampField])
+		if err != nil {
+			return err
 		}
 		if docTimestamp.Before(minTime) {
 			minTime = docTimestamp
@@ -330,13 +293,26 @@ func buildDocs(
 		if docTimestamp.After(maxTime) {
 			maxTime = docTimestamp
 		}
-		doc[consts.IDField] = docID
-		doc[consts.TimestampField] = docTimestamp
-		err := index.CheckMapping(doc)
-		if err != nil {
-			return idDocs, minTime, maxTime, err
-		}
 		idDocs[docID] = doc
 	}
-	return idDocs, minTime, maxTime, nil
+	logger.Info(
+		"ready to persist docs",
+		zap.String("index", shard.Index.Name),
+		zap.Int("shard", shard.ShardID),
+		zap.Int("segment", segment.SegmentID),
+		zap.Int("size", len(idDocs)),
+		zap.Time("minTime", minTime),
+		zap.Time("maxTime", maxTime),
+	)
+	err = writer.Batch(idDocs)
+	if err != nil {
+		return err
+	}
+	segment.UpdateStat(minTime, maxTime, int64(len(docs)))
+	shard.UpdateStat(minTime, maxTime, int64(len(docs)), walIndex)
+	err = metadata.SaveIndex(shard.Index)
+	if err != nil {
+		return err
+	}
+	return nil
 }

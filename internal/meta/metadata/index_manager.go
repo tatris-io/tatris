@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/tatris-io/tatris/internal/indexlib"
+
 	"github.com/tatris-io/tatris/internal/common/errs"
 
 	"github.com/patrickmn/go-cache"
@@ -256,19 +258,19 @@ func CheckMappings(mappings *protocol.Mappings) error {
 func checkReservedField(properties map[string]*protocol.Property) error {
 	IDField, exist := properties[consts.IDField]
 	if exist {
-		if !strings.EqualFold(IDField.Type, consts.KeywordMappingType) {
+		if !strings.EqualFold(IDField.Type, consts.LibFieldTypeKeyword) {
 			return &errs.InvalidFieldError{
 				Field: consts.IDField,
 				Message: fmt.Sprintf(
 					"%s must be %s type",
 					consts.IDField,
-					consts.KeywordMappingType,
+					consts.LibFieldTypeKeyword,
 				),
 			}
 		}
 	} else {
 		IDField = &protocol.Property{
-			Type: consts.KeywordMappingType,
+			Type: consts.LibFieldTypeKeyword,
 		}
 		properties[consts.IDField] = IDField
 	}
@@ -276,19 +278,19 @@ func checkReservedField(properties map[string]*protocol.Property) error {
 
 	TimestampField, exist := properties[consts.TimestampField]
 	if exist {
-		if !strings.EqualFold(TimestampField.Type, consts.DateMappingType) {
+		if !strings.EqualFold(TimestampField.Type, consts.LibFieldTypeDate) {
 			return &errs.InvalidFieldError{
 				Field: consts.TimestampField,
 				Message: fmt.Sprintf(
 					"%s must be %s type",
 					consts.TimestampField,
-					consts.DateMappingType,
+					consts.LibFieldTypeDate,
 				),
 			}
 		}
 	} else {
 		TimestampField = &protocol.Property{
-			Type: consts.DateMappingType,
+			Type: consts.LibFieldTypeDate,
 		}
 		properties[consts.TimestampField] = TimestampField
 	}
@@ -297,7 +299,7 @@ func checkReservedField(properties map[string]*protocol.Property) error {
 }
 
 func checkType(paramType string) error {
-	if _, ok := consts.MappingTypes[strings.ToLower(paramType)]; ok {
+	if ok, _ := indexlib.ValidateMappingType(strings.ToLower(paramType)); ok {
 		return nil
 	}
 	return &errs.UnsupportedError{Desc: "field type", Value: paramType}
