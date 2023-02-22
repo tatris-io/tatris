@@ -8,7 +8,7 @@ import (
 
 	"github.com/minio/pkg/wildcard"
 
-	"github.com/patrickmn/go-cache"
+	cache "github.com/patrickmn/go-cache"
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/common/errs"
 	"go.uber.org/zap"

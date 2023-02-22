@@ -25,7 +25,7 @@ import (
 	"github.com/sourcegraph/conc/pool"
 	"github.com/tatris-io/tatris/internal/core/config"
 
-	"github.com/patrickmn/go-cache"
+	cache "github.com/patrickmn/go-cache"
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/common/utils"

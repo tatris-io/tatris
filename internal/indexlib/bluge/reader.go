@@ -71,11 +71,11 @@ func (b *BlugeReader) OpenReader() error {
 	var cfg bluge.Config
 
 	for _, segment := range b.Segments {
-		switch b.StorageType {
+		switch b.BaseConfig.StorageType {
 		case indexlib.FSStorageType:
-			cfg = config.GetFSConfig(b.DataPath, segment)
+			cfg = config.GetFSConfig(b.BaseConfig.DataPath, segment)
 		default:
-			cfg = config.GetFSConfig(b.DataPath, segment)
+			cfg = config.GetFSConfig(b.BaseConfig.DataPath, segment)
 		}
 
 		reader, err := bluge.OpenReader(cfg)

@@ -42,11 +42,11 @@ func NewBlugeWriter(
 func (b *BlugeWriter) OpenWriter() error {
 	var cfg bluge.Config
 
-	switch b.StorageType {
+	switch b.BaseConfig.StorageType {
 	case indexlib.FSStorageType:
-		cfg = config.GetFSConfig(b.DataPath, b.Segment)
+		cfg = config.GetFSConfig(b.BaseConfig.DataPath, b.Segment)
 	default:
-		cfg = config.GetFSConfig(b.DataPath, b.Segment)
+		cfg = config.GetFSConfig(b.BaseConfig.DataPath, b.Segment)
 	}
 
 	writer, err := bluge.OpenWriter(cfg)
