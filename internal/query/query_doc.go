@@ -158,8 +158,15 @@ func transformAggs(aggs map[string]protocol.Aggs) (map[string]indexlib.Aggs, err
 			if agg.Terms.Size == 0 {
 				agg.Terms.Size = 10
 			}
+			if agg.Terms.ShardSize == 0 {
+				agg.Terms.ShardSize = 5000
+			}
 
-			indexlibAggs.Terms = &indexlib.AggTerms{Field: agg.Terms.Field, Size: agg.Terms.Size}
+			indexlibAggs.Terms = &indexlib.AggTerms{
+				Field:     agg.Terms.Field,
+				Size:      agg.Terms.Size,
+				ShardSize: agg.Terms.ShardSize,
+			}
 		} else if agg.NumericRange != nil {
 			if agg.NumericRange.Field == "" {
 				return nil, errs.ErrEmptyField
