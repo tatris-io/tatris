@@ -39,7 +39,7 @@ func AccessLog() gin.HandlerFunc {
 			zap.String("method", c.Request.Method),
 			zap.String("url", c.Request.RequestURI),
 			zap.String("proto", c.Request.Proto),
-			zap.Int("status", bodyWriter.Status()),
+			zap.Int("status", bodyWriter.ResponseWriter.Status()),
 			zap.Int("length", bodyWriter.body.Len()),
 			zap.Int64("cost", end-start),
 			zap.String("user-agent", c.Request.Header.Get("User-Agent")),

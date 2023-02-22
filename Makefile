@@ -14,7 +14,6 @@ ALL_PKG := github.com/tatris-io/tatris
 PACKAGES := $(shell go list ./...) 
 PACKAGE_DIRECTORIES := $(subst $(ALL_PKG)/,,$(PACKAGES))
 PACKAGES_WITHOUT_TOOLSET := $(shell go list ./... | sed '/^github.com\/tatris-io\/tatris\/toolset/d')
-PACKAGE_DIRECTORIES_WITHOUT_TOOLSET := $(subst $(ALL_PKG)/,,$(PACKAGES_WITHOUT_TOOLSET))
 
 REVISION := $(shell git rev-parse --short HEAD 2>/dev/null)
 REVISION_DATE := $(shell git log -1 --pretty=format:'%ad' --date short 2>/dev/null)
@@ -44,7 +43,7 @@ check: install-tools
 	@ echo "golines ..."
 	@ golines --max-len=100 --shorten-comments -w internal cmd test
 	@ echo "golangci-lint ..."
-	@ golangci-lint run -c golangci-lint.yml $(PACKAGE_DIRECTORIES_WITHOUT_TOOLSET)
+	@ golangci-lint run -c golangci-lint.yml ./cmd/... ./internal/...
 	@ echo "revive ..."
 	@ revive -formatter friendly -config revive.toml $(PACKAGES_WITHOUT_TOOLSET)
 
