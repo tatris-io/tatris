@@ -38,12 +38,12 @@ check: install-tools
 	@ echo "do checks ..."
 	@ make check-license
 	@ echo "gofmt ..."
-	@ echo "$(PACKAGE_DIRECTORIES)"
 	@ gofmt -s -l -w $(PACKAGE_DIRECTORIES)
 	@ echo "golines ..."
 	@ golines --max-len=100 --shorten-comments -w internal cmd test
 	@ echo "golangci-lint ..."
-	@ golangci-lint run -c golangci-lint.yml ./cmd/... ./internal/...
+	@ golangci-lint cache clean
+	@ golangci-lint run -c golangci-lint.yml ./internal/... ./cmd/...
 	@ echo "revive ..."
 	@ revive -formatter friendly -config revive.toml $(PACKAGES_WITHOUT_TOOLSET)
 
