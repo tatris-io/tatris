@@ -7,13 +7,14 @@ import (
 	"github.com/tatris-io/tatris/internal/common/utils"
 )
 
+// LibFieldType defines the field types supported by Tatris based on the underlying index library.
 type LibFieldType struct {
-	Type         string
-	MappingTypes []string
-	Validator    func(value any) bool
+	Type         string               // lib type
+	MappingTypes []string             // tatris mapping types
+	Validator    func(value any) bool // used to validate whether the value matches the field type
 }
 
-// libFieldTypes maps from the index library type to mapping types supported by it
+// libFieldTypes maps from the index library type to mapping types supported by it.
 var libFieldTypes = []LibFieldType{
 	{
 		Type: consts.LibFieldTypeNumeric,
@@ -49,7 +50,7 @@ var libFieldTypes = []LibFieldType{
 	},
 }
 
-// FieldTypes maps from the mapping type to the index library type it belongs to
+// FieldTypes maps from the mapping type to the index library type it belongs to.
 var FieldTypes map[string]LibFieldType
 
 func init() {
