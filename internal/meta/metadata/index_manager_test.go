@@ -5,16 +5,19 @@ package metadata
 
 import (
 	"encoding/json"
-	"github.com/tatris-io/tatris/internal/common/consts"
 	"strings"
 	"testing"
+
+	"github.com/tatris-io/tatris/internal/core"
+
+	"github.com/tatris-io/tatris/internal/common/consts"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tatris-io/tatris/internal/protocol"
 )
 
 type testItem struct {
-	Index protocol.Index
+	Index *protocol.Index
 	Res   bool
 }
 
@@ -30,7 +33,7 @@ func TestManager(t *testing.T) {
 		{"Res":true ,"Index":{"settings":{"number_of_shards":3,"number_of_replicas":1},"mappings":{"properties":{"name":{"type":"BOOLEAN"}}}}},
 		{"Res":true ,"Index":{"settings":{"number_of_shards":3,"number_of_replicas":1},"mappings":{"properties":{"name":{"type":"date"}}}}},
 		{"Res":true ,"Index":{"settings":{"number_of_shards":3,"number_of_replicas":1},"mappings":{"properties":{"name":{"type":"dAtE"}}}}},
-		{"Res":false},
+		{"Res":true, "Index":{}},
 		{"Res":true ,"Index":{"settings":{"number_of_shards":3,"number_of_replicas":1},"mappings":{}}},
 		{"Res":false ,"Index":{"settings":{"number_of_shards":3,"number_of_replicas":1},"mappings":{"properties":{"name":{"type":"keyword"},"age":{"type":"string"}}}}},
 		{"Res":false ,"Index":{"settings":{"number_of_shards":3,"number_of_replicas":1},"mappings":{"properties":{"name":{"type":"bool"},"age":{"type":"int"}}}}}
@@ -42,7 +45,11 @@ func TestManager(t *testing.T) {
 			return
 		}
 		for i, item := range items {
-			err := checkParam(&item.Index)
+			BuildIndex(&core.Index{Index: item.Index}, nil)
+			err := CheckSettings(item.Index.Settings)
+			if err == nil {
+				err = CheckMappings(item.Index.Mappings)
+			}
 			comparison := err == nil
 			if !comparison {
 				t.Logf("item %d error : %s", i, err)
@@ -78,14 +85,14 @@ func TestDynamicMappingCheck(t *testing.T) {
 			name: "valid_explicit_mapping",
 			mappings: &protocol.Mappings{
 				Dynamic:    consts.IgnoreMappingMode,
-				Properties: map[string]protocol.Property{},
+				Properties: map[string]*protocol.Property{},
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			testErr := checkMapping(tt.mappings)
+			testErr := CheckMappings(tt.mappings)
 			if strings.HasPrefix(tt.name, "valid_") {
 				assert.NoError(t, testErr)
 			} else if strings.HasPrefix(tt.name, "invalid_") {

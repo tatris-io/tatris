@@ -101,7 +101,7 @@ func (index *Index) CheckMapping(doc protocol.Document) error {
 
 		if _, ok := properties[k]; !ok && strings.EqualFold(dynamic, consts.DynamicMappingMode) {
 			// add field to properties
-			p := protocol.Property{
+			p := &protocol.Property{
 				Type:    fieldType,
 				Dynamic: consts.DynamicMappingMode,
 			}
@@ -123,7 +123,7 @@ func (index *Index) Close() error {
 
 func getFieldType(
 	dynamic string,
-	properties map[string]protocol.Property,
+	properties map[string]*protocol.Property,
 	fieldName string,
 	value interface{},
 ) (string, error) {
@@ -146,7 +146,7 @@ func getFieldType(
 }
 
 // Check that the field type specified in the property matches the value data type
-func validFieldType(property protocol.Property, value interface{}) bool {
+func validFieldType(property *protocol.Property, value interface{}) bool {
 	switch property.Type {
 	case "text", "match_only_text", "keyword", "constant_keyword":
 		return utils.IsString(value)
@@ -183,7 +183,7 @@ func getDynamicFieldType(field string, value interface{}) (string, error) {
 
 func getFieldDynamic(
 	dynamic string,
-	properties map[string]protocol.Property,
+	properties map[string]*protocol.Property,
 	fieldName string,
 ) string {
 	if property, ok := properties[fieldName]; ok {

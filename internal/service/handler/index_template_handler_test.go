@@ -19,14 +19,14 @@ import (
 	"github.com/tatris-io/tatris/test/ut/prepare"
 )
 
-func TestIndexHandler(t *testing.T) {
+func TestIndexTemplateHandler(t *testing.T) {
 
-	index, err := prepare.GetIndex(time.Now().Format(time.RFC3339Nano))
+	template, err := prepare.GetIndexTemplate(time.Now().Format(time.RFC3339Nano))
 	if err != nil {
-		t.Fatalf("prepare index and docs fail: %s", err.Error())
+		t.Fatalf("prepare template fail: %s", err.Error())
 	}
 
-	t.Run("create_index", func(t *testing.T) {
+	t.Run("create_index_template", func(t *testing.T) {
 		gin.SetMode(gin.ReleaseMode)
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -36,20 +36,20 @@ func TestIndexHandler(t *testing.T) {
 		}
 		c.Request = req
 		p := gin.Params{}
-		p = append(p, gin.Param{Key: "index", Value: index.Name})
+		p = append(p, gin.Param{Key: "template", Value: template.Name})
 		c.Params = p
 		c.Request.Header.Set("Content-Type", "application/json;charset=utf-8")
-		indexBytes, err := json.Marshal(index)
+		templateBytes, err := json.Marshal(template)
 		if err != nil {
-			t.Fatalf("parse index fail: %s", err.Error())
+			t.Fatalf("parse template fail: %s", err.Error())
 		}
-		c.Request.Body = io.NopCloser(bytes.NewBufferString(string(indexBytes)))
-		CreateIndexHandler(c)
+		c.Request.Body = io.NopCloser(bytes.NewBufferString(string(templateBytes)))
+		CreateIndexTemplateHandler(c)
 		fmt.Println(w)
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
-	t.Run("index_exist_Y", func(t *testing.T) {
+	t.Run("index_template_exist_Y", func(t *testing.T) {
 		gin.SetMode(gin.ReleaseMode)
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -59,15 +59,15 @@ func TestIndexHandler(t *testing.T) {
 		}
 		c.Request = req
 		p := gin.Params{}
-		p = append(p, gin.Param{Key: "index", Value: index.Name})
+		p = append(p, gin.Param{Key: "template", Value: template.Name})
 		c.Params = p
-		IndexExistHandler(c)
-		getIndex := protocol.Index{}
-		json.Unmarshal(w.Body.Bytes(), &getIndex)
+		IndexTemplateExistHandler(c)
+		getTemplate := protocol.IndexTemplate{}
+		json.Unmarshal(w.Body.Bytes(), &getTemplate)
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
-	t.Run("get_index", func(t *testing.T) {
+	t.Run("get_index_template", func(t *testing.T) {
 		gin.SetMode(gin.ReleaseMode)
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -77,22 +77,30 @@ func TestIndexHandler(t *testing.T) {
 		}
 		c.Request = req
 		p := gin.Params{}
-		p = append(p, gin.Param{Key: "index", Value: index.Name})
+		p = append(p, gin.Param{Key: "template", Value: template.Name})
 		c.Params = p
-		GetIndexHandler(c)
-		getIndex := protocol.Index{}
-		json.Unmarshal(w.Body.Bytes(), &getIndex)
-		assert.Equal(t, index.Name, getIndex.Name)
-		assert.Equal(t, index.Settings.NumberOfShards, getIndex.Settings.NumberOfShards)
-		assert.Equal(t, index.Settings.NumberOfReplicas, getIndex.Settings.NumberOfReplicas)
-		for field, prop := range index.Mappings.Properties {
-			assert.Equal(t, getIndex.Mappings.Properties[field].Type, prop.Type)
+		GetIndexTemplateHandler(c)
+		getTemplate := protocol.IndexTemplate{}
+		json.Unmarshal(w.Body.Bytes(), &getTemplate)
+		assert.Equal(t, template.Name, getTemplate.Name)
+		assert.Equal(
+			t,
+			template.Template.Settings.NumberOfShards,
+			getTemplate.Template.Settings.NumberOfShards,
+		)
+		assert.Equal(
+			t,
+			template.Template.Settings.NumberOfReplicas,
+			getTemplate.Template.Settings.NumberOfReplicas,
+		)
+		for field, prop := range template.Template.Mappings.Properties {
+			assert.Equal(t, getTemplate.Template.Mappings.Properties[field].Type, prop.Type)
 		}
-		fmt.Println(index)
+		fmt.Println(template)
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
-	t.Run("delete_index", func(t *testing.T) {
+	t.Run("delete_index_template", func(t *testing.T) {
 		gin.SetMode(gin.ReleaseMode)
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -102,15 +110,15 @@ func TestIndexHandler(t *testing.T) {
 		}
 		c.Request = req
 		p := gin.Params{}
-		p = append(p, gin.Param{Key: "index", Value: index.Name})
+		p = append(p, gin.Param{Key: "template", Value: template.Name})
 		c.Params = p
 		c.Request.Header.Set("Content-Type", "application/json;charset=utf-8")
-		DeleteIndexHandler(c)
+		DeleteIndexTemplateHandler(c)
 		fmt.Println(w)
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
-	t.Run("index_exist_N", func(t *testing.T) {
+	t.Run("index_template_exist_N", func(t *testing.T) {
 		gin.SetMode(gin.ReleaseMode)
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -120,11 +128,11 @@ func TestIndexHandler(t *testing.T) {
 		}
 		c.Request = req
 		p := gin.Params{}
-		p = append(p, gin.Param{Key: "index", Value: index.Name})
+		p = append(p, gin.Param{Key: "template", Value: template.Name})
 		c.Params = p
-		IndexExistHandler(c)
-		getIndex := protocol.Index{}
-		json.Unmarshal(w.Body.Bytes(), &getIndex)
+		IndexTemplateExistHandler(c)
+		getTemplate := protocol.IndexTemplate{}
+		json.Unmarshal(w.Body.Bytes(), &getTemplate)
 		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
 }

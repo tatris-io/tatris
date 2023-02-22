@@ -9,8 +9,8 @@ type AliasManageRequest struct {
 type Action map[string]*AliasTerm
 
 type AliasTerm struct {
-	Index string `json:"index"`
-	Alias string `json:"alias"`
+	Index string `json:"index,omitempty"`
+	Alias string `json:"alias,omitempty"`
 }
 
 type AliasGetResponse map[string]*Aliases

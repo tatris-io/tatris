@@ -89,4 +89,9 @@ func registerMeta(group *gin.RouterGroup) {
 	group.GET("/:index/_aliases", handler.GetAliasHandler)
 	group.GET("/_aliases/:alias", handler.GetAliasHandler)
 	group.GET("/:index/_aliases/:alias", handler.GetAliasHandler)
+
+	group.PUT("/_index_template/:template", handler.CreateIndexTemplateHandler)
+	group.GET("/_index_template/:template", handler.GetIndexTemplateHandler)
+	group.DELETE("/_index_template/:template", handler.DeleteIndexTemplateHandler)
+	group.HEAD("/_index_template/:template", handler.IndexTemplateExistHandler)
 }
