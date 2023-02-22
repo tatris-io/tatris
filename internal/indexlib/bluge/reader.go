@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"sort"
 	"strings"
 	"time"
 
@@ -134,8 +135,47 @@ func (b *BlugeReader) Search(
 	if err != nil {
 		return nil, err
 	}
+	docs, bucket := b.dealMultiResults(results, generateSort(query), limit)
 
-	return b.generateResponse(results)
+	// get buckets limit (map[aggName]size)
+	bucketLimitDoc := make(map[string]int)
+	if aggs := query.GetAggs(); aggs != nil {
+		b.getBucketAggregationsLimit(aggs, bucketLimitDoc)
+	}
+
+	return b.generateResponse(docs, bucket, bucketLimitDoc)
+}
+
+func (b *BlugeReader) dealMultiResults(
+	results []*BlugeSearchResult,
+	sortOrder search.SortOrder,
+	limit int,
+) ([]*search.DocumentMatch, *search.Bucket) {
+	docs := make([]*search.DocumentMatch, 0)
+	var bucket *search.Bucket
+	for _, result := range results {
+		docs = append(docs, result.docs...)
+		// merge bucket
+		for _, b := range result.buckets {
+			if bucket == nil {
+				bucket = b
+			} else {
+				bucket.Merge(b)
+			}
+		}
+	}
+	// sort docs
+	if sortOrder != nil && len(docs) > 1 {
+		sort.SliceStable(docs, func(i, j int) bool {
+			return sortOrder.Compare(docs[i], docs[j]) < 0
+		})
+	}
+
+	// limit docs
+	if limit != -1 && len(docs) > limit {
+		docs = docs[:limit]
+	}
+	return docs, bucket
 }
 
 func (b *BlugeReader) generateSearchRequest(
@@ -150,6 +190,20 @@ func (b *BlugeReader) generateSearchRequest(
 		limit = 10
 	}
 	searchRequest := bluge.NewTopNSearch(limit, blugeQuery).WithStandardAggregations()
+	sorts := generateSort(query)
+	if sorts != nil {
+		searchRequest.SortByCustom(sorts)
+	}
+	if aggs := query.GetAggs(); aggs != nil {
+		blugeAggs := b.generateAggregations(aggs)
+		for name, agg := range blugeAggs {
+			searchRequest.AddAggregation(name, agg)
+		}
+	}
+	return searchRequest, nil
+}
+
+func generateSort(query indexlib.QueryRequest) []*search.Sort {
 	if querySorts := query.GetSort(); querySorts != nil {
 		sorts := make([]*search.Sort, 0, len(querySorts))
 		for _, querySort := range querySorts {
@@ -164,15 +218,9 @@ func (b *BlugeReader) generateSearchRequest(
 				sorts = append(sorts, sort)
 			}
 		}
-		searchRequest.SortByCustom(sorts)
+		return sorts
 	}
-	if aggs := query.GetAggs(); aggs != nil {
-		blugeAggs := b.generateAggregations(aggs)
-		for name, agg := range blugeAggs {
-			searchRequest.AddAggregation(name, agg)
-		}
-	}
-	return searchRequest, nil
+	return nil
 }
 
 func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) (bluge.Query, error) {
@@ -236,61 +284,53 @@ func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) (bluge.Query, e
 }
 
 func (b *BlugeReader) generateResponse(
-	results []*BlugeSearchResult,
+	docs []*search.DocumentMatch,
+	bucket *search.Bucket,
+	bucketLimitDoc map[string]int,
 ) (*indexlib.QueryResponse, error) {
 
 	Hits := make([]indexlib.Hit, 0)
-	var bucket *search.Bucket
-	for _, result := range results {
-		for _, doc := range result.docs {
-			var id string
-			var index string
-			var source protocol.Document
-			var timestamp time.Time
+	for _, doc := range docs {
+		var id string
+		var index string
+		var source protocol.Document
+		var timestamp time.Time
 
-			err := doc.VisitStoredFields(func(field string, value []byte) bool {
-				switch field {
-				case consts.TimestampField:
-					location, _ := time.LoadLocation("Asia/Shanghai")
-					timestamp, _ = bluge.DecodeDateTime(value)
-					timestamp = timestamp.In(location)
-				case consts.IDField:
-					id = string(value)
-				case consts.IndexField:
-					index = string(value)
-				case consts.SourceField:
-					err := json.Unmarshal(value, &source)
-					if err != nil {
-						log.Printf("bluge source unmarshal error: %s", err)
-					}
+		err := doc.VisitStoredFields(func(field string, value []byte) bool {
+			switch field {
+			case consts.TimestampField:
+				location, _ := time.LoadLocation("Asia/Shanghai")
+				timestamp, _ = bluge.DecodeDateTime(value)
+				timestamp = timestamp.In(location)
+			case consts.IDField:
+				id = string(value)
+			case consts.IndexField:
+				index = string(value)
+			case consts.SourceField:
+				err := json.Unmarshal(value, &source)
+				if err != nil {
+					log.Printf("bluge source unmarshal error: %s", err)
 				}
-				return true
-			})
-			if err != nil {
-				log.Printf("bluge VisitStored error: %s", err)
-				continue
 			}
+			return true
+		})
+		if err != nil {
+			log.Printf("bluge VisitStored error: %s", err)
+			continue
+		}
 
-			hit := indexlib.Hit{
-				Index:     index,
-				ID:        id,
-				Source:    source,
-				Timestamp: timestamp,
-			}
-			Hits = append(Hits, hit)
+		hit := indexlib.Hit{
+			Index:     index,
+			ID:        id,
+			Source:    source,
+			Timestamp: timestamp,
 		}
-		for _, b := range result.buckets {
-			if bucket == nil {
-				bucket = b
-			} else {
-				bucket.Merge(b)
-			}
-		}
+		Hits = append(Hits, hit)
 	}
 
 	bucket.Aggregation("duration").Finish()
 
-	aggsResponse, err := b.generateAggsResponse(bucket)
+	aggsResponse, err := b.generateAggsResponse(bucket, bucketLimitDoc)
 	if err != nil {
 		return nil, err
 	}
@@ -402,6 +442,17 @@ func (b *BlugeReader) generateBoolQuery(query *indexlib.BooleanQuery) (bluge.Que
 	return q, nil
 }
 
+func (b *BlugeReader) getBucketAggregationsLimit(
+	aggs map[string]indexlib.Aggs,
+	bucketLimitDoc map[string]int,
+) {
+	for name, agg := range aggs {
+		if agg.Terms != nil {
+			bucketLimitDoc[name] = agg.Terms.Size
+		}
+	}
+}
+
 func (b *BlugeReader) generateAggregations(
 	aggs map[string]indexlib.Aggs,
 ) map[string]search.Aggregation {
@@ -409,12 +460,9 @@ func (b *BlugeReader) generateAggregations(
 
 	for name, agg := range aggs {
 		if agg.Terms != nil {
-			if agg.Terms.Size == 0 {
-				agg.Terms.Size = 10
-			}
 			termsAggregation := aggregations.NewTermsAggregation(
 				search.Field(agg.Terms.Field),
-				agg.Terms.Size,
+				agg.Terms.ShardSize,
 			)
 			// nested aggregation (bucket aggregation need support)
 			if len(agg.Aggs) > 0 {
@@ -464,19 +512,27 @@ func (b *BlugeReader) generateAggregations(
 
 func (b *BlugeReader) generateAggsResponse(
 	bucket *search.Bucket,
+	bucketLimitDoc map[string]int,
 ) (map[string]indexlib.AggsResponse, error) {
 	aggsResponse := make(map[string]indexlib.AggsResponse)
 	for name, value := range bucket.Aggregations() {
 		switch value := value.(type) {
 		case search.BucketCalculator:
 			aggsBuckets := make([]map[string]interface{}, 0)
-			for _, bkt := range value.Buckets() {
-				aggsBucket := make(map[string]interface{})
-				aggsBucket["key"] = bkt.Name()
-				aggsBucket["doc_count"] = bkt.Count()
+			buckets := value.Buckets()
+			count := len(buckets)
+			// limit bucket result
+			if limit, ok := bucketLimitDoc[name]; ok && limit < count {
+				count = limit
+			}
 
-				if bkt.Aggregations() != nil {
-					aggsResponse, err := b.generateAggsResponse(bkt)
+			for i := 0; i < count; i++ {
+				aggsBucket := make(map[string]interface{})
+				aggsBucket["key"] = buckets[i].Name()
+				aggsBucket["doc_count"] = buckets[i].Count()
+
+				if buckets[i].Aggregations() != nil {
+					aggsResponse, err := b.generateAggsResponse(buckets[i], bucketLimitDoc)
 					if err != nil {
 						return aggsResponse, err
 					}

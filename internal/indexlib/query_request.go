@@ -159,8 +159,9 @@ type AggWeightedAvg struct {
 }
 
 type AggTerms struct {
-	Field string
-	Size  int
+	Field     string
+	Size      int
+	ShardSize int
 }
 
 type AggNumericRange struct {

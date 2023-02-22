@@ -90,7 +90,18 @@ type AggWeightedAvg struct {
 
 type AggTerms struct {
 	Field string `json:"field"`
-	Size  int    `json:"size"`
+	// This is to handle the case when one term has many documents on one shard but is just below
+	// the size threshold on all other shards. If each shard only returned size terms, the
+	// aggregation would return an partial doc count for the term. So terms returns more terms in an
+	// attempt to catch the missing terms. This helps, but it’s still quite possible to return a
+	// partial doc count for a term.
+	// It just takes a term with more disparate per-shard doc counts.
+	Size int `json:"size"` // default 10
+	// increase shard_size to better account for these disparate doc counts and improve the accuracy
+	// of the selection of top terms. It is much cheaper to increase the shard_size than to increase
+	// the size. However, it still takes more bytes over the wire and
+	// waiting in memory on the coordinating node.
+	ShardSize int `json:"shard_size"` // default 5000
 }
 
 type AggNumericRange struct {
