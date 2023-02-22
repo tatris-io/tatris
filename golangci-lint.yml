@@ -1,7 +1,21 @@
 run:
   timeout: 5m
   tests: false
+  skip-dirs:
+    - docs
+    - docker
+    - supervisor
+    - conf
   skip-files:
     - internal/common/log/util/zap_text_core.go
     - internal/common/log/util/zap_text_encoder.go
+  allow-parallel-runners: false
   go: '1.19'
+linters:
+  disable-all: true
+  enable:
+    - goimports
+    - gosimple
+linters-settings:
+  gosimple:
+    go: "1.19"
