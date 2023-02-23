@@ -19,6 +19,11 @@ linters:
     - asciicheck
     - govet
     - typecheck
+    - gocritic
 linters-settings:
   gosimple:
     go: '1.19'
+  gocritic:
+    enabled-checks:
+      - equalFold
+      - boolExprSimplify
