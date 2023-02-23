@@ -62,14 +62,14 @@ func init() {
 	}
 }
 
-func ValidateMappingType(t string) (bool, LibFieldType) {
-	lType, found := FieldTypes[t]
+func ValidateMappingType(mType string) (bool, LibFieldType) {
+	lType, found := FieldTypes[mType]
 	return found, lType
 }
 
-func ValidateValue(t string, v any) bool {
-	if lType, found := FieldTypes[t]; found {
-		return lType.Validator(v)
+func ValidateValue(mType string, value any) bool {
+	if lType, found := FieldTypes[mType]; found {
+		return lType.Validator(value)
 	}
 	return false
 }
