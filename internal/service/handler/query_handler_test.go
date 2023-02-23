@@ -53,7 +53,7 @@ func TestQuerySingleIndex(t *testing.T) {
 				zap.String("name", tt.name),
 				zap.String("index", tt.index),
 				zap.Int("code", w.Code),
-				//zap.Any("resp", w.Body),
+				zap.Any("resp", w.Body),
 			)
 			assert.Equal(t, http.StatusOK, w.Code)
 		})
@@ -100,7 +100,7 @@ func TestQueryMultipleIndexes(t *testing.T) {
 				zap.String("name", tt.name),
 				zap.String("index", tt.index),
 				zap.Int("code", w.Code),
-				//zap.Any("resp", w.Body),
+				zap.Any("resp", w.Body),
 			)
 			assert.Equal(t, http.StatusOK, w.Code)
 		})
@@ -341,6 +341,27 @@ var cases = []QueryCase{
 						  }
 						}
  					}
+				  }
+				}
+			  }
+			`,
+	},
+	{
+		name: "histogram",
+		req: `
+				{
+				  "size": 0,
+				  "aggs": {
+					"histogram": {
+					  "histogram": {
+						"field": "stars",
+						"interval": 100,
+						"min_doc_count": 0,
+						"hard_bounds": {
+							"min": 100,
+							"max": 1000
+						}
+					}
 				  }
 				}
 			  }

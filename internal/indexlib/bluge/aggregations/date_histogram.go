@@ -28,8 +28,8 @@ type DateHistogramAggregation struct {
 	format           string
 	timeZone         string
 	offset           string
-	extendedBounds   *indexlib.HistogramBound
-	hardBounds       *indexlib.HistogramBound
+	extendedBounds   *indexlib.DateHistogramBound
+	hardBounds       *indexlib.DateHistogramBound
 	aggregations     map[string]search.Aggregation
 	lessFunc         func(a, b *search.Bucket) bool
 	desc             bool
@@ -43,9 +43,10 @@ func NewDateHistogramAggregation(
 	format string,
 	timeZone string,
 	offset string,
+	minDocCount int,
 	extendedBounds,
-	hardBounds *indexlib.HistogramBound,
-	minDocCount int) *DateHistogramAggregation {
+	hardBounds *indexlib.DateHistogramBound,
+) *DateHistogramAggregation {
 	rv := &DateHistogramAggregation{
 		src:              field,
 		calendarInterval: calendarInterval,
@@ -108,8 +109,8 @@ type DateHistogramCalculator struct {
 	format           string
 	timeZone         *time.Location
 	offset           string
-	extendedBounds   *indexlib.HistogramBound
-	hardBounds       *indexlib.HistogramBound
+	extendedBounds   *indexlib.DateHistogramBound
+	hardBounds       *indexlib.DateHistogramBound
 	minNano          int64
 	maxNano          int64
 	aggregations     map[string]search.Aggregation

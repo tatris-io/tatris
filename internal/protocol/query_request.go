@@ -69,6 +69,7 @@ type Bool struct {
 type Aggs struct {
 	Terms         *AggTerms         `json:"terms,omitempty"`
 	DateHistogram *AggDateHistogram `json:"date_histogram,omitempty"`
+	Histogram     *AggHistogram     `json:"histogram,omitempty"`
 	NumericRange  *AggNumericRange  `json:"range"`
 	Sum           *AggMetric        `json:"sum,omitempty"`
 	Min           *AggMetric        `json:"min,omitempty"`
@@ -145,7 +146,19 @@ type AggDateHistogram struct {
 	HardBounds *HistogramBound `json:"hard_bounds"`
 }
 
+type AggHistogram struct {
+	Field          string          `json:"field"` // only support numeric type
+	Interval       float64         `json:"interval"`
+	MinDocCount    int             `json:"min_doc_count"`
+	Offset         float64         `json:"offset"`
+	Keyed          bool            `json:"keyed"`   // TODO
+	Order          interface{}     `json:"order"`   // TODO
+	Missing        string          `json:"missing"` // TODO
+	ExtendedBounds *HistogramBound `json:"extended_bounds"`
+	HardBounds     *HistogramBound `json:"hard_bounds"`
+}
+
 type HistogramBound struct {
-	Min float64 `json:"min"` // second/millis/micros/nanos
-	Max float64 `json:"max"` // second/millis/micros/nanos
+	Min float64 `json:"min"`
+	Max float64 `json:"max"`
 }

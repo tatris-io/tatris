@@ -146,6 +146,7 @@ type Aggs struct {
 	Cardinality   *AggMetric
 	WeightedAvg   *AggWeightedAvg
 	DateHistogram *AggDateHistogram
+	Histogram     *AggHistogram
 	Aggs          map[string]Aggs
 }
 
@@ -192,11 +193,27 @@ type AggDateHistogram struct {
 	MinDocCount      int
 	Keyed            bool
 	Missing          string
-	ExtendedBounds   *HistogramBound
-	HardBounds       *HistogramBound
+	ExtendedBounds   *DateHistogramBound
+	HardBounds       *DateHistogramBound
+}
+
+type DateHistogramBound struct {
+	Min int64 `json:"min"`
+	Max int64 `json:"max"`
+}
+
+type AggHistogram struct {
+	Field          string
+	Interval       float64
+	MinDocCount    int
+	Offset         float64
+	Keyed          bool
+	Missing        string
+	ExtendedBounds *HistogramBound
+	HardBounds     *HistogramBound
 }
 
 type HistogramBound struct {
-	Min int64 `json:"min"` // nanos
-	Max int64 `json:"max"` // nanos
+	Min float64 `json:"min"`
+	Max float64 `json:"max"`
 }
