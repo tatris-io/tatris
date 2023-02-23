@@ -20,6 +20,7 @@ func BuildDocuments(
 	docs []protocol.Document,
 ) error {
 	for _, doc := range docs {
+		var err error
 		docID := ""
 		docTimestamp := time.Now()
 		if id, ok := doc[consts.IDField]; ok && id != nil && id != "" {
@@ -32,11 +33,14 @@ func BuildDocuments(
 			docID = genID
 		}
 		if timestamp, ok := doc[consts.TimestampField]; ok && timestamp != nil {
-			docTimestamp = timestamp.(time.Time)
+			docTimestamp, err = utils.ParseTime(timestamp)
+			if err != nil {
+				return err
+			}
 		}
 		doc[consts.IDField] = docID
 		doc[consts.TimestampField] = docTimestamp
-		err := CheckDocument(index, doc)
+		err = CheckDocument(index, doc)
 		if err != nil {
 			return err
 		}
