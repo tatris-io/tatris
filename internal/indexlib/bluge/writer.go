@@ -158,21 +158,13 @@ func (b *BlugeWriter) addField(
 	mappings *protocol.Mappings,
 ) error {
 	var bfield *bluge.TermField
-	switch key {
-	case consts.TimestampField:
-		bfield = bluge.NewDateTimeField(key, value.(time.Time))
-	case consts.IDField:
-		bfield = bluge.NewKeywordField(key, value.(string))
-	default:
-		if p, ok := mappings.Properties[key]; ok {
-			field, err := b.addFieldByMappingType(p.Type, key, value)
-			if err != nil {
-				return err
-			}
-			bfield = field
+	if p, ok := mappings.Properties[key]; ok {
+		field, err := b.addFieldByMappingType(p.Type, key, value)
+		if err != nil {
+			return err
 		}
+		bfield = field
 	}
-
 	if bfield != nil {
 		bdoc.AddField(bfield)
 	}
@@ -186,52 +178,41 @@ func (b *BlugeWriter) addFieldByMappingType(
 ) (*bluge.TermField, error) {
 	var bfield *bluge.TermField
 	var err error
-	if t, ok := consts.MappingTypes[mappingType]; ok {
-		switch t {
-		case consts.NumericMappingType:
+	if ok, lType := indexlib.ValidateMappingType(mappingType); ok {
+		switch lType.Type {
+		case consts.LibFieldTypeNumeric:
 			numericValue, ok := value.(float64)
 			if !ok {
-				return nil, &errs.InvalidFieldValError{Field: key, Type: t, Value: value}
+				return nil, &errs.InvalidFieldValError{Field: key, Type: mappingType, Value: value}
 			}
 			bfield = bluge.NewNumericField(key, numericValue)
-		case consts.KeywordMappingType:
+		case consts.LibFieldTypeKeyword:
 			keywordValue, ok := value.(string)
 			if !ok {
-				return nil, &errs.InvalidFieldValError{Field: key, Type: t, Value: value}
+				return nil, &errs.InvalidFieldValError{Field: key, Type: mappingType, Value: value}
 			}
 			bfield = bluge.NewKeywordField(key, keywordValue)
 			bfield.WithAnalyzer(generateAnalyzer("keyword"))
-		case consts.BoolMappingType:
+		case consts.LibFieldTypeBool:
 			boolValue, ok := value.(bool)
 			if !ok {
-				return nil, &errs.InvalidFieldValError{Field: key, Type: t, Value: value}
+				return nil, &errs.InvalidFieldValError{Field: key, Type: mappingType, Value: value}
 			}
 			bfield = bluge.NewKeywordField(key, strconv.FormatBool(boolValue))
-		case consts.TextMappingType:
+		case consts.LibFieldTypeText:
 			textValue, ok := value.(string)
 			if !ok {
-				return nil, &errs.InvalidFieldValError{Field: key, Type: t, Value: value}
+				return nil, &errs.InvalidFieldValError{Field: key, Type: mappingType, Value: value}
 			}
 			bfield = bluge.NewTextField(key, textValue)
 			// TODO get analyzer from config
 			bfield.WithAnalyzer(generateAnalyzer(""))
-		case consts.DateMappingType:
+		case consts.LibFieldTypeDate:
 			var date time.Time
-
-			switch v := value.(type) {
-			case float64:
-				date = utils.Timestamp2Unix(int64(v))
-			case int64:
-				date = utils.Timestamp2Unix(v)
-			case string:
-				date, err = time.Parse(time.RFC3339, v)
-				if err != nil {
-					return nil, err
-				}
-			default:
-				return nil, &errs.InvalidFieldValError{Field: key, Type: t, Value: value}
+			date, err := utils.ParseTime(value)
+			if err != nil {
+				return nil, &errs.InvalidFieldValError{Field: key, Type: mappingType, Value: value}
 			}
-
 			bfield = bluge.NewDateTimeField(key, date)
 		}
 	}

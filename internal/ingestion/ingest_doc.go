@@ -16,5 +16,8 @@ func IngestDocs(index *core.Index, docs []protocol.Document) error {
 	if shard == nil {
 		return &errs.NoShardError{Index: index.Name}
 	}
+	if err := core.BuildDocuments(index, docs); err != nil {
+		return err
+	}
 	return wal.ProduceWAL(shard, docs)
 }
