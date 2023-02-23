@@ -10,7 +10,7 @@ import (
 // LibFieldType defines the field types supported by Tatris based on the underlying index library.
 type LibFieldType struct {
 	Type         string               // lib type
-	MappingTypes []string             // tatris mapping types
+	MappingTypes []string             // Tatris mapping types
 	Validator    func(value any) bool // used to validate whether the value matches the field type
 }
 
@@ -19,33 +19,36 @@ var libFieldTypes = []LibFieldType{
 	{
 		Type: consts.LibFieldTypeNumeric,
 		MappingTypes: []string{
-			consts.Integer,
-			consts.Long,
-			consts.Float,
-			consts.Double,
-			consts.Short,
-			consts.Byte,
+			consts.MappingFieldTypeInteger,
+			consts.MappingFieldTypeLong,
+			consts.MappingFieldTypeFloat,
+			consts.MappingFieldTypeDouble,
+			consts.MappingFieldTypeShort,
+			consts.MappingFieldTypeByte,
 		},
 		Validator: utils.IsNumeric,
 	},
 	{
-		Type:         consts.LibFieldTypeKeyword,
-		MappingTypes: []string{consts.Keyword, consts.ConstantKeyword},
-		Validator:    utils.IsString,
+		Type: consts.LibFieldTypeKeyword,
+		MappingTypes: []string{
+			consts.MappingFieldTypeKeyword,
+			consts.MappingFieldTypeConstantKeyword,
+		},
+		Validator: utils.IsString,
 	},
 	{
 		Type:         consts.LibFieldTypeText,
-		MappingTypes: []string{consts.Text, consts.MatchOnlyText},
+		MappingTypes: []string{consts.MappingFieldTypeText, consts.MappingFieldTypeMatchOnlyText},
 		Validator:    utils.IsString,
 	},
 	{
 		Type:         consts.LibFieldTypeBool,
-		MappingTypes: []string{consts.Bool, consts.Boolean},
+		MappingTypes: []string{consts.MappingFieldTypeBool, consts.MappingFieldTypeBoolean},
 		Validator:    utils.IsString,
 	},
 	{
 		Type:         consts.LibFieldTypeDate,
-		MappingTypes: []string{consts.Date},
+		MappingTypes: []string{consts.MappingFieldTypeDate},
 		Validator:    utils.IsDateType,
 	},
 }
@@ -74,20 +77,23 @@ func ValidateValue(mType string, value any) bool {
 	return false
 }
 
-func DeduceType(value any) string {
+// DeduceType deduced Tatris field type from the value
+// reference from:
+// https://www.elastic.co/guide/en/elasticsearch/reference/8.6/dynamic-field-mapping.html
+func DeduceType(value any) (string, bool) {
 	switch value := value.(type) {
 	case string:
 		if utils.IsDateType(value) {
-			return consts.Date
+			return consts.MappingFieldTypeDate, true
 		}
-		return consts.Text
+		return consts.MappingFieldTypeText, true
 	case bool:
-		return consts.Boolean
+		return consts.MappingFieldTypeBoolean, true
 	case int64, int32, int16, int8, int, byte:
-		return consts.Long
+		return consts.MappingFieldTypeLong, true
 	case float64, float32:
-		return consts.Double
+		return consts.MappingFieldTypeFloat, true
 	default:
-		return ""
+		return "", false
 	}
 }

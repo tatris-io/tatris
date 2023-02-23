@@ -247,10 +247,14 @@ func CheckMappings(mappings *protocol.Mappings) error {
 		return err
 	}
 	for _, property := range mappings.Properties {
-		err = checkType(property.Type)
+		err = checkMappingType(property.Type)
 		if err != nil {
 			return err
 		}
+	}
+	err = checkDynamicTemplates(mappings.DynamicTemplates)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -258,19 +262,19 @@ func CheckMappings(mappings *protocol.Mappings) error {
 func checkReservedField(properties map[string]*protocol.Property) error {
 	IDField, exist := properties[consts.IDField]
 	if exist {
-		if !strings.EqualFold(IDField.Type, consts.LibFieldTypeKeyword) {
+		if !strings.EqualFold(IDField.Type, consts.MappingFieldTypeKeyword) {
 			return &errs.InvalidFieldError{
 				Field: consts.IDField,
 				Message: fmt.Sprintf(
 					"%s must be %s type",
 					consts.IDField,
-					consts.LibFieldTypeKeyword,
+					consts.MappingFieldTypeKeyword,
 				),
 			}
 		}
 	} else {
 		IDField = &protocol.Property{
-			Type: consts.LibFieldTypeKeyword,
+			Type: consts.MappingFieldTypeKeyword,
 		}
 		properties[consts.IDField] = IDField
 	}
@@ -278,19 +282,19 @@ func checkReservedField(properties map[string]*protocol.Property) error {
 
 	TimestampField, exist := properties[consts.TimestampField]
 	if exist {
-		if !strings.EqualFold(TimestampField.Type, consts.LibFieldTypeDate) {
+		if !strings.EqualFold(TimestampField.Type, consts.MappingFieldTypeDate) {
 			return &errs.InvalidFieldError{
 				Field: consts.TimestampField,
 				Message: fmt.Sprintf(
 					"%s must be %s type",
 					consts.TimestampField,
-					consts.LibFieldTypeDate,
+					consts.MappingFieldTypeDate,
 				),
 			}
 		}
 	} else {
 		TimestampField = &protocol.Property{
-			Type: consts.LibFieldTypeDate,
+			Type: consts.MappingFieldTypeDate,
 		}
 		properties[consts.TimestampField] = TimestampField
 	}
@@ -298,11 +302,28 @@ func checkReservedField(properties map[string]*protocol.Property) error {
 	return nil
 }
 
-func checkType(paramType string) error {
-	if ok, _ := indexlib.ValidateMappingType(strings.ToLower(paramType)); ok {
+func checkDynamicTemplates(templates []map[string]*protocol.DynamicTemplate) error {
+	for _, template := range templates {
+		for _, dt := range template {
+			if dt.Mapping == nil {
+				return errs.ErrNoMappingInDynamicTemplate
+			}
+			if err := checkMappingType(dt.Mapping.Type); err != nil {
+				return err
+			}
+			if dt.MatchMappingType != "" && !consts.IsJSONFieldType(dt.MatchMappingType) {
+				return errs.ErrInvalidJSONType
+			}
+		}
+	}
+	return nil
+}
+
+func checkMappingType(mappingType string) error {
+	if ok, _ := indexlib.ValidateMappingType(strings.ToLower(mappingType)); ok {
 		return nil
 	}
-	return &errs.UnsupportedError{Desc: "field type", Value: paramType}
+	return &errs.UnsupportedError{Desc: "field type", Value: mappingType}
 }
 
 func indexPrefix(name string) string {

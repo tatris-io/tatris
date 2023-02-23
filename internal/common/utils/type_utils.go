@@ -2,9 +2,26 @@
 
 package utils
 
+import (
+	"time"
+
+	"github.com/jinzhu/now"
+)
+
 func IsDateType(value interface{}) bool {
-	_, err := ParseTime(value)
-	return err == nil
+	switch value := value.(type) {
+	case time.Time:
+		return true
+	case string:
+		_, err := now.Parse(value)
+		return err == nil
+	case int64:
+		return value > 1e12
+	case float64:
+		return value > 1e12
+	default:
+		return false
+	}
 }
 
 func IsNumeric(value interface{}) bool {
