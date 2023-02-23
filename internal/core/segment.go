@@ -68,7 +68,7 @@ func (segment *Segment) GetWriter() (indexlib.Writer, error) {
 		return nil, errs.ErrSegmentReadonly
 	}
 
-	if !reflect.ValueOf(segment.writer).IsNil() {
+	if reflect.ValueOf(segment.writer).IsValid() {
 		return segment.writer, nil
 	}
 
@@ -95,7 +95,7 @@ func (segment *Segment) openWriter() (indexlib.Writer, error) {
 }
 
 func (segment *Segment) openReaderFromWriter() (indexlib.Reader, error) {
-	if reflect.ValueOf(segment.writer).IsNil() {
+	if !reflect.ValueOf(segment.writer).IsValid() {
 		return nil, errors.New("writer is nil")
 	}
 	reader, err := segment.writer.Reader()
@@ -132,7 +132,7 @@ func (segment *Segment) GetReader() (indexlib.Reader, error) {
 	segment.lock.Lock()
 	defer segment.lock.Unlock()
 
-	if segment.status == SegmentStatusWritable && (!reflect.ValueOf(segment.writer).IsNil()) {
+	if segment.status == SegmentStatusWritable && reflect.ValueOf(segment.writer).IsValid() {
 		return segment.openReaderFromWriter()
 	}
 
@@ -201,7 +201,7 @@ func (segment *Segment) onMature() {
 	segment.status = SegmentStatusReadonly
 
 	// close only when readerRef is 0
-	if (!reflect.ValueOf(segment.writer).IsNil()) && segment.readerRef == 0 {
+	if reflect.ValueOf(segment.writer).IsValid() && segment.readerRef == 0 {
 		segment.writer.Close()
 		segment.writer = nil
 	}
