@@ -5,6 +5,7 @@ package core
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"sync"
 	"time"
 
@@ -67,7 +68,7 @@ func (segment *Segment) GetWriter() (indexlib.Writer, error) {
 		return nil, errs.ErrSegmentReadonly
 	}
 
-	if segment.writer != nil {
+	if reflect.ValueOf(segment.writer).IsValid() {
 		return segment.writer, nil
 	}
 
@@ -94,7 +95,7 @@ func (segment *Segment) openWriter() (indexlib.Writer, error) {
 }
 
 func (segment *Segment) openReaderFromWriter() (indexlib.Reader, error) {
-	if segment.writer == nil {
+	if !reflect.ValueOf(segment.writer).IsValid() {
 		return nil, errors.New("writer is nil")
 	}
 	reader, err := segment.writer.Reader()
@@ -131,7 +132,7 @@ func (segment *Segment) GetReader() (indexlib.Reader, error) {
 	segment.lock.Lock()
 	defer segment.lock.Unlock()
 
-	if segment.status == SegmentStatusWritable && segment.writer != nil {
+	if segment.status == SegmentStatusWritable && reflect.ValueOf(segment.writer).IsValid() {
 		return segment.openReaderFromWriter()
 	}
 
@@ -200,7 +201,7 @@ func (segment *Segment) onMature() {
 	segment.status = SegmentStatusReadonly
 
 	// close only when readerRef is 0
-	if segment.writer != nil && segment.readerRef == 0 {
+	if reflect.ValueOf(segment.writer).IsValid() && segment.readerRef == 0 {
 		segment.writer.Close()
 		segment.writer = nil
 	}

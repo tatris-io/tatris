@@ -15,5 +15,5 @@ cd tatris && make
 ./bin/tatris-server --conf.logging=conf/log-conf.yml --conf.server=conf/server-conf.yml
 ```
 #### Useful links for beginners
-* [How Build Tatris and its Docker image](/docs/dev_guides/build.md)
+* [How to build Tatris and its Docker image](/docs/dev_guides/build.md)
 * [How to configure Tatris](/docs/user_guides/configure.md)

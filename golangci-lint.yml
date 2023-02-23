@@ -2,10 +2,7 @@ run:
   timeout: 5m
   tests: false
   skip-dirs:
-    - docs
-    - docker
-    - supervisor
-    - conf
+    - ../*
   skip-files:
     - internal/common/log/util/zap_text_core.go
     - internal/common/log/util/zap_text_encoder.go
@@ -14,8 +11,19 @@ run:
 linters:
   disable-all: true
   enable:
+    - errcheck
     - goimports
     - gosimple
+    - ineffassign
+    - unused
+    - asciicheck
+    - govet
+    - typecheck
+    - gocritic
 linters-settings:
   gosimple:
-    go: "1.19"
+    go: '1.19'
+  gocritic:
+    enabled-checks:
+      - equalFold
+      - boolExprSimplify

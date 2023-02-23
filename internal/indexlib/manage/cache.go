@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/patrickmn/go-cache"
+	cache "github.com/patrickmn/go-cache"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/indexlib"
 )

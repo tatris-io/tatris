@@ -6,7 +6,7 @@ package main
 import (
 	"os"
 
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 
 	"github.com/tatris-io/tatris/internal/core/config"
 

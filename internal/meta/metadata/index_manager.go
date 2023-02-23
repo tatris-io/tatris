@@ -12,7 +12,7 @@ import (
 
 	"github.com/tatris-io/tatris/internal/common/errs"
 
-	"github.com/patrickmn/go-cache"
+	cache "github.com/patrickmn/go-cache"
 
 	"go.uber.org/zap"
 

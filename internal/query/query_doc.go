@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/tatris-io/tatris/internal/common/utils"
-	"github.com/xhit/go-str2duration/v2"
+	str2duration "github.com/xhit/go-str2duration/v2"
 
 	"github.com/tatris-io/tatris/internal/core"
 
