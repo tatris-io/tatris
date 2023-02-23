@@ -55,12 +55,13 @@ func CheckDocument(index *Index, doc protocol.Document) error {
 
 	properties := index.Mappings.Properties
 	iDynamic := index.Mappings.Dynamic
+	dynamicTemplates := index.Mappings.DynamicTemplates
 
 	for k, v := range doc {
 		// get field-level dynamic mode
 		fDynamic := fieldLevelDynamic(iDynamic, properties, k)
 		// get field type, possibly deduced by dynamic mode and value if not explicitly defined
-		fType, err := fieldType(fDynamic, properties, k, v)
+		fType, err := fieldType(fDynamic, dynamicTemplates, properties, k, v)
 		if err != nil {
 			return err
 		}
@@ -86,20 +87,34 @@ func CheckDocument(index *Index, doc protocol.Document) error {
 }
 
 func fieldType(
-	dynamic string, properties map[string]*protocol.Property, field string, value interface{},
+	dynamic string,
+	dynamicTemplates []map[string]*protocol.DynamicTemplate,
+	properties map[string]*protocol.Property,
+	field string,
+	value interface{},
 ) (string, error) {
 	// if the field has been explicitly defined, return
 	if property, ok := properties[field]; ok && property.Type != "" {
 		return property.Type, nil
 	}
-	// otherwise, try to deduce the field type
-	return deduceFieldType(dynamic, field, value)
+	// otherwise, try to get dynamic type
+	return dynamicFieldType(dynamic, dynamicTemplates, field, value)
 }
 
-func deduceFieldType(dynamic string, field string, value interface{}) (string, error) {
+func dynamicFieldType(
+	dynamic string,
+	dynamicTemplates []map[string]*protocol.DynamicTemplate,
+	field string,
+	value interface{},
+) (string, error) {
 	switch dynamic {
 	case consts.DynamicMappingMode:
-		if t := indexlib.DeduceType(value); t != "" {
+		// if a dynamic template is matched, apply its specified type
+		if t, matched := matchDynamicTemplate(dynamicTemplates, field, value); matched {
+			return t, nil
+		}
+		// deduce from value
+		if t, deduced := indexlib.DeduceType(value); deduced {
 			return t, nil
 		}
 		return "", &errs.InvalidFieldValError{Field: field, Value: value}
@@ -110,6 +125,33 @@ func deduceFieldType(dynamic string, field string, value interface{}) (string, e
 	default:
 		return "", &errs.UnsupportedError{Desc: "dynamic mode", Value: dynamic}
 	}
+}
+
+func matchDynamicTemplate(
+	dynamicTemplates []map[string]*protocol.DynamicTemplate,
+	field string,
+	value any,
+) (string, bool) {
+	for _, dynamicTemplate := range dynamicTemplates {
+		for _, dt := range dynamicTemplate {
+			if dt.Match != "" && !utils.Match(dt.Match, field, dt.MatchPattern) {
+				continue
+			}
+			if dt.Unmatch != "" && utils.Match(dt.Unmatch, field, dt.MatchPattern) {
+				continue
+			}
+			if dt.MatchMappingType != "" &&
+				!(strings.EqualFold(dt.MatchMappingType, consts.JSONFieldTypeString) && utils.IsString(value) ||
+					strings.EqualFold(dt.MatchMappingType, consts.JSONFieldTypeLong) && utils.IsInteger(value) ||
+					strings.EqualFold(dt.MatchMappingType, consts.JSONFieldTypeDouble) && utils.IsFloat(value) ||
+					strings.EqualFold(dt.MatchMappingType, consts.JSONFieldTypeBoolean) && utils.IsBool(value) ||
+					strings.EqualFold(dt.MatchMappingType, consts.JSONFieldTypeDate) && utils.IsDateType(value)) {
+				continue
+			}
+			return dt.Mapping.Type, true
+		}
+	}
+	return "", false
 }
 
 func checkValue(t string, field string, value any) error {

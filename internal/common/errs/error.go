@@ -9,13 +9,19 @@ import (
 )
 
 var (
-	ErrEmptySettings      = errors.New("empty settings")
-	ErrEmptyMappings      = errors.New("empty mappings")
-	ErrNoSegmentMatched   = errors.New("no segment matched")
-	ErrIndexLibNotSupport = errors.New("index lib not support")
-	ErrSpecifyDirAsFile   = errors.New("specify directory as file")
-	ErrSegmentReadonly    = errors.New("segment is readonly")
-	ErrEmptyField         = errors.New("invalid field specified, must be non-null and non-empty")
+	ErrInvalidJSONType = errors.New(
+		"invalid JSON type, possible values are [string, long, double, boolean, date]",
+	)
+	ErrNoMappingInDynamicTemplate = errors.New("dynamic template must have a mapping")
+	ErrEmptySettings              = errors.New("empty settings")
+	ErrEmptyMappings              = errors.New("empty mappings")
+	ErrNoSegmentMatched           = errors.New("no segment matched")
+	ErrIndexLibNotSupport         = errors.New("index lib not support")
+	ErrSpecifyDirAsFile           = errors.New("specify directory as file")
+	ErrSegmentReadonly            = errors.New("segment is readonly")
+	ErrEmptyField                 = errors.New(
+		"invalid field specified, must be non-null and non-empty",
+	)
 )
 
 func IsIndexNotFound(err error) bool {

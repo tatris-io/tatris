@@ -30,8 +30,27 @@ type Mappings struct {
 	// `strict` means if new fields are detected, an exception is thrown and the document is
 	// rejected. New fields must be explicitly added to the mapping.
 	Dynamic string `json:"dynamic,omitempty"`
-	// Type mappings, object fields and nested fields contain sub-fields, called properties.
+	// DynamicTemplates allow you greater control of how Tatris maps your data beyond the default
+	// dynamic field mapping rules.
+	// You enable dynamic mapping by setting the Dynamic mode to true or runtime.
+	DynamicTemplates []map[string]*DynamicTemplate `json:"dynamicTemplates,omitempty"`
+	// Type mappings, object fields and nested fields contain subfields, called properties.
 	Properties map[string]*Property `json:"properties,omitempty"`
+}
+
+type DynamicTemplate struct {
+	Mapping          *DynamicTemplateMapping `json:"mapping"`
+	MatchMappingType string                  `json:"match_mapping_type"`
+	MatchPattern     string                  `json:"match_pattern"`
+	Match            string                  `json:"match"`
+	Unmatch          string                  `json:"unmatch"`
+	// TODO: PathMatch and PathUnmatch will be enabled after nested types are supported
+	PathMatch   string `json:"path_match"`
+	PathUnmatch string `json:"path_unmatch"`
+}
+
+type DynamicTemplateMapping struct {
+	Type string `json:"type"`
 }
 
 type Property struct {
