@@ -5,7 +5,7 @@ package query
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -212,7 +212,12 @@ func transformAggs(aggs map[string]protocol.Aggs) (map[string]indexlib.Aggs, err
 			}
 			indexlibAggs.Cardinality = &indexlib.AggMetric{Field: agg.Cardinality.Field}
 		} else if agg.DateHistogram != nil {
-			err := transformDateHistogramAgg(agg.DateHistogram, indexlibAggs)
+			err := transformDateHistogramAgg(name, agg.DateHistogram, indexlibAggs)
+			if err != nil {
+				return nil, err
+			}
+		} else if agg.Histogram != nil {
+			err := transformHistogramAgg(name, agg.Histogram, indexlibAggs)
 			if err != nil {
 				return nil, err
 			}
@@ -453,7 +458,11 @@ func transformBool(
 	return q, nil
 }
 
-func transformDateHistogramAgg(d *protocol.AggDateHistogram, indexlibAggs *indexlib.Aggs) error {
+func transformDateHistogramAgg(
+	aggName string,
+	d *protocol.AggDateHistogram,
+	indexlibAggs *indexlib.Aggs,
+) error {
 	if d.Field == "" {
 		return errs.ErrEmptyField
 	}
@@ -461,8 +470,9 @@ func transformDateHistogramAgg(d *protocol.AggDateHistogram, indexlibAggs *index
 		d.FixedInterval = d.Interval
 	}
 	if d.FixedInterval == "" && d.CalendarInterval == "" {
-		return errors.New(
-			"required one of fields [fixed_interval, calendar_interval], but none were specified",
+		return fmt.Errorf(
+			"required one of fields [fixed_interval, calendar_interval] for date_histogram aggregation [%s] , but none were specified",
+			aggName,
 		)
 	}
 	var fixedInterval time.Duration
@@ -474,16 +484,16 @@ func transformDateHistogramAgg(d *protocol.AggDateHistogram, indexlibAggs *index
 		}
 	}
 
-	var extendedBounds *indexlib.HistogramBound
+	var extendedBounds *indexlib.DateHistogramBound
 	if d.ExtendedBounds != nil {
-		extendedBounds = &indexlib.HistogramBound{
+		extendedBounds = &indexlib.DateHistogramBound{
 			Min: utils.UnixToTime(int64(d.ExtendedBounds.Min)).UnixNano(),
 			Max: utils.UnixToTime(int64(d.ExtendedBounds.Max)).UnixNano(),
 		}
 	}
-	var hardBounds *indexlib.HistogramBound
+	var hardBounds *indexlib.DateHistogramBound
 	if d.HardBounds != nil {
-		hardBounds = &indexlib.HistogramBound{
+		hardBounds = &indexlib.DateHistogramBound{
 			Min: utils.UnixToTime(int64(d.HardBounds.Min)).UnixNano(),
 			Max: utils.UnixToTime(int64(d.HardBounds.Max)).UnixNano(),
 		}
@@ -494,6 +504,52 @@ func transformDateHistogramAgg(d *protocol.AggDateHistogram, indexlibAggs *index
 		FixedInterval: int64(fixedInterval), Format: d.Format,
 		TimeZone: d.TimeZone, Offset: d.Offset, MinDocCount: d.MinDocCount,
 		Keyed: d.Keyed, Missing: d.Missing,
+		ExtendedBounds: extendedBounds,
+		HardBounds:     hardBounds,
+	}
+	return nil
+}
+
+func transformHistogramAgg(
+	aggName string,
+	d *protocol.AggHistogram,
+	indexlibAggs *indexlib.Aggs,
+) error {
+	if d.Field == "" {
+		return errs.ErrEmptyField
+	}
+	if d.Interval <= 0 {
+		return fmt.Errorf("[interval] must be >0 for histogram aggregation [%s]", aggName)
+	}
+	if d.Offset >= d.Interval {
+		return fmt.Errorf(
+			"[offset] must be in [0, interval) for histogram aggregation [%s]",
+			aggName,
+		)
+	}
+
+	var extendedBounds *indexlib.HistogramBound
+	if d.ExtendedBounds != nil {
+		extendedBounds = &indexlib.HistogramBound{
+			Min: d.ExtendedBounds.Min,
+			Max: d.ExtendedBounds.Max,
+		}
+	}
+	var hardBounds *indexlib.HistogramBound
+	if d.HardBounds != nil {
+		hardBounds = &indexlib.HistogramBound{
+			Min: d.HardBounds.Min,
+			Max: d.HardBounds.Max,
+		}
+	}
+
+	indexlibAggs.Histogram = &indexlib.AggHistogram{
+		Field:          d.Field,
+		Interval:       d.Interval,
+		Offset:         d.Offset,
+		MinDocCount:    d.MinDocCount,
+		Keyed:          d.Keyed,
+		Missing:        d.Missing,
 		ExtendedBounds: extendedBounds,
 		HardBounds:     hardBounds,
 	}

@@ -476,7 +476,7 @@ func (b *BlugeReader) generateAggregations(
 			dateHistogramAggregation := custom_aggregations.NewDateHistogramAggregation(
 				search.Field(d.Field), d.CalendarInterval,
 				d.FixedInterval, d.Format, d.TimeZone, d.Offset,
-				d.ExtendedBounds, d.HardBounds, d.MinDocCount,
+				d.MinDocCount, d.ExtendedBounds, d.HardBounds,
 			)
 			// nested aggregation (bucket aggregation need support)
 			if len(agg.Aggs) > 0 {
@@ -486,6 +486,18 @@ func (b *BlugeReader) generateAggregations(
 				}
 			}
 			result[name] = dateHistogramAggregation
+		} else if d := agg.Histogram; d != nil {
+			histogramAggregation := custom_aggregations.NewHistogramAggregation(
+				search.Field(d.Field),
+				d.Interval,
+				d.Offset,
+				d.MinDocCount,
+				d.ExtendedBounds,
+				d.HardBounds,
+			)
+			// when executing a histogram aggregation over a histogram field, no sub-aggregations
+			// are allowed.
+			result[name] = histogramAggregation
 		} else if agg.NumericRange != nil {
 			ranges := aggregations.Ranges(search.Field(agg.NumericRange.Field))
 			for _, value := range agg.NumericRange.Ranges {

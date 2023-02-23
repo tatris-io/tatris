@@ -3,8 +3,9 @@
 package core_test
 
 import (
-	"github.com/tatris-io/tatris/internal/common/utils"
 	"testing"
+
+	"github.com/tatris-io/tatris/internal/common/utils"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tatris-io/tatris/internal/common/consts"
