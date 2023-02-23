@@ -37,6 +37,7 @@ const (
 	JSONFieldTypeDouble  = "double"
 	JSONFieldTypeBoolean = "boolean"
 	JSONFieldTypeDate    = "date"
+	// TODO to be supported
 	// JSONFieldTypeObject  = "object"
 	// JSONFieldTypeBinary  = "binary"
 )
