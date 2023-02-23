@@ -4,6 +4,9 @@ package core
 
 import (
 	"strings"
+	"time"
+
+	"github.com/tatris-io/tatris/internal/common/utils"
 
 	"github.com/tatris-io/tatris/internal/indexlib"
 
@@ -11,6 +14,35 @@ import (
 	"github.com/tatris-io/tatris/internal/common/errs"
 	"github.com/tatris-io/tatris/internal/protocol"
 )
+
+func BuildDocuments(
+	index *Index,
+	docs []protocol.Document,
+) error {
+	for _, doc := range docs {
+		docID := ""
+		docTimestamp := time.Now()
+		if id, ok := doc[consts.IDField]; ok && id != nil && id != "" {
+			docID = id.(string)
+		} else {
+			genID, err := utils.GenerateID()
+			if err != nil {
+				return err
+			}
+			docID = genID
+		}
+		if timestamp, ok := doc[consts.TimestampField]; ok && timestamp != nil {
+			docTimestamp = timestamp.(time.Time)
+		}
+		doc[consts.IDField] = docID
+		doc[consts.TimestampField] = docTimestamp
+		err := CheckDocument(index, doc)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 func CheckDocument(index *Index, doc protocol.Document) error {
 	if index.Index == nil || index.Mappings == nil || index.Mappings.Properties == nil {
