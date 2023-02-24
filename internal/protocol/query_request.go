@@ -76,12 +76,21 @@ type Aggs struct {
 	Max           *AggMetric        `json:"max,omitempty"`
 	Avg           *AggMetric        `json:"avg,omitempty"`
 	Cardinality   *AggMetric        `json:"cardinality,omitempty"`
+	Percentiles   *AggPercentiles   `json:"percentiles,omitempty"`
 	WeightedAvg   *AggWeightedAvg   `json:"weighted_avg,omitempty"`
 	Aggs          map[string]Aggs   `json:"aggs,omitempty"`
 }
 
 type AggMetric struct {
 	Field string `json:"field"`
+}
+
+type AggPercentiles struct {
+	Field    string    `json:"field"` // only support numeric type
+	Percents []float64 `json:"percents"`
+	// Approximate algorithms must balance memory utilization with estimation accuracy. This balance
+	// can be controlled using a compression parameter
+	Compression float64 `json:"compression"`
 }
 
 type AggWeightedAvg struct {

@@ -349,22 +349,46 @@ var cases = []QueryCase{
 	{
 		name: "histogram",
 		req: `
-				{
-				  "size": 0,
-				  "aggs": {
-					"histogram": {
-					  "histogram": {
-						"field": "stars",
-						"interval": 100,
-						"min_doc_count": 0,
-						"hard_bounds": {
-							"min": 100,
-							"max": 1000
-						}
+			{
+			  "size": 0,
+			  "aggs": {
+				"histogram": {
+				  "histogram": {
+					"field": "stars",
+					"interval": 100,
+					"min_doc_count": 0,
+					"hard_bounds": {
+						"min": 100,
+						"max": 1000
 					}
+				}
+			  }
+			}
+		  }
+		`,
+	},
+	{
+		name: "percentiles",
+		req: `
+			{
+			  "size": 0,
+			  "aggs": {
+				"percentiles_stars": {
+				  "percentiles": {
+					"field": "stars",
+					"percents": [
+					  1,
+					  5,
+					  25,
+					  50,
+					  75,
+					  95,
+					  99
+					]
 				  }
 				}
 			  }
+			}
 			`,
 	},
 }

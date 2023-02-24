@@ -145,9 +145,16 @@ type Aggs struct {
 	Avg           *AggMetric
 	Cardinality   *AggMetric
 	WeightedAvg   *AggWeightedAvg
+	Percentiles   *AggPercentiles
 	DateHistogram *AggDateHistogram
 	Histogram     *AggHistogram
 	Aggs          map[string]Aggs
+}
+
+type AggPercentiles struct {
+	Field       string
+	Percents    []float64
+	Compression float64
 }
 
 type AggMetric struct {
