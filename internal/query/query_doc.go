@@ -9,6 +9,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/tatris-io/tatris/internal/common/log/logger"
+	"go.uber.org/zap"
+
+	"github.com/tatris-io/tatris/internal/core/config"
+
 	"github.com/tatris-io/tatris/internal/common/utils"
 	str2duration "github.com/xhit/go-str2duration/v2"
 
@@ -17,17 +22,15 @@ import (
 	"github.com/tatris-io/tatris/internal/common/errs"
 
 	"github.com/tatris-io/tatris/internal/common/consts"
-	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/protocol"
-	"go.uber.org/zap"
 )
 
 func SearchDocs(
 	indexes []*core.Index,
 	request protocol.QueryRequest,
 ) (*protocol.QueryResponse, error) {
-	start, end, err := timeRange(request.Query)
+	start, end, err := resolveTimeRange(request.Index, request.Query)
 	if err != nil {
 		return nil, err
 	}
@@ -91,9 +94,35 @@ func SearchDocs(
 	return &protocol.QueryResponse{Hits: hits, Aggregations: aggregations}, nil
 }
 
+func resolveTimeRange(index string, query protocol.Query) (int64, int64, error) {
+	start, end, err := timeRange(query)
+	if err != nil {
+		return 0, 0, err
+	}
+	if start > 0 && end > 0 && start <= end {
+		return start, end, nil
+	}
+	// default scan range: the number of past hours specified by
+	// config.Cfg.Query.DefaultScanHours closest to the target time
+	now := time.Now().UnixMilli()
+	if end == 0 || end > now {
+		end = now
+	}
+	if start == 0 || start > end {
+		start = end - (time.Hour.Milliseconds() * int64(config.Cfg.Query.DefaultScanHours))
+	}
+	logger.Info(
+		"unable to resolve time range from request, set to default",
+		zap.String("index", index),
+		zap.Int64("start", start),
+		zap.Int64("end", end),
+	)
+	return start, end, nil
+}
+
 func timeRange(query protocol.Query) (int64, int64, error) {
-	// default range: last 3 days
-	start, end := time.Now().UnixMilli()-60000*60*24*3, time.Now().UnixMilli()
+	var start, end int64
+	var err error
 	if query.Range != nil {
 		timeRange, ok := query.Range[consts.TimestampField]
 		if ok {
@@ -127,11 +156,16 @@ func timeRange(query protocol.Query) (int64, int64, error) {
 			}
 		}
 	} else if query.Bool != nil {
-		// TODO
-		logger.Warn("unsupported: extract timeRange from bool query", zap.String("role", "query"))
-	}
-	if start > end {
-		return start, end, &errs.InvalidQueryError{Query: query, Message: "invalid time range"}
+		subQueries := make([]*protocol.Query, 0)
+		subQueries = append(subQueries, query.Bool.Must...)
+		subQueries = append(subQueries, query.Bool.Should...)
+		subQueries = append(subQueries, query.Bool.Filter...)
+		for _, subQuery := range subQueries {
+			start, end, err = timeRange(*subQuery)
+			if err != nil || start > 0 || end > 0 {
+				return start, end, err
+			}
+		}
 	}
 	return start, end, nil
 }

@@ -29,7 +29,8 @@ func init() {
 			Parallel:         16,
 		},
 		Query: Query{
-			Parallel: 16,
+			Parallel:         16,
+			DefaultScanHours: 24 * 3,
 		},
 	}
 }
@@ -63,6 +64,8 @@ type Wal struct {
 type Query struct {
 	// the number of Goroutines used to retrieve multiple segments per query
 	Parallel int `yaml:"parallel"`
+	// the default number of hours to scan when no time range is explicitly passed in
+	DefaultScanHours int `yaml:"default_scan_hours"`
 }
 
 // Verify wraps doVerify with a `sync.Once`

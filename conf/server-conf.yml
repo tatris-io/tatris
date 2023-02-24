@@ -8,3 +8,6 @@ wal:
   no_copy: false
   dir_perms: 0750
   file_perms: 0640
+query:
+  parallel: 10
+  default_scan_hours: 72
