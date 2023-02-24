@@ -129,28 +129,28 @@ func timeRange(query protocol.Query) (int64, int64, error) {
 			if timeRange.Gt != nil {
 				t, err := utils.ParseTime(timeRange.Gt)
 				if err != nil {
-					return 0, 0, err
+					return start, end, err
 				}
 				start = t.UnixMilli() + 1
 			}
 			if timeRange.Gte != nil {
 				t, err := utils.ParseTime(timeRange.Gte)
 				if err != nil {
-					return 0, 0, err
+					return start, end, err
 				}
 				start = t.UnixMilli()
 			}
 			if timeRange.Lt != nil {
 				t, err := utils.ParseTime(timeRange.Lt)
 				if err != nil {
-					return 0, 0, err
+					return start, end, err
 				}
 				end = t.UnixMilli() - 1
 			}
 			if timeRange.Lte != nil {
 				t, err := utils.ParseTime(timeRange.Lte)
 				if err != nil {
-					return 0, 0, err
+					return start, end, err
 				}
 				end = t.UnixMilli()
 			}
