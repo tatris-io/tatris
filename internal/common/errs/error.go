@@ -110,6 +110,23 @@ func (e *InvalidFieldValError) Error() string {
 	return fmt.Sprintf("field: %s, type: %s, value: %v", e.Field, e.Type, e.Value)
 }
 
+type InvalidAggFieldTypeError struct {
+	Field           string `json:"field"`
+	FieldType       string `json:"type"`
+	AggregationType string `json:"aggregation_type"`
+	AggregationName string `json:"aggregation_name"`
+}
+
+func (e *InvalidAggFieldTypeError) Error() string {
+	return fmt.Sprintf(
+		"field [%s] of type [%s] is not supported for %s aggregation [%s]",
+		e.Field,
+		e.FieldType,
+		e.AggregationType,
+		e.AggregationName,
+	)
+}
+
 type UnsupportedError struct {
 	Desc  string `json:"desc"`
 	Value any    `json:"value"`

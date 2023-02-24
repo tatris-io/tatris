@@ -464,7 +464,7 @@ func (b *BlugeReader) generateAggregations(
 				search.Field(agg.Terms.Field),
 				agg.Terms.ShardSize,
 			)
-			// nested aggregation (bucket aggregation need support)
+			// sub-aggregations (bucket aggregation need support)
 			if len(agg.Aggs) > 0 {
 				subAggs := b.generateAggregations(agg.Aggs)
 				for k, v := range subAggs {
@@ -478,7 +478,7 @@ func (b *BlugeReader) generateAggregations(
 				d.FixedInterval, d.Format, d.TimeZone, d.Offset,
 				d.MinDocCount, d.ExtendedBounds, d.HardBounds,
 			)
-			// nested aggregation (bucket aggregation need support)
+			// sub-aggregations (bucket aggregation need support)
 			if len(agg.Aggs) > 0 {
 				subAggs := b.generateAggregations(agg.Aggs)
 				for k, v := range subAggs {
