@@ -98,16 +98,32 @@ func timeRange(query protocol.Query) (int64, int64, error) {
 		timeRange, ok := query.Range[consts.TimestampField]
 		if ok {
 			if timeRange.Gt != nil {
-				start = timeRange.Gt.(time.Time).UnixMilli() + 1
+				t, err := utils.ParseTime(timeRange.Gt)
+				if err != nil {
+					return 0, 0, err
+				}
+				start = t.UnixMilli() + 1
 			}
 			if timeRange.Gte != nil {
-				start = timeRange.Gte.(time.Time).UnixMilli()
+				t, err := utils.ParseTime(timeRange.Gte)
+				if err != nil {
+					return 0, 0, err
+				}
+				start = t.UnixMilli()
 			}
 			if timeRange.Lt != nil {
-				end = timeRange.Lt.(time.Time).UnixMilli() - 1
+				t, err := utils.ParseTime(timeRange.Lt)
+				if err != nil {
+					return 0, 0, err
+				}
+				end = t.UnixMilli() - 1
 			}
 			if timeRange.Lte != nil {
-				end = timeRange.Lte.(time.Time).UnixMilli()
+				t, err := utils.ParseTime(timeRange.Lte)
+				if err != nil {
+					return 0, 0, err
+				}
+				end = t.UnixMilli()
 			}
 		}
 	} else if query.Bool != nil {
@@ -136,7 +152,7 @@ func transform(query protocol.Query, mappings *protocol.Mappings) (indexlib.Quer
 	} else if query.Terms != nil {
 		return transformTerms(query)
 	} else if query.Range != nil {
-		return transformRange(query)
+		return transformRange(query, mappings)
 	} else if query.Bool != nil {
 		return transformBool(query, mappings)
 	} else {
@@ -387,20 +403,89 @@ func transformTerms(query protocol.Query) (indexlib.QueryRequest, error) {
 	return termsQ, nil
 }
 
-func transformRange(query protocol.Query) (indexlib.QueryRequest, error) {
+func transformRange(
+	query protocol.Query,
+	mappings *protocol.Mappings,
+) (indexlib.QueryRequest, error) {
+
 	rangeQuery := query.Range
 	if len(rangeQuery) <= 0 {
 		return &indexlib.RangeQuery{}, nil
 	}
-
 	rangeQ := indexlib.NewRangeQuery()
 	for k, v := range rangeQuery {
+		property, found := mappings.Properties[k]
+		if !found {
+			return nil, &errs.InvalidFieldError{Field: k, Message: "not found"}
+		}
+		_, lType := indexlib.ValidateMappingType(property.Type)
+		var gt, gte, lt, lte any
+		var err error
+		switch lType.Type {
+		case consts.LibFieldTypeNumeric, consts.LibFieldTypeBool:
+			if v.Gt != nil {
+				if gt, err = utils.ToFloat64(v.Gt); err != nil {
+					return nil, err
+				}
+			}
+			if v.Gte != nil {
+				if gte, err = utils.ToFloat64(v.Gte); err != nil {
+					return nil, err
+				}
+			}
+			if v.Lt != nil {
+				if lt, err = utils.ToFloat64(v.Lt); err != nil {
+					return nil, err
+				}
+			}
+			if v.Lte != nil {
+				if lte, err = utils.ToFloat64(v.Lte); err != nil {
+					return nil, err
+				}
+			}
+		case consts.LibFieldTypeKeyword, consts.LibFieldTypeText:
+			if v.Gt != nil {
+				gt = utils.ToString(v.Gt)
+			}
+			if v.Gte != nil {
+				gte = utils.ToString(v.Gte)
+			}
+			if v.Lt != nil {
+				lt = utils.ToString(v.Lt)
+			}
+			if v.Lte != nil {
+				lte = utils.ToString(v.Lte)
+			}
+		case consts.LibFieldTypeDate:
+			if v.Gt != nil {
+				if gt, err = utils.ParseTime(v.Gt); err != nil {
+					return nil, err
+				}
+			}
+			if v.Gte != nil {
+				if gte, err = utils.ParseTime(v.Gte); err != nil {
+					return nil, err
+				}
+			}
+			if v.Lt != nil {
+				if lt, err = utils.ParseTime(v.Lt); err != nil {
+					return nil, err
+				}
+			}
+			if v.Lte != nil {
+				if lte, err = utils.ParseTime(v.Lte); err != nil {
+					return nil, err
+				}
+			}
+		default:
+			return nil, &errs.UnsupportedError{Desc: "unsortable type", Value: property.Type}
+		}
 		rangeQ.Range = map[string]*indexlib.RangeVal{
 			k: {
-				GT:  v.Gt,
-				GTE: v.Gte,
-				LT:  v.Lt,
-				LTE: v.Lte,
+				LT:  lt,
+				LTE: lte,
+				GT:  gt,
+				GTE: gte,
 			},
 		}
 	}

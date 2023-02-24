@@ -254,6 +254,21 @@ var cases = []QueryCase{
                  }`,
 	},
 	{
+		name: "range",
+		req: `
+		{
+		    "size": 20,
+		    "query": {
+		        "range": {
+		            "name": {
+		                "gte": "a",
+		                "lte": "b"
+		            }
+		        }
+		    }
+		}`,
+	},
+	{
 		name: "agg",
 		req: `
                  {
