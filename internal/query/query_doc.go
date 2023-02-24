@@ -57,7 +57,7 @@ func SearchDocs(
 		return nil, err
 	}
 	if aggs := request.Aggs; aggs != nil {
-		agg, err := transformAggs(aggs)
+		agg, err := transformAggs(aggs, indexes[0].Mappings)
 		if err != nil {
 			return nil, err
 		}
@@ -162,7 +162,10 @@ func transform(query protocol.Query, mappings *protocol.Mappings) (indexlib.Quer
 	}
 }
 
-func transformAggs(aggs map[string]protocol.Aggs) (map[string]indexlib.Aggs, error) {
+func transformAggs(
+	aggs map[string]protocol.Aggs,
+	mappings *protocol.Mappings,
+) (map[string]indexlib.Aggs, error) {
 	result := make(map[string]indexlib.Aggs, len(aggs))
 
 	for name, agg := range aggs {
@@ -187,6 +190,10 @@ func transformAggs(aggs map[string]protocol.Aggs) (map[string]indexlib.Aggs, err
 			if agg.NumericRange.Field == "" {
 				return nil, errs.ErrEmptyField
 			}
+			err := validateAggFieldType(mappings, agg.NumericRange.Field, consts.LibFieldTypeNumeric, name, "range")
+			if err != nil {
+				return nil, err
+			}
 			indexLibRanges := make([]indexlib.NumericRange, 0, len(agg.NumericRange.Ranges))
 			if ranges := agg.NumericRange.Ranges; ranges != nil {
 				for _, r := range ranges {
@@ -198,25 +205,45 @@ func transformAggs(aggs map[string]protocol.Aggs) (map[string]indexlib.Aggs, err
 			if agg.Sum.Field == "" {
 				return nil, errs.ErrEmptyField
 			}
+			err := validateAggFieldType(mappings, agg.Sum.Field, consts.LibFieldTypeNumeric, name, "sum")
+			if err != nil {
+				return nil, err
+			}
 			indexlibAggs.Sum = &indexlib.AggMetric{Field: agg.Sum.Field}
 		} else if agg.Min != nil {
 			if agg.Min.Field == "" {
 				return nil, errs.ErrEmptyField
+			}
+			err := validateAggFieldType(mappings, agg.Min.Field, consts.LibFieldTypeNumeric, name, "min")
+			if err != nil {
+				return nil, err
 			}
 			indexlibAggs.Min = &indexlib.AggMetric{Field: agg.Min.Field}
 		} else if agg.Max != nil {
 			if agg.Max.Field == "" {
 				return nil, errs.ErrEmptyField
 			}
+			err := validateAggFieldType(mappings, agg.Max.Field, consts.LibFieldTypeNumeric, name, "max")
+			if err != nil {
+				return nil, err
+			}
 			indexlibAggs.Max = &indexlib.AggMetric{Field: agg.Max.Field}
 		} else if agg.Avg != nil {
 			if agg.Avg.Field == "" {
 				return nil, errs.ErrEmptyField
 			}
+			err := validateAggFieldType(mappings, agg.Avg.Field, consts.LibFieldTypeNumeric, name, "avg")
+			if err != nil {
+				return nil, err
+			}
 			indexlibAggs.Avg = &indexlib.AggMetric{Field: agg.Avg.Field}
 		} else if agg.WeightedAvg != nil {
 			if agg.WeightedAvg.Value.Field == "" {
 				return nil, errs.ErrEmptyField
+			}
+			err := validateAggFieldType(mappings, agg.WeightedAvg.Value.Field, consts.LibFieldTypeNumeric, name, "weighted_avg")
+			if err != nil {
+				return nil, err
 			}
 			indexlibAggs.WeightedAvg = &indexlib.AggWeightedAvg{
 				Value:  &indexlib.AggMetric{Field: agg.WeightedAvg.Value.Field},
@@ -228,17 +255,17 @@ func transformAggs(aggs map[string]protocol.Aggs) (map[string]indexlib.Aggs, err
 			}
 			indexlibAggs.Cardinality = &indexlib.AggMetric{Field: agg.Cardinality.Field}
 		} else if agg.Percentiles != nil {
-			err := transformPercentilesAgg(name, agg.Percentiles, indexlibAggs)
+			err := transformPercentilesAgg(mappings, name, agg.Percentiles, indexlibAggs)
 			if err != nil {
 				return nil, err
 			}
 		} else if agg.DateHistogram != nil {
-			err := transformDateHistogramAgg(name, agg.DateHistogram, indexlibAggs)
+			err := transformDateHistogramAgg(mappings, name, agg.DateHistogram, indexlibAggs)
 			if err != nil {
 				return nil, err
 			}
 		} else if agg.Histogram != nil {
-			err := transformHistogramAgg(name, agg.Histogram, indexlibAggs)
+			err := transformHistogramAgg(mappings, name, agg.Histogram, indexlibAggs)
 			if err != nil {
 				return nil, err
 			}
@@ -247,7 +274,7 @@ func transformAggs(aggs map[string]protocol.Aggs) (map[string]indexlib.Aggs, err
 		// nested aggs
 		if agg.Aggs != nil {
 			var err error
-			indexlibAggs.Aggs, err = transformAggs(agg.Aggs)
+			indexlibAggs.Aggs, err = transformAggs(agg.Aggs, mappings)
 			if err != nil {
 				return nil, err
 			}
@@ -257,6 +284,27 @@ func transformAggs(aggs map[string]protocol.Aggs) (map[string]indexlib.Aggs, err
 	}
 
 	return result, nil
+}
+
+func validateAggFieldType(
+	mappings *protocol.Mappings,
+	field string,
+	needFieldType string,
+	aggName string,
+	aggType string,
+) error {
+	if fieldType, ok := mappings.Properties[field]; ok {
+		ok, lType := indexlib.ValidateMappingType(fieldType.Type)
+		if ok && lType.Type != needFieldType {
+			return &errs.InvalidAggFieldTypeError{
+				Field:           field,
+				FieldType:       lType.Type,
+				AggregationType: aggType,
+				AggregationName: aggName,
+			}
+		}
+	}
+	return nil
 }
 
 func transformSort(sort protocol.Sort) indexlib.Sort {
@@ -549,12 +597,23 @@ func transformBool(
 }
 
 func transformDateHistogramAgg(
+	mappings *protocol.Mappings,
 	aggName string,
 	d *protocol.AggDateHistogram,
 	indexlibAggs *indexlib.Aggs,
 ) error {
 	if d.Field == "" {
 		return errs.ErrEmptyField
+	}
+	err := validateAggFieldType(
+		mappings,
+		d.Field,
+		consts.LibFieldTypeDate,
+		aggName,
+		"date_histogram",
+	)
+	if err != nil {
+		return err
 	}
 	if d.Interval != "" && d.FixedInterval == "" {
 		d.FixedInterval = d.Interval
@@ -601,12 +660,17 @@ func transformDateHistogramAgg(
 }
 
 func transformHistogramAgg(
+	mappings *protocol.Mappings,
 	aggName string,
 	d *protocol.AggHistogram,
 	indexlibAggs *indexlib.Aggs,
 ) error {
 	if d.Field == "" {
 		return errs.ErrEmptyField
+	}
+	err := validateAggFieldType(mappings, d.Field, consts.LibFieldTypeNumeric, aggName, "histogram")
+	if err != nil {
+		return err
 	}
 	if d.Interval <= 0 {
 		return fmt.Errorf("[interval] must be >0 for histogram aggregation [%s]", aggName)
@@ -647,12 +711,23 @@ func transformHistogramAgg(
 }
 
 func transformPercentilesAgg(
+	mappings *protocol.Mappings,
 	aggName string,
 	d *protocol.AggPercentiles,
 	indexlibAggs *indexlib.Aggs,
 ) error {
 	if d.Field == "" {
 		return errs.ErrEmptyField
+	}
+	err := validateAggFieldType(
+		mappings,
+		d.Field,
+		consts.LibFieldTypeNumeric,
+		aggName,
+		"percentiles",
+	)
+	if err != nil {
+		return err
 	}
 	if d.Compression < 1 {
 		d.Compression = 100
