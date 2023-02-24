@@ -273,7 +273,7 @@ func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) (bluge.Query, e
 		}
 		blugeQuery = q
 	case *indexlib.RangeQuery:
-		q, err := RangeQueryParse(query)
+		q, err := ParseRangeQuery(query)
 		if err != nil {
 			return nil, err
 		}
