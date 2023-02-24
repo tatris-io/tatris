@@ -211,6 +211,11 @@ func transformAggs(aggs map[string]protocol.Aggs) (map[string]indexlib.Aggs, err
 				return nil, errs.ErrEmptyField
 			}
 			indexlibAggs.Cardinality = &indexlib.AggMetric{Field: agg.Cardinality.Field}
+		} else if agg.Percentiles != nil {
+			err := transformPercentilesAgg(name, agg.Percentiles, indexlibAggs)
+			if err != nil {
+				return nil, err
+			}
 		} else if agg.DateHistogram != nil {
 			err := transformDateHistogramAgg(name, agg.DateHistogram, indexlibAggs)
 			if err != nil {
@@ -552,6 +557,36 @@ func transformHistogramAgg(
 		Missing:        d.Missing,
 		ExtendedBounds: extendedBounds,
 		HardBounds:     hardBounds,
+	}
+	return nil
+}
+
+func transformPercentilesAgg(
+	aggName string,
+	d *protocol.AggPercentiles,
+	indexlibAggs *indexlib.Aggs,
+) error {
+	if d.Field == "" {
+		return errs.ErrEmptyField
+	}
+	if d.Compression < 1 {
+		d.Compression = 100
+	}
+	if d.Percents == nil || len(d.Percents) == 0 {
+		return fmt.Errorf("[percents] must not be empty for percentiles aggregation [%s]", aggName)
+	}
+	for _, percent := range d.Percents {
+		if percent < 0 || percent > 100 {
+			return fmt.Errorf(
+				"[percents] must be between 0 and 100  for percentiles aggregation [%s]",
+				aggName,
+			)
+		}
+	}
+	indexlibAggs.Percentiles = &indexlib.AggPercentiles{
+		Field:       d.Field,
+		Percents:    d.Percents,
+		Compression: d.Compression,
 	}
 	return nil
 }

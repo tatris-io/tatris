@@ -516,6 +516,8 @@ func (b *BlugeReader) generateAggregations(
 			result[name] = aggregations.WeightedAvg(search.Field(agg.WeightedAvg.Value.Field), search.Field(agg.WeightedAvg.Weight.Field))
 		} else if agg.Cardinality != nil {
 			result[name] = aggregations.Cardinality(search.Field(agg.Cardinality.Field))
+		} else if agg.Percentiles != nil {
+			result[name] = custom_aggregations.NewPercentiles(search.Field(agg.Percentiles.Field), agg.Percentiles.Percents, agg.Percentiles.Compression)
 		}
 	}
 
@@ -556,6 +558,8 @@ func (b *BlugeReader) generateAggsResponse(
 			}
 			aggsResponse[name] = indexlib.AggsResponse{Buckets: aggsBuckets}
 		case search.MetricCalculator:
+			aggsResponse[name] = indexlib.AggsResponse{Value: value.Value()}
+		case *custom_aggregations.PercentilesCalculator:
 			aggsResponse[name] = indexlib.AggsResponse{Value: value.Value()}
 		case search.DurationCalculator:
 			aggsResponse[name] = indexlib.AggsResponse{Value: value.Duration().Milliseconds()}
