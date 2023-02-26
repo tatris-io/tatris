@@ -52,7 +52,7 @@ func StartHTTPServer(roles ...string) {
 		}
 	}
 
-	if err := router.Run(":6060"); err != nil {
+	if err := router.Run(":8080"); err != nil {
 		logger.Error(
 			"Tatris HTTP server start failed",
 			zap.Any("roles", roles),
