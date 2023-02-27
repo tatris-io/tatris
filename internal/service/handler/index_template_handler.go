@@ -5,6 +5,7 @@ package handler
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/tatris-io/tatris/internal/common/errs"
 
@@ -14,12 +15,16 @@ import (
 )
 
 func CreateIndexTemplateHandler(c *gin.Context) {
+	start := time.Now()
 	name := c.Param("template")
 	template := &protocol.IndexTemplate{}
 	if err := c.ShouldBind(template); err != nil {
 		c.JSON(
 			http.StatusBadRequest,
-			protocol.Response{Code: http.StatusBadRequest, Message: err.Error()},
+			protocol.Response{
+				Took:    time.Since(start).Milliseconds(),
+				Error:   true,
+				Message: err.Error()},
 		)
 		return
 	}
@@ -28,12 +33,13 @@ func CreateIndexTemplateHandler(c *gin.Context) {
 		c.JSON(
 			http.StatusInternalServerError,
 			protocol.Response{
-				Code:    http.StatusInternalServerError,
+				Took:    time.Since(start).Milliseconds(),
+				Error:   true,
 				Message: err.Error(),
 			},
 		)
 	} else {
-		c.JSON(http.StatusOK, protocol.Response{Code: http.StatusOK, Data: template})
+		c.JSON(http.StatusOK, template)
 	}
 }
 
@@ -52,13 +58,15 @@ func IndexTemplateExistHandler(c *gin.Context) {
 }
 
 func DeleteIndexTemplateHandler(c *gin.Context) {
+	start := time.Now()
 	name := c.Param("template")
 	if exist, template := CheckIndexTemplateExistence(name, c); exist {
 		if err := metadata.DeleteIndexTemplate(name); err != nil {
 			c.JSON(
 				http.StatusInternalServerError,
 				protocol.Response{
-					Code:    http.StatusInternalServerError,
+					Took:    time.Since(start).Milliseconds(),
+					Error:   true,
 					Message: err.Error(),
 				},
 			)
@@ -69,15 +77,27 @@ func DeleteIndexTemplateHandler(c *gin.Context) {
 }
 
 func CheckIndexTemplateExistence(name string, c *gin.Context) (bool, *protocol.IndexTemplate) {
+	start := time.Now()
 	if template, err := metadata.GetIndexTemplate(name); template != nil && err == nil {
 		return true, template
 	} else if errs.IsIndexTemplateNotFound(err) {
 		c.JSON(
 			http.StatusNotFound,
-			protocol.Response{Code: http.StatusNotFound, Message: err.Error()},
+			protocol.Response{
+				Took:    time.Since(start).Milliseconds(),
+				Error:   true,
+				Message: err.Error(),
+			},
 		)
 	} else {
-		c.JSON(http.StatusInternalServerError, protocol.Response{Code: http.StatusInternalServerError, Message: err.Error()})
+		c.JSON(
+			http.StatusInternalServerError,
+			protocol.Response{
+				Took:    time.Since(start).Milliseconds(),
+				Error:   true,
+				Message: err.Error(),
+			},
+		)
 	}
 	return false, nil
 }

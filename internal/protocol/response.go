@@ -3,7 +3,8 @@
 package protocol
 
 type Response struct {
-	Code    int    `json:"code"`
 	Data    any    `json:"data"`
+	Took    int64  `json:"took"`
+	Error   bool   `json:"error"`
 	Message string `json:"message"`
 }

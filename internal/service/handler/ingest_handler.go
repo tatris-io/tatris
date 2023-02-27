@@ -30,7 +30,7 @@ func IngestHandler(c *gin.Context) {
 		if err != nil {
 			c.JSON(
 				http.StatusInternalServerError,
-				protocol.IngestResponse{
+				protocol.Response{
 					Took:    time.Since(start).Milliseconds(),
 					Error:   true,
 					Message: err.Error(),
@@ -43,7 +43,7 @@ func IngestHandler(c *gin.Context) {
 	if err := c.ShouldBind(&ingestRequest); err != nil {
 		c.JSON(
 			http.StatusBadRequest,
-			protocol.IngestResponse{
+			protocol.Response{
 				Took:    time.Since(start).Milliseconds(),
 				Error:   true,
 				Message: err.Error(),
@@ -54,13 +54,13 @@ func IngestHandler(c *gin.Context) {
 	if err := ingestion.IngestDocs(index, ingestRequest.Documents); err != nil {
 		c.JSON(
 			http.StatusInternalServerError,
-			protocol.IngestResponse{
+			protocol.Response{
 				Took:    time.Since(start).Milliseconds(),
 				Error:   true,
 				Message: err.Error(),
 			},
 		)
 	} else {
-		c.JSON(http.StatusOK, protocol.IngestResponse{Took: time.Since(start).Milliseconds()})
+		c.JSON(http.StatusOK, protocol.Response{Took: time.Since(start).Milliseconds()})
 	}
 }

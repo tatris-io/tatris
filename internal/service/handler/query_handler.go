@@ -6,6 +6,7 @@ package handler
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/tatris-io/tatris/internal/meta/metadata"
 
@@ -21,11 +22,13 @@ func QueryHandler(c *gin.Context) {
 	index := c.Param("index")
 	names := strings.Split(strings.TrimSpace(index), consts.Comma)
 	queryRequest := protocol.QueryRequest{Index: index, Size: 10}
+	start := time.Now()
 	if err := c.ShouldBind(&queryRequest); err != nil || len(names) == 0 {
 		c.JSON(
 			http.StatusBadRequest,
 			protocol.Response{
-				Code:    http.StatusBadRequest,
+				Took:    time.Since(start).Milliseconds(),
+				Error:   true,
 				Message: err.Error(),
 			},
 		)
@@ -49,7 +52,8 @@ func QueryHandler(c *gin.Context) {
 		c.JSON(
 			http.StatusInternalServerError,
 			protocol.Response{
-				Code:    http.StatusInternalServerError,
+				Took:    time.Since(start).Milliseconds(),
+				Error:   true,
 				Message: err.Error(),
 			},
 		)
