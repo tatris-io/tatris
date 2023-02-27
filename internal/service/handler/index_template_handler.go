@@ -19,7 +19,7 @@ func CreateIndexTemplateHandler(c *gin.Context) {
 	if err := c.ShouldBind(template); err != nil {
 		c.JSON(
 			http.StatusBadRequest,
-			protocol.Response{Code: http.StatusBadRequest, Err: err, Message: "invalid request"},
+			protocol.Response{Code: http.StatusBadRequest, Message: err.Error()},
 		)
 		return
 	}
@@ -29,8 +29,7 @@ func CreateIndexTemplateHandler(c *gin.Context) {
 			http.StatusInternalServerError,
 			protocol.Response{
 				Code:    http.StatusInternalServerError,
-				Err:     err,
-				Message: "template create failed",
+				Message: err.Error(),
 			},
 		)
 	} else {
@@ -60,8 +59,7 @@ func DeleteIndexTemplateHandler(c *gin.Context) {
 				http.StatusInternalServerError,
 				protocol.Response{
 					Code:    http.StatusInternalServerError,
-					Err:     err,
-					Message: "template delete failed",
+					Message: err.Error(),
 				},
 			)
 		} else {
@@ -76,10 +74,10 @@ func CheckIndexTemplateExistence(name string, c *gin.Context) (bool, *protocol.I
 	} else if errs.IsIndexTemplateNotFound(err) {
 		c.JSON(
 			http.StatusNotFound,
-			protocol.Response{Code: http.StatusNotFound, Err: err},
+			protocol.Response{Code: http.StatusNotFound, Message: err.Error()},
 		)
 	} else {
-		c.JSON(http.StatusInternalServerError, protocol.Response{Code: http.StatusInternalServerError, Err: err, Message: "template get failed"})
+		c.JSON(http.StatusInternalServerError, protocol.Response{Code: http.StatusInternalServerError, Message: err.Error()})
 	}
 	return false, nil
 }

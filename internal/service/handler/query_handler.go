@@ -26,8 +26,7 @@ func QueryHandler(c *gin.Context) {
 			http.StatusBadRequest,
 			protocol.Response{
 				Code:    http.StatusBadRequest,
-				Err:     err,
-				Message: "invalid request",
+				Message: err.Error(),
 			},
 		)
 		return
@@ -51,8 +50,7 @@ func QueryHandler(c *gin.Context) {
 			http.StatusInternalServerError,
 			protocol.Response{
 				Code:    http.StatusInternalServerError,
-				Err:     err,
-				Message: "query failed",
+				Message: err.Error(),
 			},
 		)
 	} else {

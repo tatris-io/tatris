@@ -3,6 +3,7 @@
 package protocol
 
 type IngestResponse struct {
-	Took  int64 `json:"took"`
-	Error bool  `json:"error"`
+	Took    int64  `json:"took"`
+	Error   bool   `json:"error"`
+	Message string `json:"message"`
 }

@@ -17,7 +17,7 @@ func ManageAliasHandler(c *gin.Context) {
 	if err := c.ShouldBind(&req); err != nil {
 		c.JSON(
 			http.StatusBadRequest,
-			protocol.Response{Code: http.StatusBadRequest, Err: err, Message: "invalid request"},
+			protocol.Response{Code: http.StatusBadRequest, Message: err.Error()},
 		)
 		return
 	}
@@ -91,8 +91,8 @@ func handleAliasTerm(c *gin.Context, action string, term *protocol.AliasTerm) bo
 		c.JSON(
 			http.StatusInternalServerError,
 			protocol.Response{
-				Code: http.StatusInternalServerError,
-				Err:  err,
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
 			},
 		)
 		return false
@@ -118,7 +118,7 @@ func handleAliasTerm(c *gin.Context, action string, term *protocol.AliasTerm) bo
 			code = http.StatusBadRequest
 		}
 		if err != nil {
-			c.JSON(code, protocol.Response{Code: code, Err: err})
+			c.JSON(code, protocol.Response{Code: code, Message: err.Error()})
 			return false
 		}
 	}
