@@ -81,7 +81,12 @@ func GetAliasHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-func handleAliasTerm(c *gin.Context, start time.Time, action string, term *protocol.AliasTerm) bool {
+func handleAliasTerm(
+	c *gin.Context,
+	start time.Time,
+	action string,
+	term *protocol.AliasTerm,
+) bool {
 	if term.Index == "" || term.Alias == "" {
 		var msg string
 		if term.Index == "" {

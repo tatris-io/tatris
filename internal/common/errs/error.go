@@ -34,7 +34,7 @@ type IndexNotFoundError struct {
 }
 
 func (e *IndexNotFoundError) Error() string {
-	return fmt.Sprintf("index: %s", e.Index)
+	return fmt.Sprintf("index not found: %s", e.Index)
 }
 
 func IsShardNotFound(err error) bool {
@@ -48,7 +48,7 @@ type ShardNotFoundError struct {
 }
 
 func (e *ShardNotFoundError) Error() string {
-	return fmt.Sprintf("index: %s, shard: %d", e.Index, e.Shard)
+	return fmt.Sprintf("shard not found: %s/%d", e.Index, e.Shard)
 }
 
 type NoShardError struct {
@@ -56,7 +56,7 @@ type NoShardError struct {
 }
 
 func (e *NoShardError) Error() string {
-	return fmt.Sprintf("index: %s", e.Index)
+	return fmt.Sprintf("index has no shards: %s", e.Index)
 }
 
 type SegmentNotFoundError struct {
@@ -66,7 +66,7 @@ type SegmentNotFoundError struct {
 }
 
 func (e *SegmentNotFoundError) Error() string {
-	return fmt.Sprintf("index: %s, shard: %d, segment: %d", e.Index, e.Shard, e.Segment)
+	return fmt.Sprintf("segment not found: %s/%d/%d", e.Index, e.Shard, e.Segment)
 }
 
 func IsIndexTemplateNotFound(err error) bool {
@@ -79,7 +79,7 @@ type IndexTemplateNotFoundError struct {
 }
 
 func (e *IndexTemplateNotFoundError) Error() string {
-	return fmt.Sprintf("index_template: %s", e.IndexTemplate)
+	return fmt.Sprintf("index_template not found: %s", e.IndexTemplate)
 }
 
 type NoSegmentError struct {
@@ -88,7 +88,7 @@ type NoSegmentError struct {
 }
 
 func (e *NoSegmentError) Error() string {
-	return fmt.Sprintf("index: %s, shard: %d", e.Index, e.Shard)
+	return fmt.Sprintf("shard has no segments: %s/%d", e.Index, e.Shard)
 }
 
 type InvalidFieldError struct {
@@ -97,7 +97,7 @@ type InvalidFieldError struct {
 }
 
 func (e *InvalidFieldError) Error() string {
-	return fmt.Sprintf("field: %s, message: %s", e.Field, e.Message)
+	return fmt.Sprintf("invalid field: %s, %s", e.Field, e.Message)
 }
 
 type InvalidFieldValError struct {
@@ -107,7 +107,7 @@ type InvalidFieldValError struct {
 }
 
 func (e *InvalidFieldValError) Error() string {
-	return fmt.Sprintf("field: %s, type: %s, value: %v", e.Field, e.Type, e.Value)
+	return fmt.Sprintf("invalid field value for %s: %s, %v ", e.Type, e.Field, e.Value)
 }
 
 type InvalidAggFieldTypeError struct {
@@ -133,7 +133,7 @@ type UnsupportedError struct {
 }
 
 func (e *UnsupportedError) Error() string {
-	return fmt.Sprintf("desc: %s, value: %v", e.Desc, e.Value)
+	return fmt.Sprintf("unsupported: %s, %v", e.Desc, e.Value)
 }
 
 type InvalidRangeError struct {
@@ -171,5 +171,5 @@ type InvalidQueryError struct {
 }
 
 func (e *InvalidQueryError) Error() string {
-	return fmt.Sprintf("message: %s, query: %v", e.Message, e.Query)
+	return fmt.Sprintf("invalid query for %s: %v", e.Message, e.Query)
 }

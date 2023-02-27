@@ -32,7 +32,7 @@ func CreateIndexHandler(c *gin.Context) {
 			protocol.Response{
 				Took:    time.Since(start).Milliseconds(),
 				Error:   true,
-				Message: err.Error(),
+				Message: "index already exists",
 			},
 		)
 	} else {
