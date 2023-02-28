@@ -33,7 +33,7 @@ type Mappings struct {
 	// DynamicTemplates allow you greater control of how Tatris maps your data beyond the default
 	// dynamic field mapping rules.
 	// You enable dynamic mapping by setting the Dynamic mode to true or runtime.
-	DynamicTemplates []map[string]*DynamicTemplate `json:"dynamicTemplates,omitempty"`
+	DynamicTemplates []map[string]*DynamicTemplate `json:"dynamic_templates,omitempty"`
 	// Type mappings, object fields and nested fields contain subfields, called properties.
 	Properties map[string]*Property `json:"properties,omitempty"`
 }

@@ -5,6 +5,7 @@ package handler
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/tatris-io/tatris/internal/common/errs"
 	"github.com/tatris-io/tatris/internal/core"
@@ -19,6 +20,7 @@ func IngestHandler(c *gin.Context) {
 	name := c.Param("index")
 	var index *core.Index
 	var err error
+	start := time.Now()
 	if index, err = metadata.GetIndex(name); err != nil {
 		if errs.IsIndexNotFound(err) {
 			// create the index if it does not exist
@@ -28,7 +30,11 @@ func IngestHandler(c *gin.Context) {
 		if err != nil {
 			c.JSON(
 				http.StatusInternalServerError,
-				protocol.Response{Code: http.StatusInternalServerError, Err: err},
+				protocol.Response{
+					Took:    time.Since(start).Milliseconds(),
+					Error:   true,
+					Message: err.Error(),
+				},
 			)
 			return
 		}
@@ -38,8 +44,9 @@ func IngestHandler(c *gin.Context) {
 		c.JSON(
 			http.StatusBadRequest,
 			protocol.Response{
-				Code: http.StatusBadRequest,
-				Err:  err,
+				Took:    time.Since(start).Milliseconds(),
+				Error:   true,
+				Message: err.Error(),
 			},
 		)
 		return
@@ -48,11 +55,12 @@ func IngestHandler(c *gin.Context) {
 		c.JSON(
 			http.StatusInternalServerError,
 			protocol.Response{
-				Code: http.StatusInternalServerError,
-				Err:  err,
+				Took:    time.Since(start).Milliseconds(),
+				Error:   true,
+				Message: err.Error(),
 			},
 		)
 	} else {
-		c.JSON(http.StatusOK, nil)
+		c.JSON(http.StatusOK, protocol.Response{Took: time.Since(start).Milliseconds()})
 	}
 }

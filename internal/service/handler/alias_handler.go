@@ -5,6 +5,7 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tatris-io/tatris/internal/common/errs"
@@ -13,26 +14,32 @@ import (
 )
 
 func ManageAliasHandler(c *gin.Context) {
+	start := time.Now()
 	req := protocol.AliasManageRequest{}
 	if err := c.ShouldBind(&req); err != nil {
 		c.JSON(
 			http.StatusBadRequest,
-			protocol.Response{Code: http.StatusBadRequest, Err: err, Message: "invalid request"},
+			protocol.Response{
+				Took:    time.Since(start).Milliseconds(),
+				Error:   true,
+				Message: err.Error(),
+			},
 		)
 		return
 	}
 	actions := req.Actions
 	for _, action := range actions {
 		for name, term := range action {
-			if !handleAliasTerm(c, name, term) {
+			if !handleAliasTerm(c, start, name, term) {
 				return
 			}
 		}
 	}
-	c.JSON(http.StatusOK, protocol.Response{Code: http.StatusOK})
+	c.JSON(http.StatusOK, actions)
 }
 
 func GetAliasHandler(c *gin.Context) {
+	start := time.Now()
 	indexName := c.Param("index")
 	aliasName := c.Param("alias")
 	var resp protocol.AliasGetResponse
@@ -58,7 +65,14 @@ func GetAliasHandler(c *gin.Context) {
 				terms = append(terms, term)
 			}
 			if len(terms) == 0 {
-				c.JSON(http.StatusNotFound, protocol.Response{Code: http.StatusNotFound, Message: fmt.Sprintf("alias [%s] missing", aliasName)})
+				c.JSON(
+					http.StatusNotFound,
+
+					protocol.Response{
+						Took:    time.Since(start).Milliseconds(),
+						Error:   true,
+						Message: fmt.Sprintf("alias [%s] missing", aliasName),
+					})
 				return
 			}
 		}
@@ -67,7 +81,12 @@ func GetAliasHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-func handleAliasTerm(c *gin.Context, action string, term *protocol.AliasTerm) bool {
+func handleAliasTerm(
+	c *gin.Context,
+	start time.Time,
+	action string,
+	term *protocol.AliasTerm,
+) bool {
 	if term.Index == "" || term.Alias == "" {
 		var msg string
 		if term.Index == "" {
@@ -78,7 +97,8 @@ func handleAliasTerm(c *gin.Context, action string, term *protocol.AliasTerm) bo
 		c.JSON(
 			http.StatusBadRequest,
 			protocol.Response{
-				Code:    http.StatusBadRequest,
+				Took:    time.Since(start).Milliseconds(),
+				Error:   true,
 				Message: msg,
 			},
 		)
@@ -91,8 +111,9 @@ func handleAliasTerm(c *gin.Context, action string, term *protocol.AliasTerm) bo
 		c.JSON(
 			http.StatusInternalServerError,
 			protocol.Response{
-				Code: http.StatusInternalServerError,
-				Err:  err,
+				Took:    time.Since(start).Milliseconds(),
+				Error:   true,
+				Message: err.Error(),
 			},
 		)
 		return false
@@ -100,7 +121,8 @@ func handleAliasTerm(c *gin.Context, action string, term *protocol.AliasTerm) bo
 		c.JSON(
 			http.StatusBadRequest,
 			protocol.Response{
-				Code:    http.StatusBadRequest,
+				Took:    time.Since(start).Milliseconds(),
+				Error:   true,
 				Message: fmt.Sprintf("Invalid alias name [%s]: an index or data stream exists with the same name as the alias", term.Alias),
 			},
 		)
@@ -118,7 +140,14 @@ func handleAliasTerm(c *gin.Context, action string, term *protocol.AliasTerm) bo
 			code = http.StatusBadRequest
 		}
 		if err != nil {
-			c.JSON(code, protocol.Response{Code: code, Err: err})
+			c.JSON(
+				code,
+				protocol.Response{
+					Took:    time.Since(start).Milliseconds(),
+					Error:   true,
+					Message: err.Error(),
+				},
+			)
 			return false
 		}
 	}

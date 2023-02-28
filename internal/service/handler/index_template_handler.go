@@ -5,6 +5,7 @@ package handler
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/tatris-io/tatris/internal/common/errs"
 
@@ -14,12 +15,16 @@ import (
 )
 
 func CreateIndexTemplateHandler(c *gin.Context) {
+	start := time.Now()
 	name := c.Param("template")
 	template := &protocol.IndexTemplate{}
 	if err := c.ShouldBind(template); err != nil {
 		c.JSON(
 			http.StatusBadRequest,
-			protocol.Response{Code: http.StatusBadRequest, Err: err, Message: "invalid request"},
+			protocol.Response{
+				Took:    time.Since(start).Milliseconds(),
+				Error:   true,
+				Message: err.Error()},
 		)
 		return
 	}
@@ -28,13 +33,13 @@ func CreateIndexTemplateHandler(c *gin.Context) {
 		c.JSON(
 			http.StatusInternalServerError,
 			protocol.Response{
-				Code:    http.StatusInternalServerError,
-				Err:     err,
-				Message: "template create failed",
+				Took:    time.Since(start).Milliseconds(),
+				Error:   true,
+				Message: err.Error(),
 			},
 		)
 	} else {
-		c.JSON(http.StatusOK, protocol.Response{Code: http.StatusOK, Data: template})
+		c.JSON(http.StatusOK, template)
 	}
 }
 
@@ -53,15 +58,16 @@ func IndexTemplateExistHandler(c *gin.Context) {
 }
 
 func DeleteIndexTemplateHandler(c *gin.Context) {
+	start := time.Now()
 	name := c.Param("template")
 	if exist, template := CheckIndexTemplateExistence(name, c); exist {
 		if err := metadata.DeleteIndexTemplate(name); err != nil {
 			c.JSON(
 				http.StatusInternalServerError,
 				protocol.Response{
-					Code:    http.StatusInternalServerError,
-					Err:     err,
-					Message: "template delete failed",
+					Took:    time.Since(start).Milliseconds(),
+					Error:   true,
+					Message: err.Error(),
 				},
 			)
 		} else {
@@ -71,15 +77,27 @@ func DeleteIndexTemplateHandler(c *gin.Context) {
 }
 
 func CheckIndexTemplateExistence(name string, c *gin.Context) (bool, *protocol.IndexTemplate) {
+	start := time.Now()
 	if template, err := metadata.GetIndexTemplate(name); template != nil && err == nil {
 		return true, template
 	} else if errs.IsIndexTemplateNotFound(err) {
 		c.JSON(
 			http.StatusNotFound,
-			protocol.Response{Code: http.StatusNotFound, Err: err},
+			protocol.Response{
+				Took:    time.Since(start).Milliseconds(),
+				Error:   true,
+				Message: err.Error(),
+			},
 		)
 	} else {
-		c.JSON(http.StatusInternalServerError, protocol.Response{Code: http.StatusInternalServerError, Err: err, Message: "template get failed"})
+		c.JSON(
+			http.StatusInternalServerError,
+			protocol.Response{
+				Took:    time.Since(start).Milliseconds(),
+				Error:   true,
+				Message: err.Error(),
+			},
+		)
 	}
 	return false, nil
 }
