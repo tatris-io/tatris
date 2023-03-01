@@ -42,10 +42,10 @@ func (index *Index) AddProperties(addProperties map[string]*protocol.Property) {
 		for name, property := range index.Mappings.Properties {
 			properties[name] = property
 		}
-		for name, property := range addProperties {
+		for name, addProperty := range addProperties {
 			properties[name] = &protocol.Property{
-				Type:    property.Type,
-				Dynamic: property.Dynamic,
+				Type:    addProperty.Type,
+				Dynamic: addProperty.Dynamic,
 			}
 		}
 		index.Mappings.Properties = properties
