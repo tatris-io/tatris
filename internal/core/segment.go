@@ -83,7 +83,7 @@ func (segment *Segment) openWriter() (indexlib.Writer, error) {
 	}
 	writer, err := manage.GetWriter(
 		config,
-		segment.Shard.Index.GetMappings(),
+		*segment.Shard.Index.Mappings,
 		segment.Shard.Index.GetName(),
 		segment.GetName(),
 	)

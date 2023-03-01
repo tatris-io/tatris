@@ -53,7 +53,7 @@ func CheckDocument(index *Index, doc protocol.Document) error {
 		return errs.ErrEmptyMappings
 	}
 
-	mappings := index.GetMappings()
+	mappings := index.Mappings
 	properties := mappings.Properties
 	iDynamic := mappings.Dynamic
 	dynamicTemplates := mappings.DynamicTemplates
