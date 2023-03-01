@@ -46,12 +46,14 @@ func (index *Index) GetMappings() protocol.Mappings {
 }
 
 func (index *Index) AddProperties(properties map[string]*protocol.Property) {
-	index.lock.Lock()
-	defer index.lock.Unlock()
-	for name, property := range properties {
-		index.Mappings.Properties[name] = &protocol.Property{
-			Type:    property.Type,
-			Dynamic: property.Dynamic,
+	if len(properties) > 0 {
+		index.lock.Lock()
+		defer index.lock.Unlock()
+		for name, property := range properties {
+			index.Mappings.Properties[name] = &protocol.Property{
+				Type:    property.Type,
+				Dynamic: property.Dynamic,
+			}
 		}
 	}
 }
