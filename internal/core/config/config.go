@@ -67,8 +67,8 @@ type Query struct {
 	Parallel int `yaml:"parallel"`
 	// the default number of hours to scan when no time range is explicitly passed in
 	DefaultScanHours int `yaml:"default_scan_hours"`
-	// increase default_aggregation_shard_size to better account for these disparate doc counts and
-	// improve the accuracy
+	// acts on terms aggregation, increase default_aggregation_shard_size
+	// to better account for these disparate doc counts and improve the accuracy
 	// of the selection of top terms
 	DefaultAggregationShardSize int `yaml:"default_aggregation_shard_size"`
 }
