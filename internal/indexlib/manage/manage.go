@@ -77,7 +77,7 @@ func GetReaderUsingCache(config *indexlib.BaseConfig, index string) (indexlib.Re
 // but it does mean care should be taken to close the Writer when your work done.
 func GetWriter(
 	config *indexlib.BaseConfig,
-	mappings *protocol.Mappings,
+	mappings protocol.Mappings,
 	index string,
 	segment string,
 ) (indexlib.Writer, error) {

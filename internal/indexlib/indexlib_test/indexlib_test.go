@@ -30,7 +30,7 @@ func TestIndexLib(t *testing.T) {
 
 	// test
 	t.Run("test_write", func(t *testing.T) {
-		if writer, err := manage.GetWriter(&indexlib.BaseConfig{DataPath: consts.DefaultDataPath}, index.Mappings, index.Name, index.Name); err != nil {
+		if writer, err := manage.GetWriter(&indexlib.BaseConfig{DataPath: consts.DefaultDataPath}, *index.Mappings, index.Name, index.Name); err != nil {
 			t.Fatalf("get writer error: %s", err.Error())
 		} else {
 			defer writer.Close()

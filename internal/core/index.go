@@ -6,6 +6,7 @@ package core
 import (
 	"os"
 	"path"
+	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/tatris-io/tatris/internal/common/consts"
@@ -19,6 +20,7 @@ import (
 type Index struct {
 	*protocol.Index
 	Shards []*Shard `json:"shards"`
+	lock   sync.RWMutex
 }
 
 func (index *Index) GetName() string {
@@ -35,6 +37,23 @@ func (index *Index) GetShards() []*Shard {
 
 func (index *Index) GetShard(idx int) *Shard {
 	return index.Shards[idx]
+}
+
+func (index *Index) GetMappings() protocol.Mappings {
+	index.lock.RLock()
+	defer index.lock.RUnlock()
+	return *index.Mappings
+}
+
+func (index *Index) AddProperties(properties map[string]*protocol.Property) {
+	index.lock.Lock()
+	defer index.lock.Unlock()
+	for name, property := range properties {
+		index.Mappings.Properties[name] = &protocol.Property{
+			Type:    property.Type,
+			Dynamic: property.Dynamic,
+		}
+	}
 }
 
 // GetShardByRouting
