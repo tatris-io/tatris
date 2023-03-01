@@ -406,4 +406,28 @@ var cases = []QueryCase{
 			}
 			`,
 	},
+	{
+		name: "filter",
+		req: `
+			{
+			  "size": 0,
+			  "aggs": {
+				"filter_java": {
+				  "filter": {
+					"term": {
+					  "lang": "Java"
+					}
+				  },
+				  "aggs": {
+					"sum_stars": {
+					  "sum": {
+						"field": "stars"
+					  }
+					}
+				  }
+				}
+			  }
+			}
+			`,
+	},
 }

@@ -11,3 +11,4 @@ wal:
 query:
   parallel: 10
   default_scan_hours: 72
+  default_aggregation_shard_size: 5000
