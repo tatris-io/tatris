@@ -150,12 +150,17 @@ func BuildIndex(index *core.Index, template *protocol.IndexTemplate) {
 					mappings.Dynamic = template.Template.Mappings.Dynamic
 				}
 				if len(template.Template.Mappings.DynamicTemplates) > 0 {
-					mappings.DynamicTemplates = make([]map[string]*protocol.DynamicTemplate, len(template.Template.Mappings.DynamicTemplates))
+					mappings.DynamicTemplates = make(
+						[]map[string]*protocol.DynamicTemplate,
+						len(template.Template.Mappings.DynamicTemplates),
+					)
 					for i, dt := range template.Template.Mappings.DynamicTemplates {
 						mappings.DynamicTemplates[i] = make(map[string]*protocol.DynamicTemplate)
 						for k, v := range dt {
 							mappings.DynamicTemplates[i][k] = &protocol.DynamicTemplate{
-								Mapping:          &protocol.DynamicTemplateMapping{Type: v.Mapping.Type},
+								Mapping: &protocol.DynamicTemplateMapping{
+									Type: v.Mapping.Type,
+								},
 								MatchMappingType: v.MatchMappingType,
 								MatchPattern:     v.MatchPattern,
 								Match:            v.Match,

@@ -71,6 +71,7 @@ type Aggs struct {
 	DateHistogram *AggDateHistogram `json:"date_histogram,omitempty"`
 	Histogram     *AggHistogram     `json:"histogram,omitempty"`
 	NumericRange  *AggNumericRange  `json:"range"`
+	Filter        *Query            `json:"filter"`
 	Sum           *AggMetric        `json:"sum,omitempty"`
 	Min           *AggMetric        `json:"min,omitempty"`
 	Max           *AggMetric        `json:"max,omitempty"`

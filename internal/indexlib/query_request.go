@@ -148,6 +148,7 @@ type Aggs struct {
 	Percentiles   *AggPercentiles
 	DateHistogram *AggDateHistogram
 	Histogram     *AggHistogram
+	Filter        *AggFilter
 	Aggs          map[string]Aggs
 }
 
@@ -205,8 +206,8 @@ type AggDateHistogram struct {
 }
 
 type DateHistogramBound struct {
-	Min int64 `json:"min"`
-	Max int64 `json:"max"`
+	Min int64
+	Max int64
 }
 
 type AggHistogram struct {
@@ -221,6 +222,10 @@ type AggHistogram struct {
 }
 
 type HistogramBound struct {
-	Min float64 `json:"min"`
-	Max float64 `json:"max"`
+	Min float64
+	Max float64
+}
+
+type AggFilter struct {
+	FilterQuery QueryRequest
 }

@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"sort"
 	"strings"
@@ -195,7 +196,10 @@ func (b *BlugeReader) generateSearchRequest(
 		searchRequest.SortByCustom(sorts)
 	}
 	if aggs := query.GetAggs(); aggs != nil {
-		blugeAggs := b.generateAggregations(aggs)
+		blugeAggs, err := b.generateAggregations(aggs)
+		if err != nil {
+			return nil, err
+		}
 		for name, agg := range blugeAggs {
 			searchRequest.AddAggregation(name, agg)
 		}
@@ -455,7 +459,7 @@ func (b *BlugeReader) getBucketAggregationsLimit(
 
 func (b *BlugeReader) generateAggregations(
 	aggs map[string]indexlib.Aggs,
-) map[string]search.Aggregation {
+) (map[string]search.Aggregation, error) {
 	result := make(map[string]search.Aggregation, len(aggs))
 
 	for name, agg := range aggs {
@@ -466,12 +470,21 @@ func (b *BlugeReader) generateAggregations(
 			)
 			// sub-aggregations (bucket aggregation need support)
 			if len(agg.Aggs) > 0 {
-				subAggs := b.generateAggregations(agg.Aggs)
+				subAggs, err := b.generateAggregations(agg.Aggs)
+				if err != nil {
+					return nil, err
+				}
 				for k, v := range subAggs {
 					termsAggregation.AddAggregation(k, v)
 				}
 			}
 			result[name] = termsAggregation
+		} else if agg.Filter != nil {
+			filter, err := b.generateAggsFilter(agg.Filter.FilterQuery, agg.Aggs)
+			if err != nil {
+				return nil, err
+			}
+			result[name] = filter
 		} else if d := agg.DateHistogram; d != nil {
 			dateHistogramAggregation := custom_aggregations.NewDateHistogramAggregation(
 				search.Field(d.Field), d.CalendarInterval,
@@ -480,7 +493,10 @@ func (b *BlugeReader) generateAggregations(
 			)
 			// sub-aggregations (bucket aggregation need support)
 			if len(agg.Aggs) > 0 {
-				subAggs := b.generateAggregations(agg.Aggs)
+				subAggs, err := b.generateAggregations(agg.Aggs)
+				if err != nil {
+					return nil, err
+				}
 				for k, v := range subAggs {
 					dateHistogramAggregation.AddAggregation(k, v)
 				}
@@ -503,6 +519,16 @@ func (b *BlugeReader) generateAggregations(
 			for _, value := range agg.NumericRange.Ranges {
 				ranges.AddRange(aggregations.Range(value.From, value.To))
 			}
+			// sub-aggregations (bucket aggregation need support)
+			if len(agg.Aggs) > 0 {
+				subAggs, err := b.generateAggregations(agg.Aggs)
+				if err != nil {
+					return nil, err
+				}
+				for k, v := range subAggs {
+					ranges.AddAggregation(k, v)
+				}
+			}
 			result[name] = ranges
 		} else if agg.Sum != nil {
 			result[name] = aggregations.Sum(search.Field(agg.Sum.Field))
@@ -521,7 +547,56 @@ func (b *BlugeReader) generateAggregations(
 		}
 	}
 
-	return result
+	return result, nil
+}
+
+func (b *BlugeReader) generateAggsFilter(
+	query indexlib.QueryRequest,
+	aggs map[string]indexlib.Aggs,
+) (search.Aggregation, error) {
+	var filterAggs search.Aggregation
+
+	switch query := query.(type) {
+	case *indexlib.TermQuery:
+		termsAggregation := aggregations.NewTermsAggregation(
+			aggregations.FilterText(search.Field(query.Field),
+				func(bytes []byte) bool {
+					return string(bytes) == query.Term
+				}),
+			cfg.Cfg.Query.DefaultAggregationShardSize,
+		)
+		filterAggs = termsAggregation
+	case *indexlib.RangeQuery:
+		rangeQuery, err := ParseAggsFilterRangeQuery(query)
+		if err != nil {
+			return nil, err
+		}
+		filterAggs = rangeQuery
+	default:
+		return nil, fmt.Errorf("query type [%s] is not supported for filter aggregation", query)
+	}
+
+	// sub-aggregations
+	if len(aggs) > 0 {
+		subAggs, err := b.generateAggregations(aggs)
+		if err != nil {
+			return nil, err
+		}
+		for k, v := range subAggs {
+			switch filterAggs := filterAggs.(type) {
+			case *aggregations.TermsAggregation:
+				filterAggs.AddAggregation(k, v)
+			case *aggregations.RangeAggregation:
+				filterAggs.AddAggregation(k, v)
+			case *aggregations.DateRangeAggregation:
+				filterAggs.AddAggregation(k, v)
+			default:
+				return nil, fmt.Errorf("query type [%s] is not supported for filter aggregation", query)
+			}
+		}
+	}
+
+	return filterAggs, nil
 }
 
 func (b *BlugeReader) generateAggsResponse(

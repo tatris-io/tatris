@@ -29,8 +29,9 @@ func init() {
 			Parallel:         16,
 		},
 		Query: Query{
-			Parallel:         16,
-			DefaultScanHours: 24 * 3,
+			Parallel:                    16,
+			DefaultScanHours:            24 * 3,
+			DefaultAggregationShardSize: 5000,
 		},
 	}
 }
@@ -66,6 +67,10 @@ type Query struct {
 	Parallel int `yaml:"parallel"`
 	// the default number of hours to scan when no time range is explicitly passed in
 	DefaultScanHours int `yaml:"default_scan_hours"`
+	// increase default_aggregation_shard_size to better account for these disparate doc counts and
+	// improve the accuracy
+	// of the selection of top terms
+	DefaultAggregationShardSize int `yaml:"default_aggregation_shard_size"`
 }
 
 // Verify wraps doVerify with a `sync.Once`

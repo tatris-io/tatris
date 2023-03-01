@@ -212,7 +212,7 @@ func transformAggs(
 				agg.Terms.Size = 10
 			}
 			if agg.Terms.ShardSize == 0 {
-				agg.Terms.ShardSize = 5000
+				agg.Terms.ShardSize = config.Cfg.Query.DefaultAggregationShardSize
 			}
 
 			indexlibAggs.Terms = &indexlib.AggTerms{
@@ -235,6 +235,12 @@ func transformAggs(
 				}
 			}
 			indexlibAggs.NumericRange = &indexlib.AggNumericRange{Field: agg.NumericRange.Field, Ranges: indexLibRanges, Keyed: agg.NumericRange.Keyed}
+		} else if agg.Filter != nil {
+			filterQuery, err := transform(*agg.Filter, mappings)
+			if err != nil {
+				return nil, err
+			}
+			indexlibAggs.Filter = &indexlib.AggFilter{FilterQuery: filterQuery}
 		} else if agg.Sum != nil {
 			if agg.Sum.Field == "" {
 				return nil, errs.ErrEmptyField
@@ -305,7 +311,7 @@ func transformAggs(
 			}
 		}
 
-		// nested aggs
+		// sub-aggregations
 		if agg.Aggs != nil {
 			var err error
 			indexlibAggs.Aggs, err = transformAggs(agg.Aggs, mappings)
