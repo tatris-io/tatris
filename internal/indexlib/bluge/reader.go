@@ -543,7 +543,10 @@ func (b *BlugeReader) generateAggregations(
 				}
 				from, err := utils.ParseTime(fromValue)
 				if err != nil {
-					return nil, fmt.Errorf("range value [from] parse err %s for date_range aggregation [%s]", err.Error(), name)
+					return nil, &errs.InvalidFieldError{
+						Field:   "range",
+						Message: fmt.Sprintf("range value [from] parse error for date_range aggregation [%s]", name),
+					}
 				}
 
 				toValue, err = strconv.ParseInt(value.To, 10, 64)
@@ -552,7 +555,10 @@ func (b *BlugeReader) generateAggregations(
 				}
 				to, err := utils.ParseTime(toValue)
 				if err != nil {
-					return nil, fmt.Errorf("range value [to] parse err %s for date_range aggregation [%s]", err.Error(), name)
+					return nil, &errs.InvalidFieldError{
+						Field:   "range",
+						Message: fmt.Sprintf("range value [to] parse error for date_range aggregation [%s]", name),
+					}
 				}
 
 				if timeZone := agg.DateRange.TimeZone; timeZone != nil {
