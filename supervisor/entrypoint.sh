@@ -15,6 +15,6 @@ function fixAuth() {
   fi
 }
 
-fixAuth /home/tatris/logs
+fixAuth /home/tatris
 
 exec sudo -E /usr/bin/supervisord -n

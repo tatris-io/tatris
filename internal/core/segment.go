@@ -16,7 +16,6 @@ import (
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"go.uber.org/zap"
 
-	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/indexlib/manage"
 )
@@ -79,7 +78,7 @@ func (segment *Segment) GetWriter() (indexlib.Writer, error) {
 func (segment *Segment) openWriter() (indexlib.Writer, error) {
 	// open a writer
 	config := &indexlib.BaseConfig{
-		DataPath: consts.DefaultDataPath,
+		DataPath: config.Cfg.GetDataPath(),
 	}
 	writer, err := manage.GetWriter(
 		config,
@@ -137,7 +136,7 @@ func (segment *Segment) GetReader() (indexlib.Reader, error) {
 	}
 
 	config := &indexlib.BaseConfig{
-		DataPath: consts.DefaultDataPath,
+		DataPath: config.Cfg.GetDataPath(),
 	}
 
 	// The segment is readonly, so we can cache the result and reuse it

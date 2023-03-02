@@ -3,7 +3,8 @@
 package consts
 
 const (
-	DefaultDataPath = "/tmp/tatris/_data"
-	DefaultMetaPath = "/tmp/tatris/_meta"
-	DefaultWALPath  = "/tmp/tatris/_wal"
+	DefaultPath = "/tmp/tatris"
+	PathData    = "_data"
+	PathMeta    = "_meta"
+	PathWAL     = "_wal"
 )

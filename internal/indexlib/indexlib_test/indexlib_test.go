@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/tatris-io/tatris/internal/core/config"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
@@ -30,7 +32,7 @@ func TestIndexLib(t *testing.T) {
 
 	// test
 	t.Run("test_write", func(t *testing.T) {
-		if writer, err := manage.GetWriter(&indexlib.BaseConfig{DataPath: consts.DefaultDataPath}, *index.Mappings, index.Name, index.Name); err != nil {
+		if writer, err := manage.GetWriter(&indexlib.BaseConfig{DataPath: config.Cfg.GetDataPath()}, *index.Mappings, index.Name, index.Name); err != nil {
 			t.Fatalf("get writer error: %s", err.Error())
 		} else {
 			defer writer.Close()
@@ -55,7 +57,7 @@ func TestIndexLib(t *testing.T) {
 	t.Run("test_read", func(t *testing.T) {
 		reader, err := manage.GetReader(
 			&indexlib.BaseConfig{
-				DataPath: consts.DefaultDataPath,
+				DataPath: config.Cfg.GetDataPath(),
 			},
 			index.Name,
 		)

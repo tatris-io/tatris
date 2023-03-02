@@ -6,7 +6,12 @@ package config
 import (
 	"encoding/json"
 	"os"
+	"path"
 	"sync"
+
+	"github.com/tatris-io/tatris/internal/common/consts"
+	"github.com/tatris-io/tatris/internal/common/log/logger"
+	"go.uber.org/zap"
 
 	"go.uber.org/atomic"
 )
@@ -15,6 +20,7 @@ var Cfg *Config
 
 func init() {
 	Cfg = &Config{
+		DataPath: consts.DefaultPath,
 		Segment: Segment{
 			MatureThreshold: 20000,
 		},
@@ -37,9 +43,10 @@ func init() {
 }
 
 type Config struct {
-	Segment Segment `yaml:"segment"`
-	Wal     Wal     `yaml:"wal"`
-	Query   Query   `yaml:"query"`
+	DataPath string  `yaml:"data_path"`
+	Segment  Segment `yaml:"segment"`
+	Wal      Wal     `yaml:"wal"`
+	Query    Query   `yaml:"query"`
 
 	_once   sync.Once
 	_inited atomic.Bool
@@ -86,6 +93,26 @@ func (cfg *Config) IsVerified() bool {
 	return cfg._inited.Load()
 }
 
+func (cfg *Config) verifyPath() {
+	p := cfg.DataPath
+	if stat, err := os.Stat(cfg.DataPath); err != nil {
+		if os.IsNotExist(err) {
+			// not exists, try to create
+			if err = os.MkdirAll(cfg.DataPath, 0755); err != nil {
+				logger.Panic("create data path failed", zap.String("path", p), zap.Error(err))
+			}
+			logger.Info("create data path", zap.String("path", p))
+		} else {
+			logger.Panic("invalid data path", zap.String("path", p), zap.Error(err))
+		}
+	} else {
+		// already exists, check if it is a DIRECTORY
+		if !stat.IsDir() {
+			logger.Panic("data path is not a directory", zap.String("path", p))
+		}
+	}
+}
+
 func (s *Segment) verify() {
 	if s.MatureThreshold <= 0 {
 		panic("segment.mature_threshold should be positive")
@@ -115,9 +142,22 @@ func (q *Query) verify() {
 
 // doVerify verifies the control parameters of all modules
 func (cfg *Config) doVerify() {
+	cfg.verifyPath()
 	cfg.Segment.verify()
 	cfg.Wal.verify()
 	cfg.Query.verify()
+}
+
+func (cfg *Config) GetDataPath() string {
+	return path.Join(cfg.DataPath, consts.PathData)
+}
+
+func (cfg *Config) GetMetaPath() string {
+	return path.Join(cfg.DataPath, consts.PathMeta)
+}
+
+func (cfg *Config) GetWALPath() string {
+	return path.Join(cfg.DataPath, consts.PathWAL)
 }
 
 func (cfg *Config) String() string {
