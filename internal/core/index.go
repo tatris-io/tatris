@@ -4,6 +4,10 @@
 package core
 
 import (
+	"os"
+	"path"
+	"sync"
+
 	"github.com/pkg/errors"
 	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/common/errs"
@@ -11,13 +15,12 @@ import (
 	"github.com/tatris-io/tatris/internal/indexlib"
 	"github.com/tatris-io/tatris/internal/protocol"
 	"go.uber.org/zap"
-	"os"
-	"path"
 )
 
 type Index struct {
 	*protocol.Index
 	Shards []*Shard `json:"shards"`
+	lock   sync.RWMutex
 }
 
 func (index *Index) GetName() string {
@@ -38,6 +41,8 @@ func (index *Index) GetShard(idx int) *Shard {
 
 func (index *Index) AddProperties(addProperties map[string]*protocol.Property) {
 	if len(addProperties) > 0 {
+		index.lock.Lock()
+		defer index.lock.Unlock()
 		properties := make(map[string]*protocol.Property)
 		for name, property := range index.Mappings.Properties {
 			properties[name] = property
