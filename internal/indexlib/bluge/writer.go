@@ -24,7 +24,7 @@ import (
 
 type BlugeWriter struct {
 	*indexlib.BaseConfig
-	Mappings *protocol.Mappings
+	Mappings protocol.Mappings
 	Index    string
 	Segment  string
 	Writer   *bluge.Writer
@@ -32,7 +32,7 @@ type BlugeWriter struct {
 
 func NewBlugeWriter(
 	config *indexlib.BaseConfig,
-	mappings *protocol.Mappings,
+	mappings protocol.Mappings,
 	index string,
 	segment string,
 ) *BlugeWriter {
@@ -109,7 +109,7 @@ func (b *BlugeWriter) Close() {
 func (b *BlugeWriter) generateBlugeDoc(
 	docID string,
 	doc protocol.Document,
-	mappings *protocol.Mappings,
+	mappings protocol.Mappings,
 ) (segment.Document, error) {
 	bdoc := bluge.NewDocument(docID)
 	for key, value := range doc {
@@ -155,7 +155,7 @@ func (b *BlugeWriter) addField(
 	bdoc *bluge.Document,
 	key string,
 	value interface{},
-	mappings *protocol.Mappings,
+	mappings protocol.Mappings,
 ) error {
 	var bfield *bluge.TermField
 	if p, ok := mappings.Properties[key]; ok {

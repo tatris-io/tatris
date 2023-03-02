@@ -53,9 +53,12 @@ func CheckDocument(index *Index, doc protocol.Document) error {
 		return errs.ErrEmptyMappings
 	}
 
-	properties := index.Mappings.Properties
-	iDynamic := index.Mappings.Dynamic
-	dynamicTemplates := index.Mappings.DynamicTemplates
+	mappings := index.Mappings
+	properties := mappings.Properties
+	iDynamic := mappings.Dynamic
+	dynamicTemplates := mappings.DynamicTemplates
+
+	newProperties := make(map[string]*protocol.Property)
 
 	for k, v := range doc {
 		// get field-level dynamic mode
@@ -75,14 +78,13 @@ func CheckDocument(index *Index, doc protocol.Document) error {
 		}
 		// if new valid field types have been deduced, store them into the index metadata
 		if _, ok := properties[k]; !ok && strings.EqualFold(iDynamic, consts.DynamicMappingMode) {
-			p := &protocol.Property{
+			newProperties[k] = &protocol.Property{
 				Type:    fType,
 				Dynamic: consts.DynamicMappingMode,
 			}
-			properties[k] = p
 		}
 	}
-	index.Mappings.Properties = properties
+	index.AddProperties(newProperties)
 	return nil
 }
 
