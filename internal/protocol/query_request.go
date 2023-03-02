@@ -71,7 +71,9 @@ type Aggs struct {
 	DateHistogram *AggDateHistogram `json:"date_histogram,omitempty"`
 	Histogram     *AggHistogram     `json:"histogram,omitempty"`
 	NumericRange  *AggNumericRange  `json:"range"`
+	DateRange     *AggDateRange     `json:"date_range"`
 	Filter        *Query            `json:"filter"`
+	Count         *AggMetric        `json:"count,omitempty"`
 	Sum           *AggMetric        `json:"sum,omitempty"`
 	Min           *AggMetric        `json:"min,omitempty"`
 	Max           *AggMetric        `json:"max,omitempty"`
@@ -124,6 +126,19 @@ type AggNumericRange struct {
 type NumericRange struct {
 	To   float64 `json:"to"`
 	From float64 `json:"from"`
+}
+
+type AggDateRange struct {
+	Field    string      `json:"field"`
+	TimeZone string      `json:"time_zone"`
+	Ranges   []DateRange `json:"ranges"`
+	Format   string      `json:"format"` // TODO
+	Keyed    bool        `json:"keyed"`  // TODO
+}
+
+type DateRange struct {
+	To   string `json:"to"`
+	From string `json:"from"`
 }
 
 type Sort []map[string]SortTerm

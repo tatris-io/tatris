@@ -220,38 +220,38 @@ var cases = []QueryCase{
 	{
 		name: "query",
 		req: `
-                 {
-                   "size": 20,
-                   "query": {
-                     "bool": {
-                       "must": [
-                         {
-                           "match": {
-                             "name": {
-                               "query": "elasticsearch",
-                               "prefix_length": 5,
-                               "fuzziness": 1
-                             }
-                           }
-                         },
-                         {
-                           "query_string": {
-                             "query": "name:elasticsearch"
-                           }
-                         }
-                       ],
-                       "must_not": [
-                         {
-                           "term": {
-                             "name": {
-                               "value": "meilisearch"
-                             }
-                           }
-                         }
-                       ]
-                     }
-                   }
-                 }`,
+			 {
+			   "size": 20,
+			   "query": {
+				 "bool": {
+				   "must": [
+					 {
+					   "match": {
+						 "name": {
+						   "query": "elasticsearch",
+						   "prefix_length": 5,
+						   "fuzziness": 1
+						 }
+					   }
+					 },
+					 {
+					   "query_string": {
+						 "query": "name:elasticsearch"
+					   }
+					 }
+				   ],
+				   "must_not": [
+					 {
+					   "term": {
+						 "name": {
+						   "value": "meilisearch"
+						 }
+					   }
+					 }
+				   ]
+				 }
+			   }
+			 }`,
 	},
 	{
 		name: "range",
@@ -271,48 +271,59 @@ var cases = []QueryCase{
 	{
 		name: "agg",
 		req: `
-                 {
-                   "size": 20,
-                   "aggs": {
-                     "lang": {
-                      "terms": {
-                        "field": "lang",
-                        "size": 1
-                      },
-                      "aggs": {
-                        "avg_forks": {
-                          "avg": {
-                            "field": "forks"
-                          }
-                        },
-                        "sum_stars": {
-                          "sum": {
-                            "field": "stars"
-                          }
-                        },
-                        "cardinality_name": {
-                          "cardinality": {
-                            "field": "name"
-                          }
-                        },
-                       "range_forks": {
-                        "range": {
-                          "field": "forks",
-                          "ranges": [
-                            {
-                              "to": 10000
-                            },
-                            {
-                              "from": 10000,
-                              "to": 20000
-                            }
-                          ]
-                        }
-                       }
-                      }
-                     }
-                   }
-                 }`,
+			 {
+			   "size": 0,
+			   "aggs": {
+				 "lang": {
+				  "terms": {
+					"field": "lang",
+					"size": 10
+				  },
+				  "aggs": {
+					"avg_forks": {
+					  "avg": {
+						"field": "forks"
+					  }
+					},
+					"sum_stars": {
+					  "sum": {
+						"field": "stars"
+					  }
+					},
+					"cardinality_name": {
+					  "cardinality": {
+						"field": "name"
+					  }
+					},
+				   "range_forks": {
+					"range": {
+					  "field": "forks",
+					  "ranges": [
+						{
+						  "to": 10000
+						},
+						{
+						  "from": 10000,
+						  "to": 20000
+						}
+					  ]
+					}
+				   },
+				   "range_time": {
+					"date_range": {
+					  "field": "start_time",
+					  "ranges": [
+						{
+						  "from": "1676513718560",
+						  "to": "1676513918580"
+						}
+					  ]
+					}
+				   }
+				  }
+				 }
+			   }
+			 }`,
 	},
 	{
 		name: "sort",
@@ -421,6 +432,13 @@ var cases = []QueryCase{
 				  "aggs": {
 					"sum_stars": {
 					  "sum": {
+						"field": "stars"
+					  }
+					}
+				  },
+                  "aggs": {
+					"count_item": {
+					  "count": {
 						"field": "stars"
 					  }
 					}
