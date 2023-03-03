@@ -6,60 +6,11 @@ package metadata
 import (
 	"encoding/json"
 
-	"github.com/bobg/go-generics/slices"
-
 	cache "github.com/patrickmn/go-cache"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/protocol"
 	"go.uber.org/zap"
 )
-
-var (
-	// aliasTermsCache caches { alias -> []AliasTerm }
-	aliasTermsCache = cache.New(
-		cache.NoExpiration,
-		cache.NoExpiration,
-	)
-	// indexTermsCache caches { index -> []AliasTerm }
-	indexTermsCache = cache.New(
-		cache.NoExpiration,
-		cache.NoExpiration,
-	)
-)
-
-func LoadAliases() error {
-	bytesMap, err := MStore.List(AliasPath)
-	if err != nil {
-		return err
-	}
-	terms := make([]*protocol.AliasTerm, 0)
-	for _, bytes := range bytesMap {
-		ts := make([]*protocol.AliasTerm, 0)
-		if err := json.Unmarshal(bytes, &ts); err != nil {
-			return err
-		}
-		terms = append(terms, ts...)
-	}
-	groupByAlias, err := slices.Group(terms, func(t *protocol.AliasTerm) (string, error) {
-		return t.Alias, nil
-	})
-	if err != nil {
-		return err
-	}
-	for alias, terms := range groupByAlias {
-		aliasTermsCache.Set(alias, terms, cache.NoExpiration)
-	}
-	groupByIndex, err := slices.Group(terms, func(t *protocol.AliasTerm) (string, error) {
-		return t.Index, nil
-	})
-	if err != nil {
-		return err
-	}
-	for index, terms := range groupByIndex {
-		indexTermsCache.Set(index, terms, cache.NoExpiration)
-	}
-	return nil
-}
 
 func ResolveIndexes(name string) []string {
 	terms := GetTermsByAlias(name)
@@ -143,7 +94,7 @@ func remove(terms []*protocol.AliasTerm, term *protocol.AliasTerm) []*protocol.A
 }
 
 func ListTerms() []*protocol.AliasTerm {
-	items := aliasTermsCache.Items()
+	items := M().AliasTermsCache.Items()
 	terms := make([]*protocol.AliasTerm, 0)
 	for _, item := range items {
 		terms = append(terms, item.Object.([]*protocol.AliasTerm)...)
@@ -153,7 +104,7 @@ func ListTerms() []*protocol.AliasTerm {
 
 func GetTermsByAlias(alias string) []*protocol.AliasTerm {
 	var terms []*protocol.AliasTerm
-	cached, found := aliasTermsCache.Get(alias)
+	cached, found := M().AliasTermsCache.Get(alias)
 	if found {
 		terms = cached.([]*protocol.AliasTerm)
 	}
@@ -162,7 +113,7 @@ func GetTermsByAlias(alias string) []*protocol.AliasTerm {
 
 func GetTermsByIndex(index string) []*protocol.AliasTerm {
 	terms := make([]*protocol.AliasTerm, 0)
-	cached, found := indexTermsCache.Get(index)
+	cached, found := M().IndexTermsCache.Get(index)
 	if found {
 		terms = cached.([]*protocol.AliasTerm)
 	}
@@ -188,14 +139,14 @@ func saveAlias(
 	index string,
 	indexTerms []*protocol.AliasTerm,
 ) error {
-	aliasTermsCache.Set(alias, aliasTerms, cache.NoExpiration)
-	indexTermsCache.Set(index, indexTerms, cache.NoExpiration)
+	M().AliasTermsCache.Set(alias, aliasTerms, cache.NoExpiration)
+	M().IndexTermsCache.Set(index, indexTerms, cache.NoExpiration)
 
 	indexTermsJSON, err := json.Marshal(indexTerms)
 	if err != nil {
 		return err
 	}
-	return MStore.Set(aliasPrefix(index), indexTermsJSON)
+	return M().MStore.Set(aliasPrefix(index), indexTermsJSON)
 }
 
 func aliasPrefix(name string) string {
