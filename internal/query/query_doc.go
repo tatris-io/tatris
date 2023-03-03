@@ -44,7 +44,7 @@ func SearchDocs(
 		return &protocol.QueryResponse{Hits: protocol.Hits{Hits: []protocol.Hit{}}}, nil
 	}
 	reader, err := core.MergeSegmentReader(&indexlib.BaseConfig{
-		DataPath: consts.DefaultDataPath,
+		DataPath: config.Cfg.GetDataPath(),
 	}, allSegments...)
 	if err != nil {
 		return nil, err

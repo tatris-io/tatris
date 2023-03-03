@@ -8,11 +8,12 @@ import (
 	"os"
 	"path"
 
+	"github.com/tatris-io/tatris/internal/core/config"
+
 	"go.uber.org/zap"
 
 	"github.com/tatris-io/tatris/internal/common/utils"
 
-	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/meta/metadata/storage"
 	"go.etcd.io/bbolt"
@@ -23,7 +24,7 @@ type BoltMetaStore struct {
 }
 
 func Open() (storage.MetaStore, error) {
-	p := consts.DefaultMetaPath + ".bolt"
+	p := config.Cfg.GetMetaPath() + ".bolt"
 	logger.Info("open boltdb", zap.String("path", p))
 	d := path.Dir(p)
 	// mkdir
