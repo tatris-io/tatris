@@ -21,7 +21,7 @@ const IndexPath = "/_index/"
 const IndexTemplatePath = "/_index_template/"
 
 type Metadata struct {
-	// MStore implements access to the physical storage of all metadata
+	// MStore completes direct access to metadata physical storage
 	MStore storage.MetaStore
 	// IndexCache caches { name -> Index }
 	IndexCache *cache.Cache
