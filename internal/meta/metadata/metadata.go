@@ -15,7 +15,7 @@ const IndexTemplatePath = "/_index_template/"
 
 var MStore storage.MetaStore
 
-func init() {
+func InitMetadata() {
 	var err error
 	MStore, err = boltdb.Open()
 	if err != nil {

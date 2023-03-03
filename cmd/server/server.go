@@ -6,6 +6,8 @@ package main
 import (
 	"os"
 
+	"github.com/tatris-io/tatris/internal/meta/metadata"
+
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/tatris-io/tatris/internal/core/config"
@@ -89,5 +91,6 @@ func main() {
 	} else {
 		gin.SetMode(gin.ReleaseMode)
 	}
+	metadata.InitMetadata()
 	service.StartHTTPServer("all")
 }
