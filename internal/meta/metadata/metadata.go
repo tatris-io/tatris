@@ -36,7 +36,8 @@ type Metadata struct {
 var metadata *Metadata
 var _once sync.Once
 
-func M() *Metadata {
+// Instance lazily initializes a Metadata singleton and returns it
+func Instance() *Metadata {
 	_once.Do(func() {
 		metadata = &Metadata{}
 		metadata.initMetadata()

@@ -54,8 +54,8 @@ func SaveIndex(index *core.Index) error {
 	if err != nil {
 		return err
 	}
-	M().IndexCache.Set(index.Name, index, cache.NoExpiration)
-	return M().MStore.Set(indexPrefix(index.Name), json)
+	Instance().IndexCache.Set(index.Name, index, cache.NoExpiration)
+	return Instance().MStore.Set(indexPrefix(index.Name), json)
 }
 
 func GetShard(indexName string, shardID int) (*core.Shard, error) {
@@ -75,7 +75,7 @@ func GetShard(indexName string, shardID int) (*core.Shard, error) {
 
 func GetIndex(indexName string) (*core.Index, error) {
 	var index *core.Index
-	cachedIndex, found := M().IndexCache.Get(indexName)
+	cachedIndex, found := Instance().IndexCache.Get(indexName)
 	if found {
 		index = cachedIndex.(*core.Index)
 		return index, nil
@@ -89,7 +89,7 @@ func DeleteIndex(indexName string) error {
 		return err
 	}
 	// first set the cache disable, then all requests for this index will get a 404
-	M().IndexCache.Delete(indexName)
+	Instance().IndexCache.Delete(indexName)
 	// close the index and its components (shards, segments, wals ...)
 	err = index.Close()
 	if err != nil {
@@ -101,7 +101,7 @@ func DeleteIndex(indexName string) error {
 		return err
 	}
 	// remove the index from metastore
-	return M().MStore.Delete(indexPrefix(indexName))
+	return Instance().MStore.Delete(indexPrefix(indexName))
 }
 
 func BuildIndex(index *core.Index, template *protocol.IndexTemplate) {

@@ -32,13 +32,13 @@ func SaveIndexTemplate(template *protocol.IndexTemplate) error {
 	if err != nil {
 		return err
 	}
-	M().TemplateCache.Set(template.Name, template, cache.NoExpiration)
-	return M().MStore.Set(indexTemplatePrefix(template.Name), json)
+	Instance().TemplateCache.Set(template.Name, template, cache.NoExpiration)
+	return Instance().MStore.Set(indexTemplatePrefix(template.Name), json)
 }
 
 func FindTemplates(indexName string) *protocol.IndexTemplate {
 	var template *protocol.IndexTemplate
-	for _, item := range M().TemplateCache.Items() {
+	for _, item := range Instance().TemplateCache.Items() {
 		t := item.Object.(*protocol.IndexTemplate)
 		for _, pattern := range t.IndexPatterns {
 			if wildcard.Match(pattern, indexName) {
@@ -54,7 +54,7 @@ func FindTemplates(indexName string) *protocol.IndexTemplate {
 
 func GetIndexTemplate(templateName string) (*protocol.IndexTemplate, error) {
 	var template *protocol.IndexTemplate
-	cachedTemplate, found := M().TemplateCache.Get(templateName)
+	cachedTemplate, found := Instance().TemplateCache.Get(templateName)
 	if found {
 		template = cachedTemplate.(*protocol.IndexTemplate)
 		return template, nil
@@ -63,8 +63,8 @@ func GetIndexTemplate(templateName string) (*protocol.IndexTemplate, error) {
 }
 
 func DeleteIndexTemplate(templateName string) error {
-	M().TemplateCache.Delete(templateName)
-	return M().MStore.Delete(indexTemplatePrefix(templateName))
+	Instance().TemplateCache.Delete(templateName)
+	return Instance().MStore.Delete(indexTemplatePrefix(templateName))
 }
 
 func FillTemplateAsDefault(template *protocol.IndexTemplate) {

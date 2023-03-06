@@ -94,7 +94,7 @@ func remove(terms []*protocol.AliasTerm, term *protocol.AliasTerm) []*protocol.A
 }
 
 func ListTerms() []*protocol.AliasTerm {
-	items := M().AliasTermsCache.Items()
+	items := Instance().AliasTermsCache.Items()
 	terms := make([]*protocol.AliasTerm, 0)
 	for _, item := range items {
 		terms = append(terms, item.Object.([]*protocol.AliasTerm)...)
@@ -104,7 +104,7 @@ func ListTerms() []*protocol.AliasTerm {
 
 func GetTermsByAlias(alias string) []*protocol.AliasTerm {
 	var terms []*protocol.AliasTerm
-	cached, found := M().AliasTermsCache.Get(alias)
+	cached, found := Instance().AliasTermsCache.Get(alias)
 	if found {
 		terms = cached.([]*protocol.AliasTerm)
 	}
@@ -113,7 +113,7 @@ func GetTermsByAlias(alias string) []*protocol.AliasTerm {
 
 func GetTermsByIndex(index string) []*protocol.AliasTerm {
 	terms := make([]*protocol.AliasTerm, 0)
-	cached, found := M().IndexTermsCache.Get(index)
+	cached, found := Instance().IndexTermsCache.Get(index)
 	if found {
 		terms = cached.([]*protocol.AliasTerm)
 	}
@@ -139,14 +139,14 @@ func saveAlias(
 	index string,
 	indexTerms []*protocol.AliasTerm,
 ) error {
-	M().AliasTermsCache.Set(alias, aliasTerms, cache.NoExpiration)
-	M().IndexTermsCache.Set(index, indexTerms, cache.NoExpiration)
+	Instance().AliasTermsCache.Set(alias, aliasTerms, cache.NoExpiration)
+	Instance().IndexTermsCache.Set(index, indexTerms, cache.NoExpiration)
 
 	indexTermsJSON, err := json.Marshal(indexTerms)
 	if err != nil {
 		return err
 	}
-	return M().MStore.Set(aliasPrefix(index), indexTermsJSON)
+	return Instance().MStore.Set(aliasPrefix(index), indexTermsJSON)
 }
 
 func aliasPrefix(name string) string {
