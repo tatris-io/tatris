@@ -2,6 +2,8 @@
 
 package indexlib
 
+import "time"
+
 type QueryRequest interface {
 	SetAggs(aggregations map[string]Aggs)
 	GetAggs() map[string]Aggs
@@ -139,6 +141,8 @@ type RangeVal struct {
 type Aggs struct {
 	Terms         *AggTerms
 	NumericRange  *AggNumericRange
+	DateRange     *AggDateRange
+	Count         *AggMetric
 	Sum           *AggMetric
 	Min           *AggMetric
 	Max           *AggMetric
@@ -184,6 +188,19 @@ type NumericRange struct {
 	From float64
 }
 
+type AggDateRange struct {
+	Field    string
+	Format   string
+	TimeZone *time.Location
+	Ranges   []DateRange
+	Keyed    bool
+}
+
+type DateRange struct {
+	To   string
+	From string
+}
+
 type Sort []map[string]SortTerm
 
 type SortTerm struct {
@@ -196,7 +213,7 @@ type AggDateHistogram struct {
 	FixedInterval    int64 // nanos
 	CalendarInterval string
 	Format           string
-	TimeZone         string
+	TimeZone         *time.Location
 	Offset           string
 	MinDocCount      int
 	Keyed            bool

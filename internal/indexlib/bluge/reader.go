@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -530,6 +531,49 @@ func (b *BlugeReader) generateAggregations(
 				}
 			}
 			result[name] = ranges
+		} else if agg.DateRange != nil {
+			ranges := aggregations.DateRanges(search.Field(agg.DateRange.Field))
+			var fromValue any
+			var toValue any
+			var err error
+			for _, value := range agg.DateRange.Ranges {
+				fromValue, err = strconv.ParseInt(value.From, 10, 64)
+				if err != nil {
+					fromValue = value.From
+				}
+				from, err := utils.ParseTime(fromValue)
+				if err != nil {
+					return nil, &errs.InvalidFieldValError{Field: "range", Type: "date", Value: fromValue}
+				}
+
+				toValue, err = strconv.ParseInt(value.To, 10, 64)
+				if err != nil {
+					toValue = value.To
+				}
+				to, err := utils.ParseTime(toValue)
+				if err != nil {
+					return nil, &errs.InvalidFieldValError{Field: "range", Type: "date", Value: fromValue}
+				}
+
+				if timeZone := agg.DateRange.TimeZone; timeZone != nil {
+					from = from.In(timeZone)
+					to = to.In(timeZone)
+				}
+				ranges.AddRange(aggregations.NewDateRange(from, to))
+			}
+			// sub-aggregations (bucket aggregation need support)
+			if len(agg.Aggs) > 0 {
+				subAggs, err := b.generateAggregations(agg.Aggs)
+				if err != nil {
+					return nil, err
+				}
+				for k, v := range subAggs {
+					ranges.AddAggregation(k, v)
+				}
+			}
+			result[name] = ranges
+		} else if agg.Count != nil {
+			result[name] = aggregations.CountMatches()
 		} else if agg.Sum != nil {
 			result[name] = aggregations.Sum(search.Field(agg.Sum.Field))
 		} else if agg.Min != nil {

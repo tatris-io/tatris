@@ -224,6 +224,9 @@ func transformAggs(
 			if agg.NumericRange.Field == "" {
 				return nil, errs.ErrEmptyField
 			}
+			if agg.NumericRange.Ranges == nil || len(agg.NumericRange.Ranges) == 0 {
+				return nil, fmt.Errorf("no [ranges] specified for the range aggregation [%s]", name)
+			}
 			err := validateAggFieldType(mappings, agg.NumericRange.Field, consts.LibFieldTypeNumeric, name, "range")
 			if err != nil {
 				return nil, err
@@ -235,12 +238,38 @@ func transformAggs(
 				}
 			}
 			indexlibAggs.NumericRange = &indexlib.AggNumericRange{Field: agg.NumericRange.Field, Ranges: indexLibRanges, Keyed: agg.NumericRange.Keyed}
+		} else if agg.DateRange != nil {
+			if agg.DateRange.Field == "" {
+				return nil, errs.ErrEmptyField
+			}
+			if agg.DateRange.Ranges == nil || len(agg.DateRange.Ranges) == 0 {
+				return nil, fmt.Errorf("no [ranges] specified for the date_range aggregation [%s]", name)
+			}
+			err := validateAggFieldType(mappings, agg.DateRange.Field, consts.LibFieldTypeDate, name, "date_range")
+			if err != nil {
+				return nil, err
+			}
+			indexLibRanges := make([]indexlib.DateRange, 0, len(agg.DateRange.Ranges))
+			if ranges := agg.DateRange.Ranges; ranges != nil {
+				for _, r := range ranges {
+					indexLibRanges = append(indexLibRanges, indexlib.DateRange{From: r.From, To: r.To})
+				}
+			}
+			indexlibAggs.DateRange = &indexlib.AggDateRange{
+				Field:    agg.DateRange.Field,
+				Ranges:   indexLibRanges,
+				Format:   agg.DateRange.Format,
+				TimeZone: utils.ParseTimeZone(agg.DateRange.TimeZone),
+				Keyed:    agg.DateRange.Keyed,
+			}
 		} else if agg.Filter != nil {
 			filterQuery, err := transform(*agg.Filter, mappings)
 			if err != nil {
 				return nil, err
 			}
 			indexlibAggs.Filter = &indexlib.AggFilter{FilterQuery: filterQuery}
+		} else if agg.Count != nil {
+			indexlibAggs.Count = &indexlib.AggMetric{Field: agg.Count.Field}
 		} else if agg.Sum != nil {
 			if agg.Sum.Field == "" {
 				return nil, errs.ErrEmptyField
@@ -691,7 +720,7 @@ func transformDateHistogramAgg(
 	indexlibAggs.DateHistogram = &indexlib.AggDateHistogram{
 		Field: d.Field, CalendarInterval: d.CalendarInterval,
 		FixedInterval: int64(fixedInterval), Format: d.Format,
-		TimeZone: d.TimeZone, Offset: d.Offset, MinDocCount: d.MinDocCount,
+		TimeZone: utils.ParseTimeZone(d.TimeZone), Offset: d.Offset, MinDocCount: d.MinDocCount,
 		Keyed: d.Keyed, Missing: d.Missing,
 		ExtendedBounds: extendedBounds,
 		HardBounds:     hardBounds,

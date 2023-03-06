@@ -26,7 +26,7 @@ type DateHistogramAggregation struct {
 	fixedInterval    int64 // nanos
 	minDocCount      int
 	format           string
-	timeZone         string
+	timeZone         *time.Location
 	offset           string
 	extendedBounds   *indexlib.DateHistogramBound
 	hardBounds       *indexlib.DateHistogramBound
@@ -41,7 +41,7 @@ func NewDateHistogramAggregation(
 	calendarInterval string,
 	fixedInterval int64,
 	format string,
-	timeZone string,
+	timeZone *time.Location,
 	offset string,
 	minDocCount int,
 	extendedBounds,
@@ -87,7 +87,7 @@ func (d *DateHistogramAggregation) Calculator() search.Calculator {
 		fixedInterval:    d.fixedInterval,
 		minDocCount:      d.minDocCount,
 		format:           d.format,
-		timeZone:         loadLocation(d.timeZone),
+		timeZone:         d.timeZone,
 		offset:           d.offset,
 		extendedBounds:   d.extendedBounds,
 		hardBounds:       d.hardBounds,
@@ -248,37 +248,13 @@ func (c *DateHistogramCalculator) Swap(i, j int) {
 	c.bucketsList[i], c.bucketsList[j] = c.bucketsList[j], c.bucketsList[i]
 }
 
-func loadLocation(timeZoneStr string) *time.Location {
-	loc := time.UTC
-	if len(timeZoneStr) > 0 {
-		if timeZoneStr[0] == '+' || timeZoneStr[0] == '-' {
-			if len(timeZoneStr) == 6 && timeZoneStr[3] == ':' {
-				// -01:00
-				// When parsing a time with a zone offset like -0700, if the offset corresponds to a
-				// time zone used by the current location (Local), then Parse uses that location and
-				// zone in the returned time. Otherwise it records the time as being in a fabricated
-				// location with time
-				// fixed at the given zone offset.
-				tt, _ := time.Parse("-07:00", timeZoneStr)
-				loc = tt.Location()
-			} else if len(timeZoneStr) == 5 {
-				// -0100
-				tt, _ := time.Parse("-0700", timeZoneStr)
-				loc = tt.Location()
-			}
-		} else {
-			loc, _ = time.LoadLocation(timeZoneStr)
-		}
-	}
-
-	return loc
-}
-
 func (c *DateHistogramCalculator) calculatorBucketKey(unixNano int64) string {
 	var ms int64
-	t := time.Unix(0, unixNano).In(c.timeZone)
-	_, offset := t.Zone()
-	t = t.Add(time.Duration(offset) * time.Second)
+	t := time.Unix(0, unixNano)
+	if c.timeZone != nil {
+		_, offset := t.In(c.timeZone).Zone()
+		t = t.Add(time.Duration(offset) * time.Second)
+	}
 
 	if c.calendarInterval != "" {
 		switch c.calendarInterval {
@@ -321,9 +297,11 @@ func (c *DateHistogramCalculator) calculatorBucketKey(unixNano int64) string {
 
 func (c *DateHistogramCalculator) calculatorNextBucketKey(unixNano int64) int64 {
 	var nanos int64
-	t := time.Unix(0, unixNano).In(c.timeZone)
-	_, offset := t.Zone()
-	t = t.Add(time.Duration(offset) * time.Second)
+	t := time.Unix(0, unixNano)
+	if c.timeZone != nil {
+		_, offset := t.In(c.timeZone).Zone()
+		t = t.Add(time.Duration(offset) * time.Second)
+	}
 
 	if c.calendarInterval != "" {
 		switch c.calendarInterval {
