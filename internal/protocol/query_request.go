@@ -9,6 +9,7 @@ type QueryRequest struct {
 	Aggs  map[string]Aggs `json:"aggs"`
 	Sort  Sort            `json:"sort"`
 	Size  int64           `json:"size"`
+	From  int64           `json:"from"`
 }
 
 // TODO: to be supplemented

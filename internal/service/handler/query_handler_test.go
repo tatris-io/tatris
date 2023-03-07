@@ -222,6 +222,7 @@ var cases = []QueryCase{
 		req: `
 			 {
 			   "size": 20,
+			   "from": 5,
 			   "query": {
 				 "bool": {
 				   "must": [
@@ -258,6 +259,7 @@ var cases = []QueryCase{
 		req: `
 		{
 		    "size": 20,
+            "from": 5,
 		    "query": {
 		        "range": {
 		            "name": {
@@ -330,6 +332,7 @@ var cases = []QueryCase{
 		req: `
                  {
                    "size": 20,
+                   "from": 5,
                    "query": {
                      "term": {
                        "lang": "Java"
