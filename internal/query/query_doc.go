@@ -30,6 +30,12 @@ func SearchDocs(
 	indexes []*core.Index,
 	request protocol.QueryRequest,
 ) (*protocol.QueryResponse, error) {
+	if request.Size < 0 {
+		request.Size = 10
+	}
+	if request.From < 0 {
+		request.From = 0
+	}
 	start, end, err := resolveTimeRange(request.Index, request.Query)
 	if err != nil {
 		return nil, err
@@ -73,7 +79,12 @@ func SearchDocs(
 	hits.Hits = make([]protocol.Hit, 0)
 	aggregations := make(map[string]protocol.AggsResponse)
 
-	resp, err := reader.Search(context.Background(), libRequest, int(request.Size))
+	resp, err := reader.Search(
+		context.Background(),
+		libRequest,
+		int(request.Size),
+		int(request.From),
+	)
 	if err != nil {
 		return nil, err
 	}

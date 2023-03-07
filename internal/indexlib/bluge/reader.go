@@ -93,13 +93,14 @@ func (b *BlugeReader) OpenReader() error {
 func (b *BlugeReader) Search(
 	ctx context.Context,
 	query indexlib.QueryRequest,
-	limit int,
+	limit, from int,
 ) (*indexlib.QueryResponse, error) {
 	defer utils.Timerf(
-		"bluge search docs finish, segments:%+v, query:%+v, limit:%d",
+		"bluge search docs finish, segments:%+v, query:%+v, limit:%d, from:%d",
 		b.Segments,
 		query,
 		limit,
+		from,
 	)()
 	p := pool.NewWithResults[*BlugeSearchResult]().WithErrors().
 		WithMaxGoroutines(cfg.Cfg.Query.Parallel)
@@ -110,7 +111,7 @@ func (b *BlugeReader) Search(
 				docs:    make([]*search.DocumentMatch, 0),
 				buckets: make([]*search.Bucket, 0),
 			}
-			searchRequest, err := b.generateSearchRequest(query, limit)
+			searchRequest, err := b.generateSearchRequest(query, limit, from)
 			if err != nil {
 				return nil, err
 			}
@@ -137,7 +138,9 @@ func (b *BlugeReader) Search(
 	if err != nil {
 		return nil, err
 	}
-	docs, bucket := b.dealMultiResults(results, generateSort(query), limit)
+	// TODO: stream the documents returned by multiple readers through a channel instead of loading
+	// them all into memory instantaneously
+	docs, bucket := b.dealMultiResults(results, generateSort(query), limit, from)
 
 	// get buckets limit (map[aggName]size)
 	bucketLimitDoc := make(map[string]int)
@@ -151,7 +154,7 @@ func (b *BlugeReader) Search(
 func (b *BlugeReader) dealMultiResults(
 	results []*BlugeSearchResult,
 	sortOrder search.SortOrder,
-	limit int,
+	limit, from int,
 ) ([]*search.DocumentMatch, *search.Bucket) {
 	docs := make([]*search.DocumentMatch, 0)
 	var bucket *search.Bucket
@@ -173,8 +176,16 @@ func (b *BlugeReader) dealMultiResults(
 		})
 	}
 
+	// skip docs
+	if from > 0 {
+		if len(docs) <= from {
+			docs = docs[:0]
+		} else {
+			docs = docs[from:]
+		}
+	}
 	// limit docs
-	if limit != -1 && len(docs) > limit {
+	if len(docs) > limit {
 		docs = docs[:limit]
 	}
 	return docs, bucket
@@ -182,16 +193,14 @@ func (b *BlugeReader) dealMultiResults(
 
 func (b *BlugeReader) generateSearchRequest(
 	query indexlib.QueryRequest,
-	limit int,
+	limit, from int,
 ) (bluge.SearchRequest, error) {
 	blugeQuery, err := b.generateQuery(query)
 	if err != nil {
 		return nil, err
 	}
-	if limit < 0 {
-		limit = 10
-	}
-	searchRequest := bluge.NewTopNSearch(limit, blugeQuery).WithStandardAggregations()
+	size := limit + from
+	searchRequest := bluge.NewTopNSearch(size, blugeQuery).WithStandardAggregations()
 	sorts := generateSort(query)
 	if sorts != nil {
 		searchRequest.SortByCustom(sorts)

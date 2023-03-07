@@ -70,7 +70,7 @@ func TestIndexLib(t *testing.T) {
 		matchQuery := indexlib.NewMatchQuery()
 		matchQuery.Match = "Java"
 		matchQuery.Field = "lang"
-		resp, err := reader.Search(context.Background(), matchQuery, -1)
+		resp, err := reader.Search(context.Background(), matchQuery, 10, 0)
 		assert.NoError(t, err)
 		respJSON, err := json.Marshal(resp)
 		assert.NoError(t, err)
@@ -80,7 +80,7 @@ func TestIndexLib(t *testing.T) {
 		termQuery := indexlib.NewTermQuery()
 		termQuery.Term = "Java"
 		termQuery.Field = "lang"
-		termResp, err := reader.Search(context.Background(), termQuery, 10)
+		termResp, err := reader.Search(context.Background(), termQuery, 10, 0)
 		assert.NoError(t, err)
 		termRespJSON, err := json.Marshal(termResp)
 		assert.NoError(t, err)
@@ -93,7 +93,7 @@ func TestIndexLib(t *testing.T) {
 				Fields: []string{"elasticsearch", "meilisearch"},
 			},
 		}
-		termsResp, err := reader.Search(context.Background(), termsQuery, 10)
+		termsResp, err := reader.Search(context.Background(), termsQuery, 10, 0)
 		assert.NoError(t, err)
 		termsRespJSON, err := json.Marshal(termsResp)
 		assert.NoError(t, err)
@@ -109,7 +109,7 @@ func TestIndexLib(t *testing.T) {
 					docs[2][consts.IDField].(string)},
 			},
 		}
-		idsResp, err := reader.Search(context.Background(), idsQuery, 10)
+		idsResp, err := reader.Search(context.Background(), idsQuery, 10, 0)
 		assert.NoError(t, err)
 		idsRespJSON, err := json.Marshal(idsResp)
 		assert.NoError(t, err)
@@ -123,7 +123,7 @@ func TestIndexLib(t *testing.T) {
 				LT:  100000,
 			},
 		}
-		rangeResp, err := reader.Search(context.Background(), rangeQuery, 10)
+		rangeResp, err := reader.Search(context.Background(), rangeQuery, 10, 0)
 		assert.NoError(t, err)
 		rangeRespJSON, err := json.Marshal(rangeResp)
 		assert.NoError(t, err)
@@ -133,7 +133,7 @@ func TestIndexLib(t *testing.T) {
 		boolQuery := indexlib.NewBooleanQuery()
 		boolQuery.Musts = []indexlib.QueryRequest{termQuery}
 		boolQuery.Filters = []indexlib.QueryRequest{termsQuery}
-		boolResp, err := reader.Search(context.Background(), boolQuery, 10)
+		boolResp, err := reader.Search(context.Background(), boolQuery, 10, 0)
 		assert.NoError(t, err)
 		boolRespJSON, err := json.Marshal(boolResp)
 		assert.NoError(t, err)
