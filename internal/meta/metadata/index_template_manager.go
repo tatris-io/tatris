@@ -18,23 +18,6 @@ import (
 	"github.com/tatris-io/tatris/internal/protocol"
 )
 
-var templateCache = cache.New(cache.NoExpiration, cache.NoExpiration)
-
-func LoadIndexTemplates() error {
-	bytesMap, err := MStore.List(IndexTemplatePath)
-	if err != nil {
-		return err
-	}
-	for _, bytes := range bytesMap {
-		template := &protocol.IndexTemplate{}
-		if err := json.Unmarshal(bytes, template); err != nil {
-			return err
-		}
-		templateCache.Set(template.Name, template, cache.NoExpiration)
-	}
-	return nil
-}
-
 func CreateIndexTemplate(template *protocol.IndexTemplate) error {
 	FillTemplateAsDefault(template)
 	if err := CheckTemplateValid(template); err != nil {
@@ -49,13 +32,13 @@ func SaveIndexTemplate(template *protocol.IndexTemplate) error {
 	if err != nil {
 		return err
 	}
-	templateCache.Set(template.Name, template, cache.NoExpiration)
-	return MStore.Set(indexTemplatePrefix(template.Name), json)
+	Instance().TemplateCache.Set(template.Name, template, cache.NoExpiration)
+	return Instance().MStore.Set(indexTemplatePrefix(template.Name), json)
 }
 
 func FindTemplates(indexName string) *protocol.IndexTemplate {
 	var template *protocol.IndexTemplate
-	for _, item := range templateCache.Items() {
+	for _, item := range Instance().TemplateCache.Items() {
 		t := item.Object.(*protocol.IndexTemplate)
 		for _, pattern := range t.IndexPatterns {
 			if wildcard.Match(pattern, indexName) {
@@ -71,7 +54,7 @@ func FindTemplates(indexName string) *protocol.IndexTemplate {
 
 func GetIndexTemplate(templateName string) (*protocol.IndexTemplate, error) {
 	var template *protocol.IndexTemplate
-	cachedTemplate, found := templateCache.Get(templateName)
+	cachedTemplate, found := Instance().TemplateCache.Get(templateName)
 	if found {
 		template = cachedTemplate.(*protocol.IndexTemplate)
 		return template, nil
@@ -80,8 +63,8 @@ func GetIndexTemplate(templateName string) (*protocol.IndexTemplate, error) {
 }
 
 func DeleteIndexTemplate(templateName string) error {
-	templateCache.Delete(templateName)
-	return MStore.Delete(indexTemplatePrefix(templateName))
+	Instance().TemplateCache.Delete(templateName)
+	return Instance().MStore.Delete(indexTemplatePrefix(templateName))
 }
 
 func FillTemplateAsDefault(template *protocol.IndexTemplate) {

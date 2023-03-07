@@ -30,35 +30,6 @@ const (
 	MaxNumberOfReplicas     = 5
 )
 
-var indexCache = cache.New(cache.NoExpiration, cache.NoExpiration)
-
-func LoadIndexes() error {
-	bytesMap, err := MStore.List(IndexPath)
-	if err != nil {
-		return err
-	}
-	for _, bytes := range bytesMap {
-		index := &core.Index{}
-		if err := json.Unmarshal(bytes, index); err != nil {
-			return err
-		}
-		shards := index.Shards
-		if len(shards) > 0 {
-			for _, shard := range shards {
-				shard.Index = index
-				segments := shard.Segments
-				if len(segments) > 0 {
-					for _, segment := range segments {
-						segment.Shard = shard
-					}
-				}
-			}
-		}
-		indexCache.Set(index.Name, index, cache.NoExpiration)
-	}
-	return nil
-}
-
 func CreateIndex(index *core.Index) error {
 	template := FindTemplates(index.Name)
 	BuildIndex(index, template)
@@ -83,8 +54,8 @@ func SaveIndex(index *core.Index) error {
 	if err != nil {
 		return err
 	}
-	indexCache.Set(index.Name, index, cache.NoExpiration)
-	return MStore.Set(indexPrefix(index.Name), json)
+	Instance().IndexCache.Set(index.Name, index, cache.NoExpiration)
+	return Instance().MStore.Set(indexPrefix(index.Name), json)
 }
 
 func GetShard(indexName string, shardID int) (*core.Shard, error) {
@@ -104,7 +75,7 @@ func GetShard(indexName string, shardID int) (*core.Shard, error) {
 
 func GetIndex(indexName string) (*core.Index, error) {
 	var index *core.Index
-	cachedIndex, found := indexCache.Get(indexName)
+	cachedIndex, found := Instance().IndexCache.Get(indexName)
 	if found {
 		index = cachedIndex.(*core.Index)
 		return index, nil
@@ -118,7 +89,7 @@ func DeleteIndex(indexName string) error {
 		return err
 	}
 	// first set the cache disable, then all requests for this index will get a 404
-	indexCache.Delete(indexName)
+	Instance().IndexCache.Delete(indexName)
 	// close the index and its components (shards, segments, wals ...)
 	err = index.Close()
 	if err != nil {
@@ -130,7 +101,7 @@ func DeleteIndex(indexName string) error {
 		return err
 	}
 	// remove the index from metastore
-	return MStore.Delete(indexPrefix(indexName))
+	return Instance().MStore.Delete(indexPrefix(indexName))
 }
 
 func BuildIndex(index *core.Index, template *protocol.IndexTemplate) {
