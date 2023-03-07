@@ -138,8 +138,8 @@ func (b *BlugeReader) Search(
 	if err != nil {
 		return nil, err
 	}
-	// TODO: stream the documents returned by multiple readers through a channel instead of loading
-	// them all into memory instantaneously
+	// TODO: stream process the documents returned by multiple readers instead of loading them all
+	// into memory instantaneously
 	docs, bucket := b.dealMultiResults(results, generateSort(query), limit, from)
 
 	// get buckets limit (map[aggName]size)
