@@ -334,8 +334,8 @@ var cases = []QueryCase{
                    "size": 20,
                    "from": 5,
                    "query": {
-                     "term": {
-                       "lang": "Java"
+                     "terms": {
+                       "lang": ["Java", "C++"]
                      }
                    },
                    "sort": [
