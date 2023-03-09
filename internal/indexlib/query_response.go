@@ -32,6 +32,7 @@ type Hit struct {
 }
 
 type AggsResponse struct {
-	Value   interface{} `json:"value,omitempty"`   // metric aggregation
-	Buckets interface{} `json:"buckets,omitempty"` // bucket aggregation
+	Type    string            `json:"_type"`             // real type of AggsResponse, see: internal/common/consts/aggregation.go
+	Value   interface{}       `json:"value,omitempty"`   // metric aggregation
+	Buckets []protocol.Bucket `json:"buckets,omitempty"` // bucket aggregation
 }
