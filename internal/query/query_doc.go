@@ -514,6 +514,7 @@ func transformTerms(query protocol.Query) (indexlib.QueryRequest, error) {
 	field := ""
 	values := []string{}
 	termsQ := indexlib.NewTermsQuery()
+	termsQ.Terms = make(map[string]*indexlib.Terms, len(terms))
 	for k, v := range terms {
 		field = k
 		for _, vv := range v {
