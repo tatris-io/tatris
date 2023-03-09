@@ -9,9 +9,9 @@ import (
 )
 
 type QueryResponse struct {
-	Took         int64                   `json:"took"`
-	Hits         Hits                    `json:"hits"`
-	Aggregations map[string]AggsResponse `json:"aggregations"`
+	Took         int64                      `json:"took"`
+	Hits         Hits                       `json:"hits"`
+	Aggregations map[string]AggregationTerm `json:"aggregations"`
 }
 
 type Hits struct {
@@ -31,8 +31,8 @@ type Hit struct {
 	Timestamp time.Time         `json:"_timestamp"`
 }
 
-type AggsResponse struct {
-	Type    string            `json:"_type"`             // real type of AggsResponse, see: internal/common/consts/aggregation.go
+type AggregationTerm struct {
+	Type    string            `json:"_type"`             // real type of AggregationTerm, see: internal/common/consts/aggregation.go
 	Value   interface{}       `json:"value,omitempty"`   // metric aggregation
 	Buckets []protocol.Bucket `json:"buckets,omitempty"` // bucket aggregation
 }
