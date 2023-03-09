@@ -36,6 +36,12 @@ type Hit struct {
 }
 
 type AggsResponse struct {
+	// Type is used to distinguish how a JSON string is unmarshalled to different AggsResponse
+	// implementations, which may be used on the client side.
+	// see: internal/common/consts/aggregation.go.
+	Type    string      `json:"_type"`
 	Value   interface{} `json:"value,omitempty"`
-	Buckets interface{} `json:"buckets,omitempty"`
+	Buckets []Bucket    `json:"buckets,omitempty"`
 }
+
+type Bucket map[string]interface{}

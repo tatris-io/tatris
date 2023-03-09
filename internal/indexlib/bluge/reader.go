@@ -655,12 +655,12 @@ func (b *BlugeReader) generateAggsFilter(
 func (b *BlugeReader) generateAggsResponse(
 	bucket *search.Bucket,
 	bucketLimitDoc map[string]int,
-) (map[string]indexlib.AggsResponse, error) {
-	aggsResponse := make(map[string]indexlib.AggsResponse)
+) (map[string]indexlib.AggregationTerm, error) {
+	aggsResponse := make(map[string]indexlib.AggregationTerm)
 	for name, value := range bucket.Aggregations() {
 		switch value := value.(type) {
 		case search.BucketCalculator:
-			aggsBuckets := make([]map[string]interface{}, 0)
+			aggsBuckets := make([]protocol.Bucket, 0)
 			buckets := value.Buckets()
 			count := len(buckets)
 			// limit bucket result
@@ -684,13 +684,13 @@ func (b *BlugeReader) generateAggsResponse(
 				}
 				aggsBuckets = append(aggsBuckets, aggsBucket)
 			}
-			aggsResponse[name] = indexlib.AggsResponse{Buckets: aggsBuckets}
+			aggsResponse[name] = indexlib.AggregationTerm{Type: consts.AggTermBucket, Buckets: aggsBuckets}
 		case search.MetricCalculator:
-			aggsResponse[name] = indexlib.AggsResponse{Value: value.Value()}
+			aggsResponse[name] = indexlib.AggregationTerm{Type: consts.AggTermMetric, Value: value.Value()}
 		case *custom_aggregations.PercentilesCalculator:
-			aggsResponse[name] = indexlib.AggsResponse{Value: value.Value()}
+			aggsResponse[name] = indexlib.AggregationTerm{Type: consts.AggTermPercentile, Value: value.Value()}
 		case search.DurationCalculator:
-			aggsResponse[name] = indexlib.AggsResponse{Value: value.Duration().Milliseconds()}
+			aggsResponse[name] = indexlib.AggregationTerm{Type: consts.AggTermDuration, Value: value.Duration().Milliseconds()}
 		default:
 			return aggsResponse, &errs.UnsupportedError{Desc: "aggregation calculator", Value: value}
 		}

@@ -97,7 +97,7 @@ func SearchDocs(
 	}
 
 	for k, v := range resp.Aggregations {
-		aggregations[k] = protocol.AggsResponse{Value: v.Value, Buckets: v.Buckets}
+		aggregations[k] = protocol.AggsResponse{Type: v.Type, Value: v.Value, Buckets: v.Buckets}
 	}
 
 	hits.Total.Value = respHits.Total.Value
