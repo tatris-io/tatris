@@ -3,8 +3,8 @@
 package consts
 
 const (
-	AggTermMetric     = "metric"
-	AggTermPercentile = "percentile"
-	AggTermBucket     = "bucket"
-	AggTermDuration   = "duration"
+	AggregationTypeMetric     = "metric"
+	AggregationTypePercentile = "percentile"
+	AggregationTypeBucket     = "bucket"
+	AggregationTypeDuration   = "duration"
 )

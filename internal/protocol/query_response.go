@@ -3,13 +3,13 @@
 package protocol
 
 type QueryResponse struct {
-	Took         int64                   `json:"took"` // unit: ms
-	TimedOut     bool                    `json:"timed_out"`
-	Shards       Shards                  `json:"_shards"`
-	Hits         Hits                    `json:"hits"`
-	Error        interface{}             `json:"error,omitempty"`
-	Status       int32                   `json:"status"`
-	Aggregations map[string]AggsResponse `json:"aggregations,omitempty"`
+	Took         int64                  `json:"took"` // unit: ms
+	TimedOut     bool                   `json:"timed_out"`
+	Shards       Shards                 `json:"_shards"`
+	Hits         Hits                   `json:"hits"`
+	Error        interface{}            `json:"error,omitempty"`
+	Status       int32                  `json:"status"`
+	Aggregations map[string]Aggregation `json:"aggregations,omitempty"`
 }
 
 type Shards struct {
@@ -35,8 +35,8 @@ type Hit struct {
 	Source Document `json:"_source"`
 }
 
-type AggsResponse struct {
-	// Type is used to distinguish how a JSON string is unmarshalled to different AggsResponse
+type Aggregation struct {
+	// Type is used to distinguish how a JSON string is unmarshalled to different Aggregation
 	// implementations, which may be used on the client side.
 	// see: internal/common/consts/aggregation.go.
 	Type    string      `json:"_type"`

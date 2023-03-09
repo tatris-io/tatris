@@ -77,7 +77,7 @@ func SearchDocs(
 	}
 
 	hits.Hits = make([]protocol.Hit, 0)
-	aggregations := make(map[string]protocol.AggsResponse)
+	aggregations := make(map[string]protocol.Aggregation)
 
 	resp, err := reader.Search(
 		context.Background(),
@@ -97,7 +97,7 @@ func SearchDocs(
 	}
 
 	for k, v := range resp.Aggregations {
-		aggregations[k] = protocol.AggsResponse{Type: v.Type, Value: v.Value, Buckets: v.Buckets}
+		aggregations[k] = protocol.Aggregation{Type: v.Type, Value: v.Value, Buckets: v.Buckets}
 	}
 
 	hits.Total.Value = respHits.Total.Value
