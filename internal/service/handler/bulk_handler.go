@@ -22,6 +22,9 @@ import (
 	"github.com/tatris-io/tatris/internal/protocol"
 )
 
+// maxBytesOfLine limits the maximum bytes that can be read for each line of the bulk request
+const maxBytesOfLine = 1024 * 1024 * 4
+
 func BulkHandler(c *gin.Context) {
 	name := c.Param("index")
 	var index *core.Index
@@ -69,6 +72,8 @@ func BulkHandler(c *gin.Context) {
 func divideBulk(index string, reader io.Reader) (map[string][]protocol.Document, error) {
 	documents := make(map[string][]protocol.Document)
 	sc := bufio.NewScanner(reader)
+	buf := make([]byte, maxBytesOfLine)
+	sc.Buffer(buf, maxBytesOfLine)
 	documentLine := false
 	var lastMeta *protocol.BulkMeta
 	for sc.Scan() {
