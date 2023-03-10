@@ -173,3 +173,11 @@ type InvalidQueryError struct {
 func (e *InvalidQueryError) Error() string {
 	return fmt.Sprintf("invalid query for %s: %v", e.Message, e.Query)
 }
+
+type InvalidBulkError struct {
+	Message string `json:"message"`
+}
+
+func (e *InvalidBulkError) Error() string {
+	return fmt.Sprintf("invalid bulk request: %s", e.Message)
+}
