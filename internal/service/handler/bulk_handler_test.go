@@ -22,6 +22,7 @@ import (
 )
 
 func TestBulkHandler(t *testing.T) {
+	// prepare
 	count := 5
 	versions := make([]string, count)
 	for i := 0; i < count; i++ {
