@@ -65,6 +65,10 @@ func registerIngestion(group *gin.RouterGroup) {
 	logger.Info("ingestion APIs registering")
 	group.PUT("/:index/_ingest", handler.IngestHandler)
 	group.POST("/:index/_ingest", handler.IngestHandler)
+	group.PUT("/:index/_bulk", handler.BulkHandler)
+	group.POST("/:index/_bulk", handler.BulkHandler)
+	group.PUT("/_bulk", handler.BulkHandler)
+	group.POST("/_bulk", handler.BulkHandler)
 }
 
 func registerQuery(group *gin.RouterGroup) {

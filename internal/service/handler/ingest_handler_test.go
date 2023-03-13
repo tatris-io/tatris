@@ -47,7 +47,6 @@ func TestIngestHandler(t *testing.T) {
 }
 
 const ingestRequest = `{
-  "index": "search-engine",
   "documents": [
     {
       "name": "elasticsearch",
