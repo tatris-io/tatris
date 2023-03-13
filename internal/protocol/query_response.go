@@ -20,8 +20,9 @@ type Shards struct {
 }
 
 type Hits struct {
-	Total Total `json:"total"`
-	Hits  []Hit `json:"hits"`
+	Total    Total   `json:"total"`
+	Hits     []Hit   `json:"hits"`
+	MaxScore float64 `json:"max_score"`
 }
 
 type Total struct {
@@ -33,13 +34,13 @@ type Hit struct {
 	Index  string   `json:"_index"`
 	ID     string   `json:"_id"`
 	Source Document `json:"_source"`
+	Score  float64  `json:"_score"`
+	Type   string   `json:"_type"`
 }
 
 type Aggregation struct {
 	// Type is used to distinguish how a JSON string is unmarshalled to different Aggregation
 	// implementations, which may be used on the client side.
-	// see: internal/common/consts/aggregation.go.
-	Type    string      `json:"_type"`
 	Value   interface{} `json:"value,omitempty"`
 	Buckets []Bucket    `json:"buckets,omitempty"`
 }

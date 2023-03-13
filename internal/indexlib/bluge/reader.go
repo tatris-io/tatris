@@ -338,7 +338,8 @@ func (b *BlugeReader) generateResponse(
 			ID:        id,
 			Source:    source,
 			Timestamp: timestamp,
-		}
+			Type:      "_doc",
+			Score:     doc.Score}
 		Hits = append(Hits, hit)
 	}
 
@@ -348,12 +349,18 @@ func (b *BlugeReader) generateResponse(
 	if err != nil {
 		return nil, err
 	}
+	if len(aggsResponse) > 0 {
+		delete(aggsResponse, "count")
+		delete(aggsResponse, "duration")
+		delete(aggsResponse, "max_score")
+	}
 
 	resp := &indexlib.QueryResponse{
 		Took: bucket.Duration().Milliseconds(),
 		Hits: indexlib.Hits{
-			Total: indexlib.Total{Value: int64(bucket.Count())},
-			Hits:  Hits,
+			Total:    indexlib.Total{Value: int64(bucket.Count()), Relation: "eq"},
+			Hits:     Hits,
+			MaxScore: bucket.Metric("max_score"),
 		},
 		Aggregations: aggsResponse,
 	}
@@ -678,19 +685,20 @@ func (b *BlugeReader) generateAggsResponse(
 					if err != nil {
 						return aggsResponse, err
 					}
+					delete(aggsResponse, "count")
 					for k, v := range aggsResponse {
 						aggsBucket[k] = v
 					}
 				}
 				aggsBuckets = append(aggsBuckets, aggsBucket)
 			}
-			aggsResponse[name] = indexlib.Aggregation{Type: consts.AggregationTypeBucket, Buckets: aggsBuckets}
+			aggsResponse[name] = indexlib.Aggregation{Buckets: aggsBuckets}
 		case search.MetricCalculator:
-			aggsResponse[name] = indexlib.Aggregation{Type: consts.AggregationTypeMetric, Value: value.Value()}
+			aggsResponse[name] = indexlib.Aggregation{Value: value.Value()}
 		case *custom_aggregations.PercentilesCalculator:
-			aggsResponse[name] = indexlib.Aggregation{Type: consts.AggregationTypePercentile, Value: value.Value()}
+			aggsResponse[name] = indexlib.Aggregation{Value: value.Value()}
 		case search.DurationCalculator:
-			aggsResponse[name] = indexlib.Aggregation{Type: consts.AggregationTypeDuration, Value: value.Duration().Milliseconds()}
+			aggsResponse[name] = indexlib.Aggregation{Value: value.Duration().Milliseconds()}
 		default:
 			return aggsResponse, &errs.UnsupportedError{Desc: "aggregation calculator", Value: value}
 		}

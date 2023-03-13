@@ -34,7 +34,7 @@ func StartHTTPServer(roles ...string) {
 	router.Use(gin.Recovery())
 
 	// api version: v1
-	v1 := router.Group("/v1")
+	v1 := router.Group("")
 
 	for _, role := range roles {
 		switch role {
@@ -73,6 +73,7 @@ func registerIngestion(group *gin.RouterGroup) {
 
 func registerQuery(group *gin.RouterGroup) {
 	logger.Info("query APIs registering")
+
 	group.POST("/:index/_search", handler.QueryHandler)
 }
 

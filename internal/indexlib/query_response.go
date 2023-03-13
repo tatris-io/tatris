@@ -15,8 +15,9 @@ type QueryResponse struct {
 }
 
 type Hits struct {
-	Total Total `json:"total"`
-	Hits  []Hit `json:"hits"`
+	Total    Total   `json:"total"`
+	Hits     []Hit   `json:"hits"`
+	MaxScore float64 `json:"max_score"`
 }
 
 type Total struct {
@@ -29,10 +30,11 @@ type Hit struct {
 	ID        string            `json:"_id"`
 	Source    protocol.Document `json:"_source"`
 	Timestamp time.Time         `json:"_timestamp"`
+	Score     float64           `json:"_score"`
+	Type      string            `json:"_type"`
 }
 
 type Aggregation struct {
-	Type    string            `json:"_type"`             // real type of Aggregation, see: internal/common/consts/aggregation.go
 	Value   interface{}       `json:"value,omitempty"`   // metric aggregation
 	Buckets []protocol.Bucket `json:"buckets,omitempty"` // bucket aggregation
 }

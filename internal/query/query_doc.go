@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/tatris-io/tatris/internal/common/log/logger"
@@ -65,13 +66,26 @@ func SearchDocs(
 	if err != nil {
 		return nil, err
 	}
-	if aggs := request.Aggs; aggs != nil {
-		agg, err := transformAggs(aggs, indexes[0].Mappings)
+
+	var aggsNamePrefixDict map[string]string
+	if request.TypedKeys {
+		aggsNamePrefixDict = make(map[string]string)
+	}
+
+	var aggs map[string]protocol.Aggs
+	if request.Aggs != nil {
+		aggs = request.Aggs
+	} else {
+		aggs = request.Aggregations
+	}
+	if aggs != nil {
+		agg, err := transformAggs(aggs, indexes[0].Mappings, aggsNamePrefixDict)
 		if err != nil {
 			return nil, err
 		}
 		libRequest.SetAggs(agg)
 	}
+
 	if sort := request.Sort; sort != nil {
 		libRequest.SetSort(transformSort(sort))
 	}
@@ -92,16 +106,31 @@ func SearchDocs(
 	for _, respHit := range respHits.Hits {
 		hits.Hits = append(
 			hits.Hits,
-			protocol.Hit{Index: respHit.Index, ID: respHit.ID, Source: respHit.Source},
+			protocol.Hit{
+				Index:  respHit.Index,
+				ID:     respHit.ID,
+				Source: respHit.Source,
+				Score:  respHit.Score,
+				Type:   respHit.Type,
+			},
 		)
 	}
 
 	for k, v := range resp.Aggregations {
-		aggregations[k] = protocol.Aggregation{Type: v.Type, Value: v.Value, Buckets: v.Buckets}
+		if aggsNamePrefixDict != nil {
+			if prefix, ok := aggsNamePrefixDict[k]; ok {
+				k = strings.Join([]string{prefix, k}, consts.TypedKeysDelimiter)
+			}
+		}
+		aggregations[k] = protocol.Aggregation{
+			Value:   v.Value,
+			Buckets: addAggNamePrefix(v.Buckets, aggsNamePrefixDict),
+		}
 	}
 
 	hits.Total.Value = respHits.Total.Value
 	hits.Total.Relation = respHits.Total.Relation
+	hits.MaxScore = respHits.MaxScore
 	return &protocol.QueryResponse{Hits: hits, Aggregations: aggregations}, nil
 }
 
@@ -210,6 +239,7 @@ func transform(query protocol.Query, mappings *protocol.Mappings) (indexlib.Quer
 func transformAggs(
 	aggs map[string]protocol.Aggs,
 	mappings *protocol.Mappings,
+	aggsPrefixDict map[string]string,
 ) (map[string]indexlib.Aggs, error) {
 	result := make(map[string]indexlib.Aggs, len(aggs))
 
@@ -225,7 +255,9 @@ func transformAggs(
 			if agg.Terms.ShardSize == 0 {
 				agg.Terms.ShardSize = config.Cfg.Query.DefaultAggregationShardSize
 			}
-
+			if aggsPrefixDict != nil {
+				aggsPrefixDict[name] = consts.TypedKeysStermsPrefix
+			}
 			indexlibAggs.Terms = &indexlib.AggTerms{
 				Field:     agg.Terms.Field,
 				Size:      agg.Terms.Size,
@@ -241,6 +273,9 @@ func transformAggs(
 			err := validateAggFieldType(mappings, agg.NumericRange.Field, consts.LibFieldTypeNumeric, name, "range")
 			if err != nil {
 				return nil, err
+			}
+			if aggsPrefixDict != nil {
+				aggsPrefixDict[name] = consts.TypedKeysRangePrefix
 			}
 			indexLibRanges := make([]indexlib.NumericRange, 0, len(agg.NumericRange.Ranges))
 			if ranges := agg.NumericRange.Ranges; ranges != nil {
@@ -260,6 +295,9 @@ func transformAggs(
 			if err != nil {
 				return nil, err
 			}
+			if aggsPrefixDict != nil {
+				aggsPrefixDict[name] = consts.TypedKeysDateRangePrefix
+			}
 			indexLibRanges := make([]indexlib.DateRange, 0, len(agg.DateRange.Ranges))
 			if ranges := agg.DateRange.Ranges; ranges != nil {
 				for _, r := range ranges {
@@ -278,9 +316,20 @@ func transformAggs(
 			if err != nil {
 				return nil, err
 			}
+			if aggsPrefixDict != nil {
+				aggsPrefixDict[name] = consts.TypedKeysFilterPrefix
+			}
 			indexlibAggs.Filter = &indexlib.AggFilter{FilterQuery: filterQuery}
 		} else if agg.Count != nil {
+			if aggsPrefixDict != nil {
+				aggsPrefixDict[name] = consts.TypedKeysCountPrefix
+			}
 			indexlibAggs.Count = &indexlib.AggMetric{Field: agg.Count.Field}
+		} else if agg.ValueCount != nil {
+			if aggsPrefixDict != nil {
+				aggsPrefixDict[name] = consts.TypedKeysCountPrefix
+			}
+			indexlibAggs.Count = &indexlib.AggMetric{Field: agg.ValueCount.Field}
 		} else if agg.Sum != nil {
 			if agg.Sum.Field == "" {
 				return nil, errs.ErrEmptyField
@@ -288,6 +337,9 @@ func transformAggs(
 			err := validateAggFieldType(mappings, agg.Sum.Field, consts.LibFieldTypeNumeric, name, "sum")
 			if err != nil {
 				return nil, err
+			}
+			if aggsPrefixDict != nil {
+				aggsPrefixDict[name] = consts.TypedKeysSumPrefix
 			}
 			indexlibAggs.Sum = &indexlib.AggMetric{Field: agg.Sum.Field}
 		} else if agg.Min != nil {
@@ -298,6 +350,9 @@ func transformAggs(
 			if err != nil {
 				return nil, err
 			}
+			if aggsPrefixDict != nil {
+				aggsPrefixDict[name] = consts.TypedKeysMinPrefix
+			}
 			indexlibAggs.Min = &indexlib.AggMetric{Field: agg.Min.Field}
 		} else if agg.Max != nil {
 			if agg.Max.Field == "" {
@@ -306,6 +361,9 @@ func transformAggs(
 			err := validateAggFieldType(mappings, agg.Max.Field, consts.LibFieldTypeNumeric, name, "max")
 			if err != nil {
 				return nil, err
+			}
+			if aggsPrefixDict != nil {
+				aggsPrefixDict[name] = consts.TypedKeysMaxPrefix
 			}
 			indexlibAggs.Max = &indexlib.AggMetric{Field: agg.Max.Field}
 		} else if agg.Avg != nil {
@@ -316,6 +374,9 @@ func transformAggs(
 			if err != nil {
 				return nil, err
 			}
+			if aggsPrefixDict != nil {
+				aggsPrefixDict[name] = consts.TypedKeysAvgPrefix
+			}
 			indexlibAggs.Avg = &indexlib.AggMetric{Field: agg.Avg.Field}
 		} else if agg.WeightedAvg != nil {
 			if agg.WeightedAvg.Value.Field == "" {
@@ -325,6 +386,9 @@ func transformAggs(
 			if err != nil {
 				return nil, err
 			}
+			if aggsPrefixDict != nil {
+				aggsPrefixDict[name] = consts.TypedKeysWeightedAvgPrefix
+			}
 			indexlibAggs.WeightedAvg = &indexlib.AggWeightedAvg{
 				Value:  &indexlib.AggMetric{Field: agg.WeightedAvg.Value.Field},
 				Weight: &indexlib.AggMetric{Field: agg.WeightedAvg.Weight.Field},
@@ -333,28 +397,38 @@ func transformAggs(
 			if agg.Cardinality.Field == "" {
 				return nil, errs.ErrEmptyField
 			}
+			if aggsPrefixDict != nil {
+				aggsPrefixDict[name] = consts.TypedKeysCardinalityPrefix
+			}
 			indexlibAggs.Cardinality = &indexlib.AggMetric{Field: agg.Cardinality.Field}
 		} else if agg.Percentiles != nil {
-			err := transformPercentilesAgg(mappings, name, agg.Percentiles, indexlibAggs)
+			err := transformPercentilesAgg(mappings, name, agg.Percentiles, indexlibAggs, aggsPrefixDict)
 			if err != nil {
 				return nil, err
 			}
 		} else if agg.DateHistogram != nil {
-			err := transformDateHistogramAgg(mappings, name, agg.DateHistogram, indexlibAggs)
+			err := transformDateHistogramAgg(mappings, name, agg.DateHistogram, indexlibAggs, aggsPrefixDict)
 			if err != nil {
 				return nil, err
 			}
 		} else if agg.Histogram != nil {
-			err := transformHistogramAgg(mappings, name, agg.Histogram, indexlibAggs)
+			err := transformHistogramAgg(mappings, name, agg.Histogram, indexlibAggs, aggsPrefixDict)
 			if err != nil {
 				return nil, err
 			}
 		}
 
 		// sub-aggregations
+		var subAggs map[string]protocol.Aggs
 		if agg.Aggs != nil {
+			subAggs = agg.Aggs
+		} else {
+			subAggs = agg.Aggregations
+		}
+
+		if subAggs != nil {
 			var err error
-			indexlibAggs.Aggs, err = transformAggs(agg.Aggs, mappings)
+			indexlibAggs.Aggs, err = transformAggs(subAggs, mappings, aggsPrefixDict)
 			if err != nil {
 				return nil, err
 			}
@@ -516,15 +590,23 @@ func transformTerms(query protocol.Query) (indexlib.QueryRequest, error) {
 	termsQ := indexlib.NewTermsQuery()
 	termsQ.Terms = make(map[string]*indexlib.Terms, len(terms))
 	for k, v := range terms {
+		if strings.ToLower(k) == "boost" {
+			// TODO
+			continue
+		}
 		field = k
-		for _, vv := range v {
-			switch vv := vv.(type) {
-			case string:
-				values = append(values, vv)
-			default:
-				return nil, &errs.UnsupportedError{Desc: "term", Value: vv}
+		switch v := v.(type) {
+		case []interface{}:
+			for _, vv := range v {
+				switch vv := vv.(type) {
+				case string:
+					values = append(values, vv)
+				default:
+					return nil, &errs.UnsupportedError{Desc: "term", Value: vv}
+				}
 			}
 		}
+
 		termsQ.Terms[field] = &indexlib.Terms{
 			Fields: values,
 		}
@@ -550,6 +632,22 @@ func transformRange(
 		_, lType := indexlib.ValidateMappingType(property.Type)
 		var gt, gte, lt, lte any
 		var err error
+
+		// adapts the elasticsearch query sdk
+		if v.From != nil {
+			if v.IncludeLower {
+				gte = v.From
+			} else {
+				gt = v.From
+			}
+		}
+		if v.To != nil {
+			if v.IncludeUpper {
+				lte = v.To
+			} else {
+				lt = v.To
+			}
+		}
 		switch lType.Type {
 		case consts.LibFieldTypeNumeric, consts.LibFieldTypeBool:
 			if v.Gt != nil {
@@ -682,6 +780,7 @@ func transformDateHistogramAgg(
 	aggName string,
 	d *protocol.AggDateHistogram,
 	indexlibAggs *indexlib.Aggs,
+	aggsPrefixDict map[string]string,
 ) error {
 	if d.Field == "" {
 		return errs.ErrEmptyField
@@ -713,7 +812,9 @@ func transformDateHistogramAgg(
 			return err
 		}
 	}
-
+	if aggsPrefixDict != nil {
+		aggsPrefixDict[aggName] = consts.TypedKeysDateHistogramPrefix
+	}
 	var extendedBounds *indexlib.DateHistogramBound
 	if d.ExtendedBounds != nil {
 		extendedBounds = &indexlib.DateHistogramBound{
@@ -745,6 +846,7 @@ func transformHistogramAgg(
 	aggName string,
 	d *protocol.AggHistogram,
 	indexlibAggs *indexlib.Aggs,
+	aggsPrefixDict map[string]string,
 ) error {
 	if d.Field == "" {
 		return errs.ErrEmptyField
@@ -762,7 +864,9 @@ func transformHistogramAgg(
 			aggName,
 		)
 	}
-
+	if aggsPrefixDict != nil {
+		aggsPrefixDict[aggName] = consts.TypedKeysHistogramPrefix
+	}
 	var extendedBounds *indexlib.HistogramBound
 	if d.ExtendedBounds != nil {
 		extendedBounds = &indexlib.HistogramBound{
@@ -796,6 +900,7 @@ func transformPercentilesAgg(
 	aggName string,
 	d *protocol.AggPercentiles,
 	indexlibAggs *indexlib.Aggs,
+	aggsPrefixDict map[string]string,
 ) error {
 	if d.Field == "" {
 		return errs.ErrEmptyField
@@ -824,10 +929,54 @@ func transformPercentilesAgg(
 			)
 		}
 	}
+	if aggsPrefixDict != nil {
+		aggsPrefixDict[aggName] = consts.TypedKeysPercentilesPrefix
+	}
 	indexlibAggs.Percentiles = &indexlib.AggPercentiles{
 		Field:       d.Field,
 		Percents:    d.Percents,
 		Compression: d.Compression,
 	}
 	return nil
+}
+
+// addAggNamePrefix used when parameter typed_keys is true, the parameter is passed by the
+// elasticsearch sdk, this method is designed to accommodate the elasticsearch sdk
+func addAggNamePrefix(
+	buckets []protocol.Bucket,
+	aggsNamePrefixDict map[string]string,
+) []protocol.Bucket {
+	if aggsNamePrefixDict != nil && buckets != nil {
+		for _, bucket := range buckets {
+			for name, prefix := range aggsNamePrefixDict {
+				if v, ok := bucket[name]; ok {
+					var filterBucket interface{}
+					var percentilesValue interface{}
+					if v, ok := v.(indexlib.Aggregation); ok {
+						addAggNamePrefix(v.Buckets, aggsNamePrefixDict)
+						// tatris aggregation response adaptation the elasticsearch response
+						// filter response need remove buckets
+						if prefix == consts.TypedKeysFilterPrefix && v.Buckets != nil {
+							filterBucket = v.Buckets[0]
+						}
+						// percentiles response value -> values
+						if prefix == consts.TypedKeysPercentilesPrefix && v.Value != nil {
+							percentilesValue = v.Value
+						}
+					}
+
+					newName := strings.Join([]string{prefix, name}, consts.TypedKeysDelimiter)
+					bucket[newName] = v
+					if filterBucket != nil {
+						bucket[newName] = filterBucket
+					}
+					if percentilesValue != nil {
+						bucket[newName] = map[string]interface{}{"values": percentilesValue}
+					}
+					delete(bucket, name)
+				}
+			}
+		}
+	}
+	return buckets
 }

@@ -34,6 +34,12 @@ func QueryHandler(c *gin.Context) {
 		)
 		return
 	}
+	// compatibility the elasticsearch sdk(sdk send a param typed_keys:true)
+	typedKeys := c.Request.URL.Query()[consts.TypedKeysParam]
+	if typedKeys != nil && typedKeys[0] == consts.TypedKeysParamValueTrue {
+		queryRequest.TypedKeys = true
+	}
+
 	indexNames := make([]string, 0)
 	for _, n := range names {
 		indexNames = append(indexNames, metadata.ResolveIndexes(n)...)
