@@ -7,8 +7,7 @@ const (
 	TypedKeysParam          = "typed_keys"
 	TypedKeysParamValueTrue = "true"
 
-	// TypedKeysDelimiter used when prefixing aggregation names with their type
-	// using the typed_keys parameter
+	// TypedKeysDelimiter used to concatenated aggregation prefix name when the parameter typed_keys is true
 	TypedKeysDelimiter = "#"
 
 	TypedKeysStermsPrefix            = "sterms"
