@@ -39,8 +39,6 @@ type Hit struct {
 }
 
 type Aggregation struct {
-	// Type is used to distinguish how a JSON string is unmarshalled to different Aggregation
-	// implementations, which may be used on the client side.
 	Value   interface{} `json:"value,omitempty"`
 	Buckets []Bucket    `json:"buckets,omitempty"`
 }

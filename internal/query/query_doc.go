@@ -940,41 +940,29 @@ func transformPercentilesAgg(
 	return nil
 }
 
-// addAggNamePrefix used when parameter typed_keys is true, the parameter is passed by the
-// elasticsearch sdk, this method is designed to accommodate the elasticsearch sdk
+// addAggNamePrefix will be prefixing aggregation names with their type
 func addAggNamePrefix(
 	buckets []protocol.Bucket,
 	aggsNamePrefixDict map[string]string,
 ) []protocol.Bucket {
-	if aggsNamePrefixDict != nil && buckets != nil {
-		for _, bucket := range buckets {
-			for name, prefix := range aggsNamePrefixDict {
-				if v, ok := bucket[name]; ok {
-					var filterBucket interface{}
-					var percentilesValue interface{}
-					if v, ok := v.(indexlib.Aggregation); ok {
-						addAggNamePrefix(v.Buckets, aggsNamePrefixDict)
-						// tatris aggregation response adaptation the elasticsearch response
-						// filter response need remove buckets
-						if prefix == consts.TypedKeysFilterPrefix && v.Buckets != nil {
-							filterBucket = v.Buckets[0]
-						}
-						// percentiles response value -> values
-						if prefix == consts.TypedKeysPercentilesPrefix && v.Value != nil {
-							percentilesValue = v.Value
-						}
+	for _, bucket := range buckets {
+		for name, prefix := range aggsNamePrefixDict {
+			if v, ok := bucket[name]; ok {
+				newName := strings.Join([]string{prefix, name}, consts.TypedKeysDelimiter)
+				bucket[newName] = v
+				if v, ok := v.(indexlib.Aggregation); ok {
+					addAggNamePrefix(v.Buckets, aggsNamePrefixDict)
+					// filter response need remove buckets
+					if prefix == consts.TypedKeysFilterPrefix && v.Buckets != nil && len(v.Buckets) > 0 {
+						bucket[newName] = v.Buckets[0]
 					}
-
-					newName := strings.Join([]string{prefix, name}, consts.TypedKeysDelimiter)
-					bucket[newName] = v
-					if filterBucket != nil {
-						bucket[newName] = filterBucket
+					// percentiles response value -> values
+					if prefix == consts.TypedKeysPercentilesPrefix && v.Value != nil {
+						bucket[newName] = map[string]interface{}{"values": v.Value}
 					}
-					if percentilesValue != nil {
-						bucket[newName] = map[string]interface{}{"values": percentilesValue}
-					}
-					delete(bucket, name)
 				}
+
+				delete(bucket, name)
 			}
 		}
 	}

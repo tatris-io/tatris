@@ -34,7 +34,8 @@ func QueryHandler(c *gin.Context) {
 		)
 		return
 	}
-	// compatibility the elasticsearch sdk(sdk send a param typed_keys:true)
+
+	// The elasticsearch query sdk will pass the parameter typed_keys=true
 	typedKeys := c.Request.URL.Query()[consts.TypedKeysParam]
 	if typedKeys != nil && typedKeys[0] == consts.TypedKeysParamValueTrue {
 		queryRequest.TypedKeys = true

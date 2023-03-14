@@ -349,11 +349,12 @@ func (b *BlugeReader) generateResponse(
 	if err != nil {
 		return nil, err
 	}
-	if len(aggsResponse) > 0 {
-		delete(aggsResponse, "count")
-		delete(aggsResponse, "duration")
-		delete(aggsResponse, "max_score")
-	}
+
+	// The following fields are deleted to match the elasticsearch query sdk, otherwise an error will be reported:
+	// "Could not parse aggregation keyed as [xxxx]"
+	delete(aggsResponse, "count")
+	delete(aggsResponse, "duration")
+	delete(aggsResponse, "max_score")
 
 	resp := &indexlib.QueryResponse{
 		Took: bucket.Duration().Milliseconds(),
@@ -685,6 +686,8 @@ func (b *BlugeReader) generateAggsResponse(
 					if err != nil {
 						return aggsResponse, err
 					}
+					// Delete the count to match the elasticsearch query sdk, otherwise an error will be reported:
+					// "Could not parse aggregation keyed as [count]"
 					delete(aggsResponse, "count")
 					for k, v := range aggsResponse {
 						aggsBucket[k] = v

@@ -11,7 +11,8 @@ type QueryRequest struct {
 	Sort         Sort            `json:"sort"`
 	Size         int64           `json:"size"`
 	From         int64           `json:"from"`
-	TypedKeys    bool            `json:"typed_keys"`
+	// When the parameter typed_keys is true will be prefixing aggregation names with their type
+	TypedKeys bool `json:"typed_keys"`
 }
 
 // TODO: to be supplemented
@@ -91,8 +92,10 @@ type Aggs struct {
 	Cardinality   *AggMetric        `json:"cardinality,omitempty"`
 	Percentiles   *AggPercentiles   `json:"percentiles,omitempty"`
 	WeightedAvg   *AggWeightedAvg   `json:"weighted_avg,omitempty"`
-	Aggs          map[string]Aggs   `json:"aggs,omitempty"`
-	Aggregations  map[string]Aggs   `json:"aggregations,omitempty"`
+	// Both aggs and aggregations are sub-aggregation
+	// The elasticsearch query sdk uses "aggregations"
+	Aggs         map[string]Aggs `json:"aggs,omitempty"`
+	Aggregations map[string]Aggs `json:"aggregations,omitempty"`
 }
 
 type AggMetric struct {
