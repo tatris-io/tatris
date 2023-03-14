@@ -4,8 +4,10 @@
 package protocol
 
 type QueryRequest struct {
-	Index        string          `json:"index"`
-	Query        Query           `json:"query"`
+	Index string `json:"index"`
+	Query Query  `json:"query"`
+	// Any one of Aggs or Aggregations can be specified to represent aggregated queries.
+	// This is for compatibility with elasticsearch's query protocol.
 	Aggs         map[string]Aggs `json:"aggs"`
 	Aggregations map[string]Aggs `json:"aggregations"`
 	Sort         Sort            `json:"sort"`
@@ -92,10 +94,8 @@ type Aggs struct {
 	Cardinality   *AggMetric        `json:"cardinality,omitempty"`
 	Percentiles   *AggPercentiles   `json:"percentiles,omitempty"`
 	WeightedAvg   *AggWeightedAvg   `json:"weighted_avg,omitempty"`
-	// Both aggs and aggregations are sub-aggregation
-	// The elasticsearch query sdk uses "aggregations"
-	Aggs         map[string]Aggs `json:"aggs,omitempty"`
-	Aggregations map[string]Aggs `json:"aggregations,omitempty"`
+	Aggs          map[string]Aggs   `json:"aggs,omitempty"`
+	Aggregations  map[string]Aggs   `json:"aggregations,omitempty"`
 }
 
 type AggMetric struct {
