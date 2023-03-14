@@ -960,8 +960,8 @@ func addAggNamePrefix(
 						bucket[newName] = v.Buckets[0]
 					}
 					// Convert bluge's response structure from:
-					// "tdigest_percentiles#percentiles_name": {"value": {"95": 6}} To a new
-					// response structure compatible with elasticsearch:
+					// "tdigest_percentiles#percentiles_name": {"value": {"95": 6}}
+					//  To a new response structure compatible with elasticsearch:
 					// "tdigest_percentiles#percentiles_name": {"values": {"95": 6}}
 					if prefix == consts.TypedKeysPercentilesPrefix && v.Value != nil {
 						bucket[newName] = map[string]interface{}{"values": v.Value}
