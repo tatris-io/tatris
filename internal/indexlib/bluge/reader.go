@@ -350,12 +350,6 @@ func (b *BlugeReader) generateResponse(
 		return nil, err
 	}
 
-	// The following fields are deleted to match the elasticsearch query sdk, otherwise an error will be reported:
-	// "Could not parse aggregation keyed as [xxxx]"
-	delete(aggsResponse, "count")
-	delete(aggsResponse, "duration")
-	delete(aggsResponse, "max_score")
-
 	resp := &indexlib.QueryResponse{
 		Took: bucket.Duration().Milliseconds(),
 		Hits: indexlib.Hits{
@@ -479,7 +473,6 @@ func (b *BlugeReader) generateAggregations(
 	aggs map[string]indexlib.Aggs,
 ) (map[string]search.Aggregation, error) {
 	result := make(map[string]search.Aggregation, len(aggs))
-
 	for name, agg := range aggs {
 		if agg.Terms != nil {
 			termsAggregation := aggregations.NewTermsAggregation(
@@ -666,6 +659,12 @@ func (b *BlugeReader) generateAggsResponse(
 ) (map[string]indexlib.Aggregation, error) {
 	aggsResponse := make(map[string]indexlib.Aggregation)
 	for name, value := range bucket.Aggregations() {
+		// Skip the following fields to be compatible with the elasticsearch protocol, otherwise,
+		// users using the elasticsearch SDK will get an error like:
+		// "Could not parse aggregation keyed as [...]"
+		if name == "count" || name == "duration" || name == "max_score" {
+			continue
+		}
 		switch value := value.(type) {
 		case search.BucketCalculator:
 			aggsBuckets := make([]protocol.Bucket, 0)
@@ -686,9 +685,6 @@ func (b *BlugeReader) generateAggsResponse(
 					if err != nil {
 						return aggsResponse, err
 					}
-					// Delete the count to match the elasticsearch query sdk, otherwise an error will be reported:
-					// "Could not parse aggregation keyed as [count]"
-					delete(aggsResponse, "count")
 					for k, v := range aggsResponse {
 						aggsBucket[k] = v
 					}
