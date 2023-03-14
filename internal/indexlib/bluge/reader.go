@@ -338,7 +338,8 @@ func (b *BlugeReader) generateResponse(
 			ID:        id,
 			Source:    source,
 			Timestamp: timestamp,
-		}
+			Type:      "_doc",
+			Score:     doc.Score}
 		Hits = append(Hits, hit)
 	}
 
@@ -352,8 +353,9 @@ func (b *BlugeReader) generateResponse(
 	resp := &indexlib.QueryResponse{
 		Took: bucket.Duration().Milliseconds(),
 		Hits: indexlib.Hits{
-			Total: indexlib.Total{Value: int64(bucket.Count())},
-			Hits:  Hits,
+			Total:    indexlib.Total{Value: int64(bucket.Count()), Relation: "eq"},
+			Hits:     Hits,
+			MaxScore: bucket.Metric("max_score"),
 		},
 		Aggregations: aggsResponse,
 	}
@@ -471,7 +473,6 @@ func (b *BlugeReader) generateAggregations(
 	aggs map[string]indexlib.Aggs,
 ) (map[string]search.Aggregation, error) {
 	result := make(map[string]search.Aggregation, len(aggs))
-
 	for name, agg := range aggs {
 		if agg.Terms != nil {
 			termsAggregation := aggregations.NewTermsAggregation(
@@ -658,6 +659,12 @@ func (b *BlugeReader) generateAggsResponse(
 ) (map[string]indexlib.Aggregation, error) {
 	aggsResponse := make(map[string]indexlib.Aggregation)
 	for name, value := range bucket.Aggregations() {
+		// Skip the following fields to be compatible with the elasticsearch protocol, otherwise,
+		// users using the elasticsearch SDK will get an error like:
+		// "Could not parse aggregation keyed as [...]"
+		if name == "count" || name == "duration" || name == "max_score" {
+			continue
+		}
 		switch value := value.(type) {
 		case search.BucketCalculator:
 			aggsBuckets := make([]protocol.Bucket, 0)
@@ -684,13 +691,13 @@ func (b *BlugeReader) generateAggsResponse(
 				}
 				aggsBuckets = append(aggsBuckets, aggsBucket)
 			}
-			aggsResponse[name] = indexlib.Aggregation{Type: consts.AggregationTypeBucket, Buckets: aggsBuckets}
+			aggsResponse[name] = indexlib.Aggregation{Buckets: aggsBuckets}
 		case search.MetricCalculator:
-			aggsResponse[name] = indexlib.Aggregation{Type: consts.AggregationTypeMetric, Value: value.Value()}
+			aggsResponse[name] = indexlib.Aggregation{Value: value.Value()}
 		case *custom_aggregations.PercentilesCalculator:
-			aggsResponse[name] = indexlib.Aggregation{Type: consts.AggregationTypePercentile, Value: value.Value()}
+			aggsResponse[name] = indexlib.Aggregation{Value: value.Value()}
 		case search.DurationCalculator:
-			aggsResponse[name] = indexlib.Aggregation{Type: consts.AggregationTypeDuration, Value: value.Duration().Milliseconds()}
+			aggsResponse[name] = indexlib.Aggregation{Value: value.Duration().Milliseconds()}
 		default:
 			return aggsResponse, &errs.UnsupportedError{Desc: "aggregation calculator", Value: value}
 		}

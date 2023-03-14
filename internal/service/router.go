@@ -33,21 +33,20 @@ func StartHTTPServer(roles ...string) {
 	router.Use(AccessLog())
 	router.Use(gin.Recovery())
 
-	// api version: v1
-	v1 := router.Group("/v1")
+	routerGroup := router.Group("")
 
 	for _, role := range roles {
 		switch role {
 		case "ingestion":
-			registerIngestion(v1)
+			registerIngestion(routerGroup)
 		case "query":
-			registerQuery(v1)
+			registerQuery(routerGroup)
 		case "meta":
-			registerMeta(v1)
+			registerMeta(routerGroup)
 		case "all":
-			registerIngestion(v1)
-			registerQuery(v1)
-			registerMeta(v1)
+			registerIngestion(routerGroup)
+			registerQuery(routerGroup)
+			registerMeta(routerGroup)
 		default:
 		}
 	}
@@ -73,6 +72,7 @@ func registerIngestion(group *gin.RouterGroup) {
 
 func registerQuery(group *gin.RouterGroup) {
 	logger.Info("query APIs registering")
+
 	group.POST("/:index/_search", handler.QueryHandler)
 }
 

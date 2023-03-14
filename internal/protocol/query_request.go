@@ -4,12 +4,17 @@
 package protocol
 
 type QueryRequest struct {
-	Index string          `json:"index"`
-	Query Query           `json:"query"`
-	Aggs  map[string]Aggs `json:"aggs"`
-	Sort  Sort            `json:"sort"`
-	Size  int64           `json:"size"`
-	From  int64           `json:"from"`
+	Index string `json:"index"`
+	Query Query  `json:"query"`
+	// Any one of Aggs or Aggregations can be specified to represent aggregated queries.
+	// This is for compatibility with elasticsearch's query protocol.
+	Aggs         map[string]Aggs `json:"aggs"`
+	Aggregations map[string]Aggs `json:"aggregations"`
+	Sort         Sort            `json:"sort"`
+	Size         int64           `json:"size"`
+	From         int64           `json:"from"`
+	// When the parameter typed_keys is true will be prefixing aggregation names with their type
+	TypedKeys bool `json:"typed_keys"`
 }
 
 // TODO: to be supplemented
@@ -48,7 +53,7 @@ type Ids struct {
 
 type Term map[string]interface{}
 
-type Terms map[string][]interface{}
+type Terms map[string]interface{}
 
 type Range map[string]*RangeVal
 
@@ -57,6 +62,12 @@ type RangeVal struct {
 	Gte interface{} `json:"gte,omitempty"`
 	Lt  interface{} `json:"lt,omitempty"`
 	Lte interface{} `json:"lte,omitempty"`
+
+	// adapts the elasticsearch query sdk
+	From         interface{} `json:"from"`
+	To           interface{} `json:"to"`
+	IncludeLower bool        `json:"include_lower"`
+	IncludeUpper bool        `json:"include_upper"`
 }
 
 type Bool struct {
@@ -75,6 +86,7 @@ type Aggs struct {
 	DateRange     *AggDateRange     `json:"date_range"`
 	Filter        *Query            `json:"filter"`
 	Count         *AggMetric        `json:"count,omitempty"`
+	ValueCount    *AggMetric        `json:"value_count,omitempty"`
 	Sum           *AggMetric        `json:"sum,omitempty"`
 	Min           *AggMetric        `json:"min,omitempty"`
 	Max           *AggMetric        `json:"max,omitempty"`
@@ -83,6 +95,7 @@ type Aggs struct {
 	Percentiles   *AggPercentiles   `json:"percentiles,omitempty"`
 	WeightedAvg   *AggWeightedAvg   `json:"weighted_avg,omitempty"`
 	Aggs          map[string]Aggs   `json:"aggs,omitempty"`
+	Aggregations  map[string]Aggs   `json:"aggregations,omitempty"`
 }
 
 type AggMetric struct {

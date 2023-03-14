@@ -34,6 +34,15 @@ func QueryHandler(c *gin.Context) {
 		)
 		return
 	}
+
+	// the param typedKeys is used to carry the aggregation type to the aggregation result, which is
+	// usually used to help the client perform correct JSON deserialization see:
+	// https://www.elastic.co/guide/en/elasticsearch/reference/8.6/search-aggregations.html#return-agg-type
+	typedKeys := c.Request.URL.Query()[consts.TypedKeysParam]
+	if typedKeys != nil && typedKeys[0] == consts.TypedKeysParamValueTrue {
+		queryRequest.TypedKeys = true
+	}
+
 	indexNames := make([]string, 0)
 	for _, n := range names {
 		indexNames = append(indexNames, metadata.ResolveIndexes(n)...)
