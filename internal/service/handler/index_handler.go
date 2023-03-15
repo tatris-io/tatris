@@ -64,7 +64,7 @@ func GetIndexHandler(c *gin.Context) {
 		for _, index := range indexes {
 			indexMap[index.Name] = index
 		}
-		c.JSON(http.StatusOK, indexMap)
+		c.JSON(code, indexMap)
 	}
 }
 

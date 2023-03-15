@@ -18,29 +18,22 @@ func CreateIndexTemplateHandler(c *gin.Context) {
 	start := time.Now()
 	name := c.Param("template")
 	template := &protocol.IndexTemplate{}
+	code := http.StatusOK
+	response := protocol.Response{}
 	if err := c.ShouldBind(template); err != nil {
-		c.JSON(
-			http.StatusBadRequest,
-			protocol.Response{
-				Took:    time.Since(start).Milliseconds(),
-				Error:   true,
-				Message: err.Error()},
-		)
-		return
-	}
-	template.Name = name
-	if err := metadata.CreateIndexTemplate(template); err != nil {
-		c.JSON(
-			http.StatusInternalServerError,
-			protocol.Response{
-				Took:    time.Since(start).Milliseconds(),
-				Error:   true,
-				Message: err.Error(),
-			},
-		)
+		code = http.StatusBadRequest
+		response.Error = true
+		response.Message = err.Error()
 	} else {
-		c.JSON(http.StatusOK, template)
+		template.Name = name
+		if err := metadata.CreateIndexTemplate(template); err != nil {
+			code = http.StatusInternalServerError
+			response.Error = true
+			response.Message = err.Error()
+		}
 	}
+	response.Took = time.Since(start).Milliseconds()
+	c.JSON(code, response)
 }
 
 func GetIndexTemplateHandler(c *gin.Context) {
