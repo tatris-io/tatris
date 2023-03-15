@@ -20,7 +20,7 @@ func CreateIndexHandler(c *gin.Context) {
 	name := c.Param("index")
 	code := http.StatusOK
 	response := protocol.Response{}
-	if exist, err := metadata.GetIndexPrecisely(name); err != nil && !errs.IsIndexNotFound(err) {
+	if exist, err := metadata.GetIndexExplicitly(name); err != nil && !errs.IsIndexNotFound(err) {
 		code = http.StatusInternalServerError
 		response.Error = true
 		response.Message = err.Error()

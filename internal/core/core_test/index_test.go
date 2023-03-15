@@ -29,7 +29,7 @@ func TestIndex(t *testing.T) {
 
 	// test
 	t.Run("test_index", func(t *testing.T) {
-		index, err := metadata.GetIndexPrecisely(index.Name)
+		index, err := metadata.GetIndexExplicitly(index.Name)
 		assert.NoError(t, err)
 		assert.NotNil(t, index)
 		assert.Equal(t, index.Settings.NumberOfShards, index.GetShardNum())

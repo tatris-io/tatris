@@ -42,7 +42,7 @@ func ManageAliasHandler(c *gin.Context) {
 						} else {
 							response.Message = "alias is required"
 						}
-					} else if exist, _ := metadata.GetIndexPrecisely(term.Alias); exist != nil {
+					} else if exist, _ := metadata.GetIndexExplicitly(term.Alias); exist != nil {
 						code = http.StatusBadRequest
 						response.Error = true
 						response.Message = fmt.Sprintf("Invalid alias name [%s]: an index or data stream exists with the same name as the alias", term.Alias)
@@ -87,7 +87,7 @@ func GetAliasHandler(c *gin.Context) {
 	response := protocol.Response{}
 	if indexName != "" && !utils.ContainsWildcard(indexName) {
 		// if the index is specified explicitly, check its existence first
-		if _, err := metadata.GetIndexPrecisely(indexName); err != nil {
+		if _, err := metadata.GetIndexExplicitly(indexName); err != nil {
 			if errs.IsIndexNotFound(err) {
 				code = http.StatusNotFound
 			} else {

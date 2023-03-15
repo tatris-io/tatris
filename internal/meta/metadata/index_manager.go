@@ -62,7 +62,7 @@ func SaveIndex(index *core.Index) error {
 }
 
 func GetShard(indexName string, shardID int) (*core.Shard, error) {
-	index, err := GetIndexPrecisely(indexName)
+	index, err := GetIndexExplicitly(indexName)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func ResolveIndexes(exp string) ([]*core.Index, error) {
 			return nil, &errs.IndexNotFoundError{Index: maybeAlias}
 		}
 		for _, idxName := range idxNames {
-			if index, err := GetIndexPrecisely(idxName); err == nil {
+			if index, err := GetIndexExplicitly(idxName); err == nil {
 				results.Add(index)
 			} else {
 				return nil, err
@@ -115,9 +115,9 @@ func ResolveIndexes(exp string) ([]*core.Index, error) {
 	return results.Slice(), nil
 }
 
-// GetIndexPrecisely gets the index precisely by name, rather than trying to resolve that by
+// GetIndexExplicitly gets the index precisely by name, rather than trying to resolve that by
 // wildcards or aliases
-func GetIndexPrecisely(indexName string) (*core.Index, error) {
+func GetIndexExplicitly(indexName string) (*core.Index, error) {
 	var index *core.Index
 	cachedIndex, found := Instance().IndexCache.Get(indexName)
 	if found {
@@ -128,7 +128,7 @@ func GetIndexPrecisely(indexName string) (*core.Index, error) {
 }
 
 func DeleteIndex(indexName string) error {
-	index, err := GetIndexPrecisely(indexName)
+	index, err := GetIndexExplicitly(indexName)
 	if err != nil {
 		return err
 	}
