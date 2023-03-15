@@ -54,11 +54,9 @@ func FindTemplates(indexName string) *protocol.IndexTemplate {
 }
 
 // ResolveIndexTemplates resolved index templates by comma-separated expressions, each expression
-// may be
-// a native template name or a wildcard
+// may be a native template name or a wildcard
 // errs.IndexTemplateNotFoundError will be returned if there is an expression that does not match
-// any
-// index templates.
+// any index templates.
 func ResolveIndexTemplates(exp string) ([]*protocol.IndexTemplate, error) {
 	results := make([]*protocol.IndexTemplate, 0)
 	// try to resolve by wildcards, including native name matches
