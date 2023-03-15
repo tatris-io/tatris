@@ -39,7 +39,7 @@ func BulkHandler(c *gin.Context) {
 		response.Message = err.Error()
 	} else {
 		for idx, docs := range documents {
-			if index, err = metadata.GetIndex(idx); err != nil {
+			if index, err = metadata.GetIndexPrecisely(idx); err != nil {
 				if errs.IsIndexNotFound(err) {
 					// create the index if it does not exist
 					index = &core.Index{Index: &protocol.Index{Name: idx}}

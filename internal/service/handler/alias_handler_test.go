@@ -212,15 +212,15 @@ func TestAliasHandler(t *testing.T) {
 				c.Request.Header.Set("Content-Type", "application/json;charset=utf-8")
 				GetAliasHandler(c)
 				logger.Info("get alias response", zap.Any("resp", w))
+				assert.Equal(t, http.StatusOK, w.Code)
+				respData, err := io.ReadAll(w.Body)
+				assert.NoError(t, err)
+				aliasGetResponse := protocol.AliasGetResponse{}
+				err = json.Unmarshal(respData, &aliasGetResponse)
+				assert.NoError(t, err)
 				if i%2 == 0 && j%2 == 0 {
-					assert.Equal(t, http.StatusNotFound, w.Code)
+					assert.Equal(t, 0, len(aliasGetResponse))
 				} else {
-					assert.Equal(t, http.StatusOK, w.Code)
-					respData, err := io.ReadAll(w.Body)
-					assert.NoError(t, err)
-					aliasGetResponse := protocol.AliasGetResponse{}
-					err = json.Unmarshal(respData, &aliasGetResponse)
-					assert.NoError(t, err)
 					assert.Equal(t, 1, len(aliasGetResponse))
 					aliases := aliasGetResponse[indexes[i].Name]
 					assert.NotNil(t, aliases)

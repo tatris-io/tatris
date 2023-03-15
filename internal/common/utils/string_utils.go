@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/tatris-io/tatris/internal/common/consts"
+
 	"github.com/minio/pkg/wildcard"
 )
 
@@ -28,4 +30,8 @@ func RegexMatch(pattern, str string) bool {
 
 func WildcardMatch(pattern, str string) bool {
 	return wildcard.Match(pattern, str)
+}
+
+func ContainsWildcard(str string) bool {
+	return strings.Contains(str, consts.Asterisk) || strings.Contains(str, consts.QuestionMark)
 }

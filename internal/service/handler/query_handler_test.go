@@ -4,6 +4,7 @@ package handler
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -48,14 +49,15 @@ func TestQuerySingleIndex(t *testing.T) {
 			c.Request.Header.Set("Content-Type", "application/json;charset=utf-8")
 			c.Request.Body = io.NopCloser(bytes.NewBufferString(tt.req))
 			QueryHandler(c)
+			assert.Equal(t, http.StatusOK, w.Code)
+			queryRsp := protocol.QueryResponse{}
+			json.Unmarshal(w.Body.Bytes(), &queryRsp)
 			logger.Info(
-				"test query handler",
+				"test single query",
 				zap.String("name", tt.name),
 				zap.String("index", tt.index),
-				zap.Int("code", w.Code),
-				zap.Any("resp", w.Body),
+				zap.Any("total", queryRsp.Hits.Total.Value),
 			)
-			assert.Equal(t, http.StatusOK, w.Code)
 		})
 	}
 }
@@ -95,14 +97,15 @@ func TestQueryMultipleIndexes(t *testing.T) {
 			c.Request.Header.Set("Content-Type", "application/json;charset=utf-8")
 			c.Request.Body = io.NopCloser(bytes.NewBufferString(tt.req))
 			QueryHandler(c)
+			assert.Equal(t, http.StatusOK, w.Code)
+			queryRsp := protocol.QueryResponse{}
+			json.Unmarshal(w.Body.Bytes(), &queryRsp)
 			logger.Info(
 				"test multi query",
 				zap.String("name", tt.name),
 				zap.String("index", tt.index),
-				zap.Int("code", w.Code),
-				zap.Any("resp", w.Body),
+				zap.Any("total", queryRsp.Hits.Total.Value),
 			)
-			assert.Equal(t, http.StatusOK, w.Code)
 		})
 	}
 }
@@ -166,19 +169,22 @@ func TestAliasQuery(t *testing.T) {
 				c.Request.Header.Set("Content-Type", "application/json;charset=utf-8")
 				c.Request.Body = io.NopCloser(bytes.NewBufferString(tt.req))
 				QueryHandler(c)
+				assert.Equal(t, http.StatusOK, w.Code)
+				queryRsp := protocol.QueryResponse{}
+				json.Unmarshal(w.Body.Bytes(), &queryRsp)
 				logger.Info(
 					"test alias query",
 					zap.String("name", tt.name),
 					zap.String("index", tt.index),
-					zap.Int("code", w.Code),
-					//zap.Any("resp", w.Body),
+					zap.String("alias", aliasName),
+					zap.Any("total", queryRsp.Hits.Total.Value),
 				)
-				assert.Equal(t, http.StatusOK, w.Code)
+
 			})
 		}
 	}
 
-	// prepare aliases
+	// clear aliases
 	t.Run("remove_alias", func(t *testing.T) {
 		actions := make([]protocol.Action, 0)
 		for i := 0; i < count; i++ {
@@ -197,6 +203,61 @@ func TestAliasQuery(t *testing.T) {
 		}
 		ManageAlias(t, actions)
 	})
+}
+
+func TestWildcardQuery(t *testing.T) {
+
+	// prepare index and docs
+	count := 5
+	versions := make([]string, count)
+	for i := 0; i < count; i++ {
+		versions[i] = time.Now().Format(time.RFC3339Nano)
+		time.Sleep(time.Nanosecond * 1000)
+	}
+	indexes := make([]*core.Index, count)
+	indexNames := make([]string, count)
+	var err error
+	for i := 0; i < count; i++ {
+		indexes[i], _, err = prepare.CreateIndexAndDocs(versions[i])
+		if err != nil {
+			t.Fatalf("prepare index and docs fail: %s", err.Error())
+		}
+		indexNames[i] = indexes[i].Name
+	}
+
+	nativeName, _, _ := strings.Cut(indexNames[0], versions[0])
+	wildcard := indexNames[0][0:len(nativeName)+len("2006-01-02T15:04:05.")] + consts.Asterisk
+
+	// test
+	for _, tt := range createQueryCases(wildcard) {
+		t.Run(tt.name, func(t *testing.T) {
+			gin.SetMode(gin.ReleaseMode)
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			httpRequest := &http.Request{
+				URL:    &url.URL{},
+				Header: make(http.Header),
+			}
+			c.Request = httpRequest
+			p := gin.Params{}
+			p = append(p, gin.Param{Key: "index", Value: tt.index})
+			c.Params = p
+			c.Request.Header.Set("Content-Type", "application/json;charset=utf-8")
+			c.Request.Body = io.NopCloser(bytes.NewBufferString(tt.req))
+			QueryHandler(c)
+			assert.Equal(t, http.StatusOK, w.Code)
+			queryRsp := protocol.QueryResponse{}
+			json.Unmarshal(w.Body.Bytes(), &queryRsp)
+			logger.Info(
+				"test wildcard query",
+				zap.String("name", tt.name),
+				zap.String("index", tt.index),
+				zap.String("wildcard", wildcard),
+				zap.Any("total", queryRsp.Hits.Total.Value),
+			)
+		})
+	}
+
 }
 
 type QueryCase struct {

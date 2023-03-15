@@ -18,109 +18,99 @@ import (
 func CreateIndexHandler(c *gin.Context) {
 	start := time.Now()
 	name := c.Param("index")
-	if exist, err := metadata.GetIndex(name); err != nil && !errs.IsIndexNotFound(err) {
-		c.JSON(
-			http.StatusInternalServerError,
-			protocol.Response{
-				Took:    time.Since(start).Milliseconds(),
-				Error:   true,
-				Message: err.Error(),
-			},
-		)
+	code := http.StatusOK
+	response := protocol.Response{}
+	if exist, err := metadata.GetIndexPrecisely(name); err != nil && !errs.IsIndexNotFound(err) {
+		code = http.StatusInternalServerError
+		response.Error = true
+		response.Message = err.Error()
 	} else if exist != nil {
-		c.JSON(http.StatusBadRequest,
-			protocol.Response{
-				Took:    time.Since(start).Milliseconds(),
-				Error:   true,
-				Message: "index already exists",
-			},
-		)
+		code = http.StatusBadRequest
+		response.Error = true
+		response.Message = "index already exists"
 	} else {
-		index := protocol.Index{}
+		index := protocol.Index{Name: name}
 		if err := c.ShouldBind(&index); err != nil {
-			c.JSON(
-				http.StatusBadRequest,
-				protocol.Response{
-					Took:    time.Since(start).Milliseconds(),
-					Error:   true,
-					Message: err.Error()},
-			)
-			return
-		}
-		index.Name = name
-		if err := metadata.CreateIndex(&core.Index{Index: &index}); err != nil {
-			c.JSON(
-				http.StatusInternalServerError,
-				protocol.Response{
-					Took:    time.Since(start).Milliseconds(),
-					Error:   true,
-					Message: err.Error(),
-				},
-			)
-		} else {
-			c.JSON(http.StatusOK, index)
+			code = http.StatusBadRequest
+			response.Error = true
+			response.Message = err.Error()
+		} else if err := metadata.CreateIndex(&core.Index{Index: &index}); err != nil {
+			code = http.StatusInternalServerError
+			response.Error = true
+			response.Message = err.Error()
 		}
 	}
+	response.Took = time.Since(start).Milliseconds()
+	c.JSON(code, response)
 }
 
 func GetIndexHandler(c *gin.Context) {
+	start := time.Now()
 	name := c.Param("index")
-	if exist, index := CheckIndexExistence(name, c); exist {
-		c.JSON(http.StatusOK, index)
+	code := http.StatusOK
+	response := protocol.Response{}
+	if indexes, err := metadata.ResolveIndexes(name); err != nil {
+		if errs.IsIndexNotFound(err) {
+			code = http.StatusNotFound
+		} else {
+			code = http.StatusInternalServerError
+		}
+		response.Error = true
+		response.Message = err.Error()
+		response.Took = time.Since(start).Milliseconds()
+		c.JSON(code, response)
+	} else {
+		indexMap := make(map[string]*core.Index)
+		for _, index := range indexes {
+			indexMap[index.Name] = index
+		}
+		c.JSON(http.StatusOK, indexMap)
 	}
 }
 
 func IndexExistHandler(c *gin.Context) {
+	start := time.Now()
 	name := c.Param("index")
-	if exist, _ := CheckIndexExistence(name, c); exist {
-		c.JSON(http.StatusOK, nil)
+	code := http.StatusOK
+	response := protocol.Response{}
+	if _, err := metadata.ResolveIndexes(name); err != nil {
+		if errs.IsIndexNotFound(err) {
+			code = http.StatusNotFound
+		} else {
+			code = http.StatusInternalServerError
+		}
+		response.Error = true
+		response.Message = err.Error()
 	}
+	response.Took = time.Since(start).Milliseconds()
+	c.JSON(code, response)
 }
 
 func DeleteIndexHandler(c *gin.Context) {
 	start := time.Now()
 	name := c.Param("index")
-	if exist, index := CheckIndexExistence(name, c); exist {
-		if err := metadata.DeleteIndex(name); err != nil {
-			c.JSON(
-				http.StatusInternalServerError,
-				protocol.Response{
-					Took:    time.Since(start).Milliseconds(),
-					Error:   true,
-					Message: err.Error(),
-				},
-			)
+	code := http.StatusOK
+	response := protocol.Response{}
+	if indexes, err := metadata.ResolveIndexes(name); err != nil {
+		if errs.IsIndexNotFound(err) {
+			code = http.StatusNotFound
 		} else {
-			c.JSON(http.StatusOK, index)
+			code = http.StatusInternalServerError
+		}
+		response.Error = true
+		response.Message = err.Error()
+		c.JSON(code, response)
+	} else {
+		for _, index := range indexes {
+			if err := metadata.DeleteIndex(index.Name); err != nil {
+				code = http.StatusInternalServerError
+				response.Error = true
+				response.Message = err.Error()
+				break
+			}
 		}
 	}
-}
+	response.Took = time.Since(start).Milliseconds()
+	c.JSON(code, response)
 
-// CheckIndexExistence encapsulates common code snippets for checking index existence
-// returns true if the index exists
-// otherwise returns false and outputs an error message to the HTTP body
-func CheckIndexExistence(name string, c *gin.Context) (bool, *core.Index) {
-	start := time.Now()
-	if index, err := metadata.GetIndex(name); index != nil && err == nil {
-		return true, index
-	} else if errs.IsIndexNotFound(err) {
-		c.JSON(
-			http.StatusNotFound,
-			protocol.Response{
-				Took:    time.Since(start).Milliseconds(),
-				Error:   true,
-				Message: err.Error(),
-			},
-		)
-	} else {
-		c.JSON(
-			http.StatusInternalServerError,
-			protocol.Response{
-				Took:    time.Since(start).Milliseconds(),
-				Error:   true,
-				Message: err.Error(),
-			},
-		)
-	}
-	return false, nil
 }

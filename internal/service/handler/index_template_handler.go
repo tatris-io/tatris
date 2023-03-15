@@ -44,60 +44,73 @@ func CreateIndexTemplateHandler(c *gin.Context) {
 }
 
 func GetIndexTemplateHandler(c *gin.Context) {
+	start := time.Now()
 	name := c.Param("template")
-	if exist, template := CheckIndexTemplateExistence(name, c); exist {
-		c.JSON(http.StatusOK, template)
+	code := http.StatusOK
+	response := protocol.Response{}
+	if templates, err := metadata.ResolveIndexTemplates(name); err != nil {
+		if errs.IsIndexTemplateNotFound(err) {
+			code = http.StatusNotFound
+		} else {
+			code = http.StatusInternalServerError
+		}
+		response.Error = true
+		response.Message = err.Error()
+		response.Took = time.Since(start).Milliseconds()
+		c.JSON(code, response)
+	} else {
+		terms := make([]*protocol.IndexTemplateTerm, len(templates))
+		for i, template := range templates {
+			terms[i] = &protocol.IndexTemplateTerm{Name: template.Name, IndexTemplate: template}
+		}
+		c.JSON(http.StatusOK, protocol.IndexTemplateResponse{
+			IndexTemplates: terms,
+		})
 	}
 }
 
 func IndexTemplateExistHandler(c *gin.Context) {
+	start := time.Now()
 	name := c.Param("template")
-	if exist, _ := CheckIndexTemplateExistence(name, c); exist {
-		c.JSON(http.StatusOK, nil)
+	code := http.StatusOK
+	response := protocol.Response{}
+	if _, err := metadata.ResolveIndexTemplates(name); err != nil {
+		if errs.IsIndexTemplateNotFound(err) {
+			code = http.StatusNotFound
+		} else {
+			code = http.StatusInternalServerError
+		}
+		response.Error = true
+		response.Message = err.Error()
 	}
+	response.Took = time.Since(start).Milliseconds()
+	c.JSON(code, response)
 }
 
 func DeleteIndexTemplateHandler(c *gin.Context) {
 	start := time.Now()
 	name := c.Param("template")
-	if exist, template := CheckIndexTemplateExistence(name, c); exist {
-		if err := metadata.DeleteIndexTemplate(name); err != nil {
-			c.JSON(
-				http.StatusInternalServerError,
-				protocol.Response{
-					Took:    time.Since(start).Milliseconds(),
-					Error:   true,
-					Message: err.Error(),
-				},
-			)
+	code := http.StatusOK
+	response := protocol.Response{}
+	if templates, err := metadata.ResolveIndexTemplates(name); err != nil {
+		if errs.IsIndexTemplateNotFound(err) {
+			code = http.StatusNotFound
 		} else {
-			c.JSON(http.StatusOK, template)
+			code = http.StatusInternalServerError
+		}
+		response.Error = true
+		response.Message = err.Error()
+		c.JSON(code, response)
+	} else {
+		for _, template := range templates {
+			if err := metadata.DeleteIndexTemplate(template.Name); err != nil {
+				code = http.StatusInternalServerError
+				response.Error = true
+				response.Message = err.Error()
+				break
+			}
 		}
 	}
-}
-
-func CheckIndexTemplateExistence(name string, c *gin.Context) (bool, *protocol.IndexTemplate) {
-	start := time.Now()
-	if template, err := metadata.GetIndexTemplate(name); template != nil && err == nil {
-		return true, template
-	} else if errs.IsIndexTemplateNotFound(err) {
-		c.JSON(
-			http.StatusNotFound,
-			protocol.Response{
-				Took:    time.Since(start).Milliseconds(),
-				Error:   true,
-				Message: err.Error(),
-			},
-		)
-	} else {
-		c.JSON(
-			http.StatusInternalServerError,
-			protocol.Response{
-				Took:    time.Since(start).Milliseconds(),
-				Error:   true,
-				Message: err.Error(),
-			},
-		)
-	}
-	return false, nil
+	response.Took = time.Since(start).Milliseconds()
+	c.JSON(code, response)
 }

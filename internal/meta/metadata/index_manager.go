@@ -8,6 +8,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bobg/go-generics/set"
+	"github.com/tatris-io/tatris/internal/common/utils"
+
 	"github.com/tatris-io/tatris/internal/indexlib"
 
 	"github.com/tatris-io/tatris/internal/common/errs"
@@ -59,7 +62,7 @@ func SaveIndex(index *core.Index) error {
 }
 
 func GetShard(indexName string, shardID int) (*core.Shard, error) {
-	index, err := GetIndex(indexName)
+	index, err := GetIndexPrecisely(indexName)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +76,48 @@ func GetShard(indexName string, shardID int) (*core.Shard, error) {
 	return shard, nil
 }
 
-func GetIndex(indexName string) (*core.Index, error) {
+// ResolveIndexes resolved indexes by comma-separated expressions, each expression may be a
+// native index name, a wildcard or an alias.
+// errs.IndexNotFoundError will be returned if there is an expression that does not match any
+// indexes.
+func ResolveIndexes(exp string) ([]*core.Index, error) {
+	// use set to deduplicate
+	results := set.New[*core.Index]()
+	// first, try to resolve by wildcards, including native name matches
+	maybeWildcards := strings.Split(strings.TrimSpace(exp), consts.Comma)
+	maybeAliases := make([]string, 0)
+	for _, maybeWildcard := range maybeWildcards {
+		matched := false
+		for idxName, item := range Instance().IndexCache.Items() {
+			if utils.WildcardMatch(maybeWildcard, idxName) {
+				results.Add(item.Object.(*core.Index))
+				matched = true
+			}
+		}
+		if !matched {
+			maybeAliases = append(maybeAliases, maybeWildcard)
+		}
+	}
+	// for the unmatched expressions above, try to resolve them by alias
+	for _, maybeAlias := range maybeAliases {
+		idxNames := ResolveAliases(maybeAlias)
+		if len(idxNames) == 0 {
+			return nil, &errs.IndexNotFoundError{Index: maybeAlias}
+		}
+		for _, idxName := range idxNames {
+			if index, err := GetIndexPrecisely(idxName); err == nil {
+				results.Add(index)
+			} else {
+				return nil, err
+			}
+		}
+	}
+	return results.Slice(), nil
+}
+
+// GetIndexPrecisely gets the index precisely by name, rather than trying to resolve that by
+// wildcards or aliases
+func GetIndexPrecisely(indexName string) (*core.Index, error) {
 	var index *core.Index
 	cachedIndex, found := Instance().IndexCache.Get(indexName)
 	if found {
@@ -84,7 +128,7 @@ func GetIndex(indexName string) (*core.Index, error) {
 }
 
 func DeleteIndex(indexName string) error {
-	index, err := GetIndex(indexName)
+	index, err := GetIndexPrecisely(indexName)
 	if err != nil {
 		return err
 	}

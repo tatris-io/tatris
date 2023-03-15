@@ -4,9 +4,9 @@ package metadata
 
 import (
 	"encoding/json"
+	"fmt"
 	"sync"
 
-	"github.com/bobg/go-generics/slices"
 	"github.com/patrickmn/go-cache"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/core"
@@ -25,10 +25,8 @@ type Metadata struct {
 	MStore storage.MetaStore
 	// IndexCache caches { name -> Index }
 	IndexCache *cache.Cache
-	// AliasTermsCache caches { alias -> []AliasTerm }
+	// AliasTermsCache caches { index&alias -> AliasTerm }
 	AliasTermsCache *cache.Cache
-	// AliasTermsCache caches { index -> []AliasTerm }
-	IndexTermsCache *cache.Cache
 	// TemplateCache caches { name -> IndexTemplate }
 	TemplateCache *cache.Cache
 }
@@ -101,39 +99,20 @@ func (m *Metadata) loadAliases() error {
 		cache.NoExpiration,
 		cache.NoExpiration,
 	)
-	m.IndexTermsCache = cache.New(
-		cache.NoExpiration,
-		cache.NoExpiration,
-	)
 	bytesMap, err := m.MStore.List(AliasPath)
 	if err != nil {
 		return err
 	}
 	terms := make([]*protocol.AliasTerm, 0)
 	for _, bytes := range bytesMap {
-		ts := make([]*protocol.AliasTerm, 0)
-		if err := json.Unmarshal(bytes, &ts); err != nil {
+		ts := &protocol.AliasTerm{}
+		if err := json.Unmarshal(bytes, ts); err != nil {
 			return err
 		}
-		terms = append(terms, ts...)
+		terms = append(terms, ts)
 	}
-	groupByAlias, err := slices.Group(terms, func(t *protocol.AliasTerm) (string, error) {
-		return t.Alias, nil
-	})
-	if err != nil {
-		return err
-	}
-	for alias, terms := range groupByAlias {
-		m.AliasTermsCache.Set(alias, terms, cache.NoExpiration)
-	}
-	groupByIndex, err := slices.Group(terms, func(t *protocol.AliasTerm) (string, error) {
-		return t.Index, nil
-	})
-	if err != nil {
-		return err
-	}
-	for index, terms := range groupByIndex {
-		m.IndexTermsCache.Set(index, terms, cache.NoExpiration)
+	for _, term := range terms {
+		m.AliasTermsCache.Set(aliasTermKey(term.Index, term.Alias), term, cache.NoExpiration)
 	}
 	return nil
 }
@@ -155,4 +134,8 @@ func (m *Metadata) loadIndexTemplates() error {
 		m.TemplateCache.Set(template.Name, template, cache.NoExpiration)
 	}
 	return nil
+}
+
+func aliasTermKey(index, alias string) string {
+	return fmt.Sprintf("%s&&%s", index, alias)
 }

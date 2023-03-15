@@ -7,6 +7,7 @@ import (
 	"math"
 
 	"github.com/minio/pkg/wildcard"
+	"github.com/tatris-io/tatris/internal/common/utils"
 
 	cache "github.com/patrickmn/go-cache"
 	"github.com/tatris-io/tatris/internal/common/consts"
@@ -50,6 +51,26 @@ func FindTemplates(indexName string) *protocol.IndexTemplate {
 		}
 	}
 	return template
+}
+
+// ResolveIndexTemplates resolved index templates by comma-separated expressions, each expression
+// may be
+// a native template name or a wildcard
+// errs.IndexTemplateNotFoundError will be returned if there is an expression that does not match
+// any
+// index templates.
+func ResolveIndexTemplates(exp string) ([]*protocol.IndexTemplate, error) {
+	results := make([]*protocol.IndexTemplate, 0)
+	// try to resolve by wildcards, including native name matches
+	for templateName, item := range Instance().TemplateCache.Items() {
+		if utils.WildcardMatch(exp, templateName) {
+			results = append(results, item.Object.(*protocol.IndexTemplate))
+		}
+	}
+	if len(results) == 0 {
+		return nil, &errs.IndexTemplateNotFoundError{IndexTemplate: exp}
+	}
+	return results, nil
 }
 
 func GetIndexTemplate(templateName string) (*protocol.IndexTemplate, error) {
