@@ -54,7 +54,9 @@ func FindTemplates(indexName string) *protocol.IndexTemplate {
 }
 
 // ResolveIndexTemplates resolved index templates by comma-separated expressions, each expression
-// may be a native template name or a wildcard
+// may be a native template name or a wildcard.
+// If you know the complete name of the index template exactly, please use
+// GetIndexTemplateExplicitly for better performance.
 // errs.IndexTemplateNotFoundError will be returned if there is an expression that does not match
 // any index templates.
 func ResolveIndexTemplates(exp string) ([]*protocol.IndexTemplate, error) {
@@ -71,7 +73,9 @@ func ResolveIndexTemplates(exp string) ([]*protocol.IndexTemplate, error) {
 	return results, nil
 }
 
-func GetIndexTemplate(templateName string) (*protocol.IndexTemplate, error) {
+// GetIndexTemplateExplicitly gets the index template precisely by name,
+// rather than trying to resolve that by wildcards.
+func GetIndexTemplateExplicitly(templateName string) (*protocol.IndexTemplate, error) {
 	var template *protocol.IndexTemplate
 	cachedTemplate, found := Instance().TemplateCache.Get(templateName)
 	if found {
