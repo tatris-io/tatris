@@ -25,7 +25,9 @@ func QueryHandler(c *gin.Context) {
 	queryRequest := protocol.QueryRequest{Index: index, Size: 10}
 
 	code := http.StatusOK
-	response := protocol.Response{}
+	response := &protocol.Response{}
+	queryResponse := &protocol.QueryResponse{}
+
 	if err := c.ShouldBind(&queryRequest); err != nil || len(names) == 0 {
 		code = http.StatusBadRequest
 		response.Error = true
@@ -38,8 +40,6 @@ func QueryHandler(c *gin.Context) {
 		}
 		response.Error = true
 		response.Message = err.Error()
-		response.Took = time.Since(start).Milliseconds()
-		c.JSON(code, response)
 	} else {
 		// the param typedKeys is used to carry the aggregation type to the aggregation result,
 		// which is
@@ -49,15 +49,18 @@ func QueryHandler(c *gin.Context) {
 		if typedKeys != nil && typedKeys[0] == consts.TypedKeysParamValueTrue {
 			queryRequest.TypedKeys = true
 		}
-		resp, err := query.SearchDocs(indexes, queryRequest)
+		var err error
+		queryResponse, err = query.SearchDocs(indexes, queryRequest)
 		if err != nil {
 			code = http.StatusInternalServerError
 			response.Error = true
 			response.Message = err.Error()
-			response.Took = time.Since(start).Milliseconds()
-			c.JSON(code, response)
-		} else {
-			c.JSON(http.StatusOK, resp)
 		}
+	}
+	response.Took = time.Since(start).Milliseconds()
+	if code == http.StatusOK {
+		c.JSON(code, queryResponse)
+	} else {
+		c.JSON(code, response)
 	}
 }

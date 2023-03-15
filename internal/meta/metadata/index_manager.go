@@ -78,7 +78,8 @@ func GetShard(indexName string, shardID int) (*core.Shard, error) {
 
 // ResolveIndexes resolved indexes by comma-separated expressions, each expression may be a
 // native index name, a wildcard or an alias.
-// If you know the complete name of the index exactly, please use GetIndexExplicitly for better performance.
+// If you know the complete name of the index exactly, please use GetIndexExplicitly for better
+// performance.
 // errs.IndexNotFoundError will be returned if there is an expression that does not match any
 // indexes.
 func ResolveIndexes(exp string) ([]*core.Index, error) {
