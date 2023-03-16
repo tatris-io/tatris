@@ -2,6 +2,15 @@
 
 package protocol
 
+type IndexTemplateResponse struct {
+	IndexTemplates []*IndexTemplateTerm `json:"index_templates"`
+}
+
+type IndexTemplateTerm struct {
+	Name          string         `json:"name"`
+	IndexTemplate *IndexTemplate `json:"index_template"`
+}
+
 type IndexTemplate struct {
 	// Name of the index template.
 	Name string `json:"name"`

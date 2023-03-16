@@ -21,7 +21,7 @@ func IngestHandler(c *gin.Context) {
 	var index *core.Index
 	var err error
 	start := time.Now()
-	if index, err = metadata.GetIndex(name); err != nil {
+	if index, err = metadata.GetIndexExplicitly(name); err != nil {
 		if errs.IsIndexNotFound(err) {
 			// create the index if it does not exist
 			index = &core.Index{Index: &protocol.Index{Name: name}}

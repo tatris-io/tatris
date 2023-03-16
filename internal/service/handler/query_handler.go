@@ -8,65 +8,59 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tatris-io/tatris/internal/common/errs"
+
 	"github.com/tatris-io/tatris/internal/meta/metadata"
 
-	"github.com/tatris-io/tatris/internal/common/consts"
-	"github.com/tatris-io/tatris/internal/core"
-
 	"github.com/gin-gonic/gin"
+	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/protocol"
 	"github.com/tatris-io/tatris/internal/query"
 )
 
 func QueryHandler(c *gin.Context) {
+	start := time.Now()
 	index := c.Param("index")
 	names := strings.Split(strings.TrimSpace(index), consts.Comma)
 	queryRequest := protocol.QueryRequest{Index: index, Size: 10}
-	start := time.Now()
+
+	code := http.StatusOK
+	response := &protocol.Response{}
+	queryResponse := &protocol.QueryResponse{}
+
 	if err := c.ShouldBind(&queryRequest); err != nil || len(names) == 0 {
-		c.JSON(
-			http.StatusBadRequest,
-			protocol.Response{
-				Took:    time.Since(start).Milliseconds(),
-				Error:   true,
-				Message: err.Error(),
-			},
-		)
-		return
-	}
-
-	// the param typedKeys is used to carry the aggregation type to the aggregation result, which is
-	// usually used to help the client perform correct JSON deserialization see:
-	// https://www.elastic.co/guide/en/elasticsearch/reference/8.6/search-aggregations.html#return-agg-type
-	typedKeys := c.Request.URL.Query()[consts.TypedKeysParam]
-	if typedKeys != nil && typedKeys[0] == consts.TypedKeysParamValueTrue {
-		queryRequest.TypedKeys = true
-	}
-
-	indexNames := make([]string, 0)
-	for _, n := range names {
-		indexNames = append(indexNames, metadata.ResolveIndexes(n)...)
-	}
-	indexes := make([]*core.Index, len(indexNames))
-	for i, indexName := range indexNames {
-		if exist, index := CheckIndexExistence(indexName, c); exist {
-			indexes[i] = index
+		code = http.StatusBadRequest
+		response.Error = true
+		response.Message = err.Error()
+	} else if indexes, err := metadata.ResolveIndexes(index); err != nil {
+		if errs.IsIndexNotFound(err) {
+			code = http.StatusNotFound
 		} else {
-			return
+			code = http.StatusInternalServerError
+		}
+		response.Error = true
+		response.Message = err.Error()
+	} else {
+		// the param typedKeys is used to carry the aggregation type to the aggregation result,
+		// which is
+		// usually used to help the client perform correct JSON deserialization see:
+		// https://www.elastic.co/guide/en/elasticsearch/reference/8.6/search-aggregations.html#return-agg-type
+		typedKeys := c.Request.URL.Query()[consts.TypedKeysParam]
+		if typedKeys != nil && typedKeys[0] == consts.TypedKeysParamValueTrue {
+			queryRequest.TypedKeys = true
+		}
+		var err error
+		queryResponse, err = query.SearchDocs(indexes, queryRequest)
+		if err != nil {
+			code = http.StatusInternalServerError
+			response.Error = true
+			response.Message = err.Error()
 		}
 	}
-
-	resp, err := query.SearchDocs(indexes, queryRequest)
-	if err != nil {
-		c.JSON(
-			http.StatusInternalServerError,
-			protocol.Response{
-				Took:    time.Since(start).Milliseconds(),
-				Error:   true,
-				Message: err.Error(),
-			},
-		)
+	response.Took = time.Since(start).Milliseconds()
+	if code == http.StatusOK {
+		c.JSON(code, queryResponse)
 	} else {
-		c.JSON(http.StatusOK, resp)
+		c.JSON(code, response)
 	}
 }

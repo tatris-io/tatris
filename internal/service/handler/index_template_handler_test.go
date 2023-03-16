@@ -62,8 +62,9 @@ func TestIndexTemplateHandler(t *testing.T) {
 		p = append(p, gin.Param{Key: "template", Value: template.Name})
 		c.Params = p
 		IndexTemplateExistHandler(c)
-		getTemplate := protocol.IndexTemplate{}
-		json.Unmarshal(w.Body.Bytes(), &getTemplate)
+		existResponse := protocol.Response{}
+		json.Unmarshal(w.Body.Bytes(), &existResponse)
+		assert.Equal(t, false, existResponse.Error)
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
@@ -80,21 +81,26 @@ func TestIndexTemplateHandler(t *testing.T) {
 		p = append(p, gin.Param{Key: "template", Value: template.Name})
 		c.Params = p
 		GetIndexTemplateHandler(c)
-		getTemplate := protocol.IndexTemplate{}
-		json.Unmarshal(w.Body.Bytes(), &getTemplate)
-		assert.Equal(t, template.Name, getTemplate.Name)
+		templateResponse := protocol.IndexTemplateResponse{}
+		json.Unmarshal(w.Body.Bytes(), &templateResponse)
+		assert.Equal(t, 1, len(templateResponse.IndexTemplates))
+		assert.Equal(t, template.Name, templateResponse.IndexTemplates[0].IndexTemplate.Name)
 		assert.Equal(
 			t,
 			template.Template.Settings.NumberOfShards,
-			getTemplate.Template.Settings.NumberOfShards,
+			templateResponse.IndexTemplates[0].IndexTemplate.Template.Settings.NumberOfShards,
 		)
 		assert.Equal(
 			t,
 			template.Template.Settings.NumberOfReplicas,
-			getTemplate.Template.Settings.NumberOfReplicas,
+			templateResponse.IndexTemplates[0].IndexTemplate.Template.Settings.NumberOfReplicas,
 		)
 		for field, prop := range template.Template.Mappings.Properties {
-			assert.Equal(t, getTemplate.Template.Mappings.Properties[field].Type, prop.Type)
+			assert.Equal(
+				t,
+				templateResponse.IndexTemplates[0].IndexTemplate.Template.Mappings.Properties[field].Type,
+				prop.Type,
+			)
 		}
 		fmt.Println(template)
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -131,8 +137,9 @@ func TestIndexTemplateHandler(t *testing.T) {
 		p = append(p, gin.Param{Key: "template", Value: template.Name})
 		c.Params = p
 		IndexTemplateExistHandler(c)
-		getTemplate := protocol.IndexTemplate{}
-		json.Unmarshal(w.Body.Bytes(), &getTemplate)
+		existResponse := protocol.Response{}
+		json.Unmarshal(w.Body.Bytes(), &existResponse)
+		assert.Equal(t, true, existResponse.Error)
 		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
 }

@@ -1,7 +1,7 @@
 {
   "name": "search-engine",
   "index_patterns": [
-    "search-engine_*"
+    "search-engine"
   ],
   "priority": 1,
   "template": {

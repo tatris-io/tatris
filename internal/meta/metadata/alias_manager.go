@@ -6,22 +6,24 @@ package metadata
 import (
 	"encoding/json"
 
+	"github.com/bobg/go-generics/set"
+	"github.com/tatris-io/tatris/internal/common/utils"
+
 	cache "github.com/patrickmn/go-cache"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/protocol"
 	"go.uber.org/zap"
 )
 
-func ResolveIndexes(name string) []string {
-	terms := GetTermsByAlias(name)
-	if len(terms) == 0 {
-		return []string{name}
+// ResolveAliases tries to resolve index names by alias expressions
+func ResolveAliases(name string) []string {
+	// use set to deduplicate
+	indexes := set.Of[string]{}
+	terms := GetAliasTerms("", name)
+	for _, t := range terms {
+		indexes.Add(t.Index)
 	}
-	indexes := make([]string, len(terms))
-	for i, t := range terms {
-		indexes[i] = t.Index
-	}
-	return indexes
+	return indexes.Slice()
 }
 
 func AddAlias(aliasTerm *protocol.AliasTerm) error {
@@ -29,45 +31,46 @@ func AddAlias(aliasTerm *protocol.AliasTerm) error {
 	index := aliasTerm.Index
 	alias := aliasTerm.Alias
 
-	aliasTerms := GetTermsByAlias(alias)
-	aliasTerms = add(aliasTerms, aliasTerm)
-
-	indexTerms := GetTermsByIndex(index)
-	indexTerms = add(indexTerms, aliasTerm)
-
 	logger.Info(
 		"add alias",
 		zap.String("alias", alias),
 		zap.String("index", index),
-		zap.Any("aliasTerms", aliasTerms),
-		zap.Any("indexTerms", indexTerms),
 	)
-	return saveAlias(alias, aliasTerms, index, indexTerms)
+
+	Instance().AliasTermsCache.Set(aliasTermKey(index, alias), aliasTerm, cache.NoExpiration)
+
+	indexTermsJSON, err := json.Marshal(aliasTerm)
+	if err != nil {
+		return err
+	}
+	return Instance().MStore.Set(aliasPrefix(aliasTermKey(index, alias)), indexTermsJSON)
 }
 
+// RemoveAlias supports removing alias terms in the form of wildcards
 func RemoveAlias(aliasTerm *protocol.AliasTerm) error {
 
 	index := aliasTerm.Index
 	alias := aliasTerm.Alias
-
-	aliasTerms := GetTermsByAlias(alias)
-	aliasTerms = remove(aliasTerms, aliasTerm)
-
-	indexTerms := GetTermsByIndex(index)
-	indexTerms = remove(indexTerms, aliasTerm)
+	terms := GetAliasTerms(index, alias)
 
 	logger.Info(
 		"remove alias",
 		zap.String("alias", alias),
 		zap.String("index", index),
-		zap.Any("aliasTerms", aliasTerms),
-		zap.Any("indexTerms", indexTerms),
+		zap.Any("terms", terms),
 	)
-	return saveAlias(alias, aliasTerms, index, indexTerms)
+
+	for _, term := range terms {
+		Instance().AliasTermsCache.Delete(aliasTermKey(term.Index, term.Alias))
+		if err := Instance().MStore.Delete(aliasPrefix(aliasTermKey(term.Index, term.Alias))); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func RemoveAliasesByIndex(index string) error {
-	terms := GetTermsByIndex(index)
+	terms := GetAliasTerms(index, "")
 	for _, term := range terms {
 		if err := RemoveAlias(term); err != nil {
 			return err
@@ -76,77 +79,18 @@ func RemoveAliasesByIndex(index string) error {
 	return nil
 }
 
-func add(terms []*protocol.AliasTerm, term *protocol.AliasTerm) []*protocol.AliasTerm {
-	newTerms := remove(terms, term)
-	newTerms = append(newTerms, term)
-	return newTerms
-}
+func GetAliasTerms(index, alias string) []*protocol.AliasTerm {
 
-func remove(terms []*protocol.AliasTerm, term *protocol.AliasTerm) []*protocol.AliasTerm {
-	i := 0
-	for _, t := range terms {
-		if t.Index != term.Index || t.Alias != term.Alias {
-			terms[i] = t
-			i++
-		}
-	}
-	return terms[:i]
-}
-
-func ListTerms() []*protocol.AliasTerm {
-	items := Instance().AliasTermsCache.Items()
-	terms := make([]*protocol.AliasTerm, 0)
-	for _, item := range items {
-		terms = append(terms, item.Object.([]*protocol.AliasTerm)...)
-	}
-	return terms
-}
-
-func GetTermsByAlias(alias string) []*protocol.AliasTerm {
 	var terms []*protocol.AliasTerm
-	cached, found := Instance().AliasTermsCache.Get(alias)
-	if found {
-		terms = cached.([]*protocol.AliasTerm)
-	}
-	return terms
-}
 
-func GetTermsByIndex(index string) []*protocol.AliasTerm {
-	terms := make([]*protocol.AliasTerm, 0)
-	cached, found := Instance().IndexTermsCache.Get(index)
-	if found {
-		terms = cached.([]*protocol.AliasTerm)
-	}
-	return terms
-}
-
-func GetTerm(index, alias string) *protocol.AliasTerm {
-	indexTerms := GetTermsByIndex(index)
-	aliasTerms := GetTermsByAlias(alias)
-	for _, t1 := range indexTerms {
-		for _, t2 := range aliasTerms {
-			if t1.Index == t2.Index && t1.Alias == t2.Alias {
-				return t1
-			}
+	for _, item := range Instance().AliasTermsCache.Items() {
+		term := item.Object.(*protocol.AliasTerm)
+		if (index == "" || utils.WildcardMatch(index, term.Index)) &&
+			(alias == "" || utils.WildcardMatch(alias, term.Alias)) {
+			terms = append(terms, term)
 		}
 	}
-	return nil
-}
-
-func saveAlias(
-	alias string,
-	aliasTerms []*protocol.AliasTerm,
-	index string,
-	indexTerms []*protocol.AliasTerm,
-) error {
-	Instance().AliasTermsCache.Set(alias, aliasTerms, cache.NoExpiration)
-	Instance().IndexTermsCache.Set(index, indexTerms, cache.NoExpiration)
-
-	indexTermsJSON, err := json.Marshal(indexTerms)
-	if err != nil {
-		return err
-	}
-	return Instance().MStore.Set(aliasPrefix(index), indexTermsJSON)
+	return terms
 }
 
 func aliasPrefix(name string) string {

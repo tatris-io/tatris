@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/tatris-io/tatris/internal/core"
+
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/tatris-io/tatris/internal/protocol"
@@ -80,8 +82,9 @@ func TestIndexHandler(t *testing.T) {
 		p = append(p, gin.Param{Key: "index", Value: index.Name})
 		c.Params = p
 		GetIndexHandler(c)
-		getIndex := protocol.Index{}
-		json.Unmarshal(w.Body.Bytes(), &getIndex)
+		getIndexes := map[string]core.Index{}
+		json.Unmarshal(w.Body.Bytes(), &getIndexes)
+		getIndex := getIndexes[index.Name]
 		assert.Equal(t, index.Name, getIndex.Name)
 		assert.Equal(t, index.Settings.NumberOfShards, getIndex.Settings.NumberOfShards)
 		assert.Equal(t, index.Settings.NumberOfReplicas, getIndex.Settings.NumberOfReplicas)
