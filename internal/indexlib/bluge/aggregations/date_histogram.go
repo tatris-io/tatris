@@ -42,7 +42,7 @@ func NewDateHistogramAggregation(
 	fixedInterval int64,
 	format string,
 	timeZone *time.Location,
-	offset interface{},
+	offset any,
 	minDocCount int,
 	extendedBounds,
 	hardBounds *indexlib.DateHistogramBound,
