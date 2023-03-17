@@ -48,7 +48,12 @@ func SearchDocs(
 	}
 	if len(allSegments) == 0 {
 		// no match any segments, returns an appropriate response
-		return &protocol.QueryResponse{Hits: protocol.Hits{Hits: []protocol.Hit{}}}, nil
+		return &protocol.QueryResponse{
+			Hits: protocol.Hits{
+				Hits:  []protocol.Hit{},
+				Total: protocol.Total{Value: 0, Relation: "eq"},
+			},
+		}, nil
 	}
 	reader, err := core.MergeSegmentReader(&indexlib.BaseConfig{
 		DataPath: config.Cfg.GetDataPath(),
@@ -195,6 +200,7 @@ func timeRange(query protocol.Query) (int64, int64, error) {
 				end = t.UnixMilli()
 			}
 		}
+
 	} else if query.Bool != nil {
 		subQueries := make([]*protocol.Query, 0)
 		subQueries = append(subQueries, query.Bool.Must...)
@@ -564,7 +570,12 @@ func transformTerm(query protocol.Query) (indexlib.QueryRequest, error) {
 		case string:
 			termQ.Term = v
 		case map[string]interface{}:
-			termQ.Term = v["value"].(string)
+			switch v["value"].(type) {
+			case string:
+				termQ.Term = v["value"].(string)
+			default:
+				return nil, &errs.InvalidQueryError{Query: query, Message: "term query field type must be string"}
+			}
 		}
 	}
 	return termQ, nil

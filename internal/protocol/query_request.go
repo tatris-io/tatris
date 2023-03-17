@@ -170,7 +170,7 @@ type AggDateHistogram struct {
 	TimeZone         string      `json:"time_zone"`         // +0100/+01:00, -0100/-01:00, UTC, Asia/Shanghai...
 	MinDocCount      int         `json:"min_doc_count"`     // min_doc_count: 0, Zero filling
 	Format           string      `json:"format"`            // TODO
-	Offset           string      `json:"offset"`            // TODO
+	Offset           any         `json:"offset"`            // TODO
 	Keyed            bool        `json:"keyed"`             // TODO
 	Order            interface{} `json:"order"`             // TODO
 	Missing          string      `json:"missing"`           // TODO

@@ -27,7 +27,7 @@ type DateHistogramAggregation struct {
 	minDocCount      int
 	format           string
 	timeZone         *time.Location
-	offset           string
+	offset           any
 	extendedBounds   *indexlib.DateHistogramBound
 	hardBounds       *indexlib.DateHistogramBound
 	aggregations     map[string]search.Aggregation
@@ -42,7 +42,7 @@ func NewDateHistogramAggregation(
 	fixedInterval int64,
 	format string,
 	timeZone *time.Location,
-	offset string,
+	offset any,
 	minDocCount int,
 	extendedBounds,
 	hardBounds *indexlib.DateHistogramBound,
@@ -108,7 +108,7 @@ type DateHistogramCalculator struct {
 	minDocCount      int
 	format           string
 	timeZone         *time.Location
-	offset           string
+	offset           any
 	extendedBounds   *indexlib.DateHistogramBound
 	hardBounds       *indexlib.DateHistogramBound
 	minNano          int64

@@ -214,7 +214,7 @@ type AggDateHistogram struct {
 	CalendarInterval string
 	Format           string
 	TimeZone         *time.Location
-	Offset           string
+	Offset           any
 	MinDocCount      int
 	Keyed            bool
 	Missing          string
