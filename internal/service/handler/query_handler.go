@@ -4,7 +4,6 @@
 package handler
 
 import (
-	"net/http"
 	"strings"
 	"time"
 
@@ -23,23 +22,14 @@ func QueryHandler(c *gin.Context) {
 	index := c.Param("index")
 	names := strings.Split(strings.TrimSpace(index), consts.Comma)
 	queryRequest := protocol.QueryRequest{Index: index, Size: 10}
-
-	code := http.StatusOK
-	response := &protocol.Response{}
-	queryResponse := &protocol.QueryResponse{}
-
 	if err := c.ShouldBind(&queryRequest); err != nil || len(names) == 0 {
-		code = http.StatusBadRequest
-		response.Error = true
-		response.Message = err.Error()
+		BadRequest(c, err.Error())
 	} else if indexes, err := metadata.ResolveIndexes(index); err != nil {
-		if errs.IsIndexNotFound(err) {
-			code = http.StatusNotFound
+		if ok, infErr := errs.IndexNotFound(err); ok {
+			NotFound(c, "index", infErr.Index)
 		} else {
-			code = http.StatusInternalServerError
+			InternalServerError(c, err.Error())
 		}
-		response.Error = true
-		response.Message = err.Error()
 	} else {
 		// the param typedKeys is used to carry the aggregation type to the aggregation result,
 		// which is
@@ -49,18 +39,11 @@ func QueryHandler(c *gin.Context) {
 		if typedKeys != nil && typedKeys[0] == consts.TypedKeysParamValueTrue {
 			queryRequest.TypedKeys = true
 		}
-		var err error
-		queryResponse, err = query.SearchDocs(indexes, queryRequest)
-		if err != nil {
-			code = http.StatusInternalServerError
-			response.Error = true
-			response.Message = err.Error()
+		if queryResponse, err := query.SearchDocs(indexes, queryRequest); err != nil {
+			InternalServerError(c, err.Error())
+		} else {
+			queryResponse.Took = time.Since(start).Milliseconds()
+			OK(c, queryResponse)
 		}
-	}
-	response.Took = time.Since(start).Milliseconds()
-	if code == http.StatusOK {
-		c.JSON(code, queryResponse)
-	} else {
-		c.JSON(code, response)
 	}
 }

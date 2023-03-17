@@ -62,9 +62,6 @@ func TestIndexTemplateHandler(t *testing.T) {
 		p = append(p, gin.Param{Key: "template", Value: template.Name})
 		c.Params = p
 		IndexTemplateExistHandler(c)
-		existResponse := protocol.Response{}
-		json.Unmarshal(w.Body.Bytes(), &existResponse)
-		assert.Equal(t, false, existResponse.Error)
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
@@ -84,7 +81,7 @@ func TestIndexTemplateHandler(t *testing.T) {
 		templateResponse := protocol.IndexTemplateResponse{}
 		json.Unmarshal(w.Body.Bytes(), &templateResponse)
 		assert.Equal(t, 1, len(templateResponse.IndexTemplates))
-		assert.Equal(t, template.Name, templateResponse.IndexTemplates[0].IndexTemplate.Name)
+		assert.Equal(t, template.Name, templateResponse.IndexTemplates[0].Name)
 		assert.Equal(
 			t,
 			template.Template.Settings.NumberOfShards,
@@ -137,9 +134,6 @@ func TestIndexTemplateHandler(t *testing.T) {
 		p = append(p, gin.Param{Key: "template", Value: template.Name})
 		c.Params = p
 		IndexTemplateExistHandler(c)
-		existResponse := protocol.Response{}
-		json.Unmarshal(w.Body.Bytes(), &existResponse)
-		assert.Equal(t, true, existResponse.Error)
 		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
 }

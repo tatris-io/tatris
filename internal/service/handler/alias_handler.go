@@ -4,9 +4,7 @@ package handler
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
-	"time"
 
 	"github.com/tatris-io/tatris/internal/common/utils"
 
@@ -17,92 +15,67 @@ import (
 )
 
 func ManageAliasHandler(c *gin.Context) {
-	start := time.Now()
-	code := http.StatusOK
-	response := protocol.Response{}
 	req := protocol.AliasManageRequest{}
 	if err := c.ShouldBind(&req); err != nil {
-		code = http.StatusBadRequest
-		response.Error = true
-		response.Message = err.Error()
+		BadRequest(c, err.Error())
 	} else {
 		actions := req.Actions
 		for _, action := range actions {
 			if len(action) > 1 {
-				code = http.StatusBadRequest
-				response.Error = true
-				response.Message = "Too many operations declared on operation entry"
+				BadRequest(c, "Too many operations declared on operation entry")
 			} else {
 				for name, term := range action {
 					if term.Index == "" || term.Alias == "" {
-						code = http.StatusBadRequest
-						response.Error = true
 						if term.Index == "" {
-							response.Message = "index is required"
+							BadRequest(c, "index is required")
 						} else {
-							response.Message = "alias is required"
+							BadRequest(c, "alias is required")
 						}
+						return
 					} else if exist, _ := metadata.GetIndexExplicitly(term.Alias); exist != nil {
-						code = http.StatusBadRequest
-						response.Error = true
-						response.Message = fmt.Sprintf("Invalid alias name [%s]: an index or data stream exists with the same name as the alias", term.Alias)
+						BadRequest(c, fmt.Sprintf("Invalid alias name [%s]: an index or data stream exists with the same name as the alias", term.Alias))
+						return
 					} else {
 						// TODO: check the legality of the alias name,
 						// for example, it cannot contain *,?, etc.
 						if strings.EqualFold(name, "add") {
 							if err := metadata.AddAlias(term); err != nil {
-								code = http.StatusInternalServerError
-								response.Error = true
-								response.Message = err.Error()
+								InternalServerError(c, err.Error())
+								return
 							}
 						} else if strings.EqualFold(name, "remove") {
 							if err := metadata.RemoveAlias(term); err != nil {
-								code = http.StatusInternalServerError
-								response.Error = true
-								response.Message = err.Error()
+								InternalServerError(c, err.Error())
+								return
 							}
 						} else {
-							code = http.StatusBadRequest
-							response.Error = true
-							response.Message = fmt.Sprintf("unsupported action: %s", name)
+							BadRequest(c, fmt.Sprintf("[alias_action] unknown field [%s]", name))
+							return
 						}
 					}
-				}
-				if code != http.StatusOK {
-					break
 				}
 			}
 		}
 	}
-	response.Took = time.Since(start).Milliseconds()
-	c.JSON(code, response)
+	Ack(c)
 }
 
 func GetAliasHandler(c *gin.Context) {
-	start := time.Now()
 	indexName := c.Param("index")
 	aliasName := c.Param("alias")
-	var resp protocol.AliasGetResponse
-	code := http.StatusOK
-	response := protocol.Response{}
 	if indexName != "" && !utils.ContainsWildcard(indexName) {
 		// if the index is specified explicitly, check its existence first
 		if _, err := metadata.GetIndexExplicitly(indexName); err != nil {
-			if errs.IsIndexNotFound(err) {
-				code = http.StatusNotFound
+			if ok, infErr := errs.IndexNotFound(err); ok {
+				NotFound(c, "index", infErr.Index)
 			} else {
-				code = http.StatusInternalServerError
+				InternalServerError(c, err.Error())
 			}
-			response.Error = true
-			response.Message = err.Error()
-			response.Took = time.Since(start).Milliseconds()
-			c.JSON(code, response)
 			return
 		}
 	}
 	terms := metadata.GetAliasTerms(indexName, aliasName)
-	resp = generateAliasResp(terms...)
-	c.JSON(http.StatusOK, resp)
+	OK(c, generateAliasResp(terms...))
 }
 
 func generateAliasResp(aliasTerms ...*protocol.AliasTerm) protocol.AliasGetResponse {

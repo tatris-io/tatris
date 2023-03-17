@@ -2,6 +2,12 @@
 
 package protocol
 
+type CreateIndexResponse struct {
+	*Response
+	ShardsAcknowledged bool   `json:"shards_acknowledged,string,omitempty"`
+	Index              string `json:"index,omitempty"`
+}
+
 type Index struct {
 	// index name
 	Name string `json:"name"`
@@ -11,6 +17,8 @@ type Index struct {
 	Mappings *Mappings `json:"mappings,omitempty"`
 }
 
+// Settings contains index-level settings that can be set per-index.
+// The JSON unmarshalling of Settings is redefined in UnmarshalJSON.
 type Settings struct {
 	// number of shards, default is 1
 	NumberOfShards int `json:"number_of_shards,omitempty"`
@@ -18,7 +26,7 @@ type Settings struct {
 	NumberOfReplicas int `json:"number_of_replicas,omitempty"`
 }
 
-// Mappings Mapping is the process of defining how a document, and the fields it contains, are
+// Mappings is the process of defining how a document, and the fields it contains, are
 // stored and indexed.
 type Mappings struct {
 	// Mapping mode:

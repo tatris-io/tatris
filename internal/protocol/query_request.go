@@ -3,16 +3,15 @@
 // Package protocol describes the core data structures and calling conventions of Tatris
 package protocol
 
+// QueryRequest
+// The JSON unmarshalling of QueryRequest is redefined in UnmarshalJSON.
 type QueryRequest struct {
-	Index string `json:"index"`
-	Query Query  `json:"query"`
-	// Any one of Aggs or Aggregations can be specified to represent aggregated queries.
-	// This is for compatibility with elasticsearch's query protocol.
-	Aggs         map[string]Aggs `json:"aggs"`
-	Aggregations map[string]Aggs `json:"aggregations"`
-	Sort         Sort            `json:"sort"`
-	Size         int64           `json:"size"`
-	From         int64           `json:"from"`
+	Index string          `json:"index"`
+	Query Query           `json:"query"`
+	Aggs  map[string]Aggs `json:"aggs"`
+	Sort  Sort            `json:"sort"`
+	Size  int64           `json:"size"`
+	From  int64           `json:"from"`
 	// When the parameter typed_keys is true will be prefixing aggregation names with their type
 	TypedKeys bool `json:"typed_keys"`
 }
@@ -57,17 +56,13 @@ type Terms map[string]interface{}
 
 type Range map[string]*RangeVal
 
+// RangeVal
+// The JSON unmarshalling of RangeVal is redefined in UnmarshalJSON.
 type RangeVal struct {
 	Gt  interface{} `json:"gt,omitempty"`
 	Gte interface{} `json:"gte,omitempty"`
 	Lt  interface{} `json:"lt,omitempty"`
 	Lte interface{} `json:"lte,omitempty"`
-
-	// adapts the elasticsearch query sdk
-	From         interface{} `json:"from"`
-	To           interface{} `json:"to"`
-	IncludeLower bool        `json:"include_lower"`
-	IncludeUpper bool        `json:"include_upper"`
 }
 
 type Bool struct {
@@ -95,7 +90,6 @@ type Aggs struct {
 	Percentiles   *AggPercentiles   `json:"percentiles,omitempty"`
 	WeightedAvg   *AggWeightedAvg   `json:"weighted_avg,omitempty"`
 	Aggs          map[string]Aggs   `json:"aggs,omitempty"`
-	Aggregations  map[string]Aggs   `json:"aggregations,omitempty"`
 }
 
 type AggMetric struct {
