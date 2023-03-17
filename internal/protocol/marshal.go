@@ -124,8 +124,9 @@ func (r *RangeVal) UnmarshalJSON(data []byte) error {
 	if err = json.Unmarshal(data, &tmp); err != nil {
 		return err
 	}
-	// Range queries may be expressed in two ways: {gt, gte, lt, lte} OR {from, include_lower, to,
-	// include_upper}.
+	// Range queries may be expressed in two ways:
+	// {gt, gte, lt, lte} OR
+	// {from, include_lower, to, include_upper}.
 	// This is for compatibility with elasticsearch's query protocol.
 	if r.Lte == nil && r.Lt == nil && r.Gte == nil && r.Gt == nil {
 		result := gjson.ParseBytes(data)
