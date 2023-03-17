@@ -57,7 +57,7 @@ func ManageAliasHandler(c *gin.Context) {
 			}
 		}
 	}
-	Ack(c)
+	ACK(c)
 }
 
 func GetAliasHandler(c *gin.Context) {

@@ -80,5 +80,5 @@ func DeleteIndexHandler(c *gin.Context) {
 			}
 		}
 	}
-	Ack(c)
+	ACK(c)
 }

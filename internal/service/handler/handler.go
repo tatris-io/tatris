@@ -10,14 +10,19 @@ import (
 	"github.com/tatris-io/tatris/internal/protocol"
 )
 
+// OK serialize a given struct as JSON into the HTTP context and set the status code to 200
 func OK(c *gin.Context, response any) {
 	c.JSON(http.StatusOK, response)
 }
 
-func Ack(c *gin.Context) {
+// ACK serialize a response body carrying `Acknowledged=true` into the HTTP context and set the
+// status code to 200
+func ACK(c *gin.Context) {
 	c.JSON(http.StatusOK, &protocol.Response{Acknowledged: true})
 }
 
+// NotFound serialize a response body carrying resource information not found into the HTTP context
+// and set the status code to 404
 func NotFound(c *gin.Context, resource, ID string) {
 	if resource == "" && ID == "" {
 		c.JSON(http.StatusNotFound, nil)
@@ -36,11 +41,15 @@ func NotFound(c *gin.Context, resource, ID string) {
 	}
 }
 
+// BadRequest serialize a response body carrying the reason for requesting incorrectly into the HTTP
+// context and set the status code to 400
 func BadRequest(c *gin.Context, reason string) {
 	response := &protocol.Response{Error: &protocol.Error{Err: &protocol.Err{Reason: reason}}}
 	c.JSON(http.StatusBadRequest, response)
 }
 
+// InternalServerError serialize a response body carrying the reason of server exception into the
+// HTTP context and set the status code to 500
 func InternalServerError(c *gin.Context, reason string) {
 	response := &protocol.Response{Error: &protocol.Error{Err: &protocol.Err{Reason: reason}}}
 	c.JSON(http.StatusInternalServerError, response)

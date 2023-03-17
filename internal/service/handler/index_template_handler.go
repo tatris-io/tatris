@@ -19,7 +19,7 @@ func CreateIndexTemplateHandler(c *gin.Context) {
 	} else if err := metadata.CreateIndexTemplate(template); err != nil {
 		InternalServerError(c, err.Error())
 	} else {
-		Ack(c)
+		ACK(c)
 	}
 }
 
@@ -70,6 +70,6 @@ func DeleteIndexTemplateHandler(c *gin.Context) {
 				return
 			}
 		}
-		Ack(c)
+		ACK(c)
 	}
 }
