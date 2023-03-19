@@ -7,7 +7,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"io"
-	"net/http"
 	"strings"
 	"time"
 
@@ -26,17 +25,13 @@ import (
 const maxBytesOfLine = 1024 * 1024 * 4
 
 func BulkHandler(c *gin.Context) {
+	start := time.Now()
 	name := c.Param("index")
 	var index *core.Index
 	var err error
-	start := time.Now()
-	code := http.StatusOK
-	response := protocol.Response{}
 	documents, err := divideBulk(name, c.Request.Body)
 	if err != nil {
-		code = http.StatusBadRequest
-		response.Error = true
-		response.Message = err.Error()
+		BadRequest(c, err.Error())
 	} else {
 		for idx, docs := range documents {
 			if index, err = metadata.GetIndexExplicitly(idx); err != nil {
@@ -46,22 +41,17 @@ func BulkHandler(c *gin.Context) {
 					err = metadata.CreateIndex(index)
 				}
 				if err != nil {
-					code = http.StatusInternalServerError
-					response.Error = true
-					response.Message = err.Error()
-					break
+					InternalServerError(c, err.Error())
+					return
 				}
 			}
 			if err = ingestion.IngestDocs(index, docs); err != nil {
-				code = http.StatusInternalServerError
-				response.Error = true
-				response.Message = err.Error()
-				break
+				InternalServerError(c, err.Error())
+				return
 			}
 		}
 	}
-	response.Took = time.Since(start).Milliseconds()
-	c.JSON(code, response)
+	OK(c, protocol.IngestResponse{Took: time.Since(start).Milliseconds(), Error: false})
 }
 
 // divideBulk groups the documents in the bulk request by index and returns them.

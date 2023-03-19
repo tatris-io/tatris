@@ -4,7 +4,6 @@
 package handler
 
 import (
-	"net/http"
 	"time"
 
 	"github.com/tatris-io/tatris/internal/common/errs"
@@ -17,50 +16,27 @@ import (
 )
 
 func IngestHandler(c *gin.Context) {
+	start := time.Now()
 	name := c.Param("index")
 	var index *core.Index
 	var err error
-	start := time.Now()
 	if index, err = metadata.GetIndexExplicitly(name); err != nil {
 		if errs.IsIndexNotFound(err) {
 			// create the index if it does not exist
 			index = &core.Index{Index: &protocol.Index{Name: name}}
 			err = metadata.CreateIndex(index)
 		}
-		if err != nil {
-			c.JSON(
-				http.StatusInternalServerError,
-				protocol.Response{
-					Took:    time.Since(start).Milliseconds(),
-					Error:   true,
-					Message: err.Error(),
-				},
-			)
-			return
-		}
 	}
-	ingestRequest := protocol.IngestRequest{}
-	if err := c.ShouldBind(&ingestRequest); err != nil {
-		c.JSON(
-			http.StatusBadRequest,
-			protocol.Response{
-				Took:    time.Since(start).Milliseconds(),
-				Error:   true,
-				Message: err.Error(),
-			},
-		)
-		return
-	}
-	if err := ingestion.IngestDocs(index, ingestRequest.Documents); err != nil {
-		c.JSON(
-			http.StatusInternalServerError,
-			protocol.Response{
-				Took:    time.Since(start).Milliseconds(),
-				Error:   true,
-				Message: err.Error(),
-			},
-		)
+	if err != nil {
+		InternalServerError(c, err.Error())
 	} else {
-		c.JSON(http.StatusOK, protocol.Response{Took: time.Since(start).Milliseconds()})
+		ingestRequest := protocol.IngestRequest{}
+		if err = c.ShouldBind(&ingestRequest); err != nil {
+			BadRequest(c, err.Error())
+		} else if err = ingestion.IngestDocs(index, ingestRequest.Documents); err != nil {
+			InternalServerError(c, err.Error())
+		} else {
+			OK(c, protocol.IngestResponse{Took: time.Since(start).Milliseconds(), Error: false})
+		}
 	}
 }

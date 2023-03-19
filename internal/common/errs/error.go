@@ -24,6 +24,11 @@ var (
 	)
 )
 
+func IndexNotFound(err error) (bool, *IndexNotFoundError) {
+	var notFoundErr *IndexNotFoundError
+	return err != nil && errors.As(err, &notFoundErr), notFoundErr
+}
+
 func IsIndexNotFound(err error) bool {
 	var notFoundErr *IndexNotFoundError
 	return err != nil && errors.As(err, &notFoundErr)
@@ -67,6 +72,11 @@ type SegmentNotFoundError struct {
 
 func (e *SegmentNotFoundError) Error() string {
 	return fmt.Sprintf("segment not found: %s/%d/%d", e.Index, e.Shard, e.Segment)
+}
+
+func IndexTemplateNotFound(err error) (bool, *IndexTemplateNotFoundError) {
+	var notFoundErr *IndexTemplateNotFoundError
+	return err != nil && errors.As(err, &notFoundErr), notFoundErr
 }
 
 func IsIndexTemplateNotFound(err error) bool {

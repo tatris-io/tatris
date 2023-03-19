@@ -77,12 +77,7 @@ func SearchDocs(
 		aggsNamePrefixDict = make(map[string]string)
 	}
 
-	var aggs map[string]protocol.Aggs
-	if request.Aggs != nil {
-		aggs = request.Aggs
-	} else {
-		aggs = request.Aggregations
-	}
+	aggs := request.Aggs
 	if aggs != nil {
 		agg, err := transformAggs(aggs, indexes[0].Mappings, aggsNamePrefixDict)
 		if err != nil {
@@ -425,13 +420,7 @@ func transformAggs(
 		}
 
 		// sub-aggregations
-		var subAggs map[string]protocol.Aggs
-		if agg.Aggs != nil {
-			subAggs = agg.Aggs
-		} else {
-			subAggs = agg.Aggregations
-		}
-
+		subAggs := agg.Aggs
 		if subAggs != nil {
 			var err error
 			indexlibAggs.Aggs, err = transformAggs(subAggs, mappings, aggsPrefixDict)
@@ -643,22 +632,6 @@ func transformRange(
 		_, lType := indexlib.ValidateMappingType(property.Type)
 		var gt, gte, lt, lte any
 		var err error
-
-		// adapts the elasticsearch query sdk
-		if v.From != nil {
-			if v.IncludeLower {
-				gte = v.From
-			} else {
-				gt = v.From
-			}
-		}
-		if v.To != nil {
-			if v.IncludeUpper {
-				lte = v.To
-			} else {
-				lt = v.To
-			}
-		}
 		switch lType.Type {
 		case consts.LibFieldTypeNumeric, consts.LibFieldTypeBool:
 			if v.Gt != nil {
