@@ -63,7 +63,7 @@ type DynamicTemplateMapping struct {
 
 type Property struct {
 	// field data type
-	Type string
+	Type string `json:"type,omitempty"`
 	// field-level mapping mode
 	Dynamic string `json:"dynamic,omitempty"`
 }
