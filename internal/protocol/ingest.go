@@ -4,8 +4,8 @@ package protocol
 
 type IngestResponse struct {
 	Took  int64         `json:"took,omitempty"`
-	Error bool          `json:"error"`
-	Items []*IngestItem `json:"items"`
+	Error bool          `json:"error,omitempty"`
+	Items []*IngestItem `json:"items,omitempty"`
 }
 
 type IngestItem struct {
