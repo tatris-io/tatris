@@ -4,9 +4,8 @@
 package handler
 
 import (
-	"github.com/tatris-io/tatris/internal/common/errs"
-
 	"github.com/gin-gonic/gin"
+	"github.com/tatris-io/tatris/internal/common/errs"
 	"github.com/tatris-io/tatris/internal/meta/metadata"
 	"github.com/tatris-io/tatris/internal/protocol"
 )

@@ -34,6 +34,12 @@ const (
 )
 
 func CreateIndex(index *core.Index) error {
+	if err := utils.ValidateResourceName(index.Name); err != nil {
+		return err
+	}
+	if existAliases := GetAliasTerms("", index.Name); len(existAliases) > 0 {
+		return &errs.InvalidResourceNameError{Name: index.Name, Message: "already exists as alias"}
+	}
 	template := FindTemplates(index.Name)
 	BuildIndex(index, template)
 	if template != nil && template.Template != nil && template.Template.Aliases != nil {

@@ -3,7 +3,9 @@
 package consts
 
 const (
+	Dot          = "."
 	Comma        = ","
 	Asterisk     = "*"
 	QuestionMark = "?"
+	Empty        = ""
 )

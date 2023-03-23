@@ -32,26 +32,24 @@ func ManageAliasHandler(c *gin.Context) {
 							BadRequest(c, "alias is required")
 						}
 						return
-					} else if exist, _ := metadata.GetIndexExplicitly(term.Alias); exist != nil {
-						BadRequest(c, fmt.Sprintf("Invalid alias name [%s]: an index or data stream exists with the same name as the alias", term.Alias))
-						return
-					} else {
-						// TODO: check the legality of the alias name,
-						// for example, it cannot contain *,?, etc.
-						if strings.EqualFold(name, "add") {
-							if err := metadata.AddAlias(term); err != nil {
+					}
+					if strings.EqualFold(name, "add") {
+						if err := metadata.AddAlias(term); err != nil {
+							if errs.IsInvalidResourceNameError(err) {
+								BadRequest(c, err.Error())
+							} else {
 								InternalServerError(c, err.Error())
-								return
 							}
-						} else if strings.EqualFold(name, "remove") {
-							if err := metadata.RemoveAlias(term); err != nil {
-								InternalServerError(c, err.Error())
-								return
-							}
-						} else {
-							BadRequest(c, fmt.Sprintf("[alias_action] unknown field [%s]", name))
 							return
 						}
+					} else if strings.EqualFold(name, "remove") {
+						if err := metadata.RemoveAlias(term); err != nil {
+							InternalServerError(c, err.Error())
+							return
+						}
+					} else {
+						BadRequest(c, fmt.Sprintf("[alias_action] unknown field [%s]", name))
+						return
 					}
 				}
 			}

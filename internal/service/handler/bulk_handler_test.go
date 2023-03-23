@@ -10,8 +10,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/tatris-io/tatris/internal/common/consts"
 
 	"github.com/tatris-io/tatris/internal/core"
 	"github.com/tatris-io/tatris/internal/protocol"
@@ -26,7 +29,11 @@ func TestBulkHandler(t *testing.T) {
 	count := 5
 	versions := make([]string, count)
 	for i := 0; i < count; i++ {
-		versions[i] = time.Now().Format(time.RFC3339Nano)
+		versions[i] = strings.ReplaceAll(
+			time.Now().Format(consts.TimeFmtWithoutSeparator),
+			consts.Dot,
+			consts.Empty,
+		)
 		time.Sleep(time.Nanosecond * 1000)
 	}
 	indexes := make([]*core.Index, count)

@@ -4,9 +4,8 @@
 package handler
 
 import (
-	"github.com/tatris-io/tatris/internal/common/errs"
-
 	"github.com/gin-gonic/gin"
+	"github.com/tatris-io/tatris/internal/common/errs"
 	"github.com/tatris-io/tatris/internal/core"
 	"github.com/tatris-io/tatris/internal/meta/metadata"
 	"github.com/tatris-io/tatris/internal/protocol"
@@ -23,7 +22,11 @@ func CreateIndexHandler(c *gin.Context) {
 		if err := c.ShouldBind(&index); err != nil {
 			BadRequest(c, err.Error())
 		} else if err := metadata.CreateIndex(&core.Index{Index: &index}); err != nil {
-			InternalServerError(c, err.Error())
+			if errs.IsInvalidResourceNameError(err) {
+				BadRequest(c, err.Error())
+			} else {
+				InternalServerError(c, err.Error())
+			}
 		} else {
 			OK(c, protocol.CreateIndexResponse{
 				Response:           &protocol.Response{Acknowledged: true},

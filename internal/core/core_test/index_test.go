@@ -3,7 +3,9 @@
 package core_test
 
 import (
+	"github.com/tatris-io/tatris/internal/common/consts"
 	"math"
+	"strings"
 	"testing"
 	"time"
 
@@ -22,7 +24,13 @@ func TestIndex(t *testing.T) {
 
 	// prepare
 	start := time.Now()
-	index, docs, err := prepare.CreateIndexAndDocs(start.Format(time.RFC3339Nano))
+	index, docs, err := prepare.CreateIndexAndDocs(
+		strings.ReplaceAll(
+			start.Format(consts.TimeFmtWithoutSeparator),
+			consts.Dot,
+			consts.Empty,
+		),
+	)
 	if err != nil {
 		t.Fatalf("prepare docs fail: %s", err.Error())
 	}
@@ -64,7 +72,13 @@ func TestIndex(t *testing.T) {
 func TestSegmentReader(t *testing.T) {
 	// prepare
 	start := time.Now()
-	index, _, err := prepare.CreateIndexAndDocs(start.Format(time.RFC3339Nano))
+	index, _, err := prepare.CreateIndexAndDocs(
+		strings.ReplaceAll(
+			start.Format(consts.TimeFmtWithoutSeparator),
+			consts.Dot,
+			consts.Empty,
+		),
+	)
 	if err != nil {
 		t.Fatalf("prepare docs fail: %s", err.Error())
 	}

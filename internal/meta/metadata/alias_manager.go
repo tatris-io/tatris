@@ -6,6 +6,8 @@ package metadata
 import (
 	"encoding/json"
 
+	"github.com/tatris-io/tatris/internal/common/errs"
+
 	"github.com/bobg/go-generics/set"
 	"github.com/tatris-io/tatris/internal/common/utils"
 
@@ -30,6 +32,17 @@ func AddAlias(aliasTerm *protocol.AliasTerm) error {
 
 	index := aliasTerm.Index
 	alias := aliasTerm.Alias
+
+	if err := utils.ValidateResourceName(alias); err != nil {
+		return err
+	}
+
+	if existIndex, _ := GetIndexExplicitly(alias); existIndex != nil {
+		return &errs.InvalidResourceNameError{
+			Name:    alias,
+			Message: "an index or data stream exists with the same name as the alias",
+		}
+	}
 
 	logger.Info(
 		"add alias",

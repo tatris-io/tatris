@@ -3,8 +3,11 @@
 package wal_test
 
 import (
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/tatris-io/tatris/internal/common/consts"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tatris-io/tatris/internal/core"
@@ -15,7 +18,13 @@ import (
 )
 
 func TestWal(t *testing.T) {
-	index, err := prepare.CreateIndex(time.Now().Format(time.RFC3339Nano))
+	index, err := prepare.CreateIndex(
+		strings.ReplaceAll(
+			time.Now().Format(consts.TimeFmtWithoutSeparator),
+			consts.Dot,
+			consts.Empty,
+		),
+	)
 	assert.NoError(t, err)
 	assert.NotNil(t, index)
 

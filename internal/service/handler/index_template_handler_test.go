@@ -10,8 +10,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/tatris-io/tatris/internal/common/consts"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -21,7 +24,13 @@ import (
 
 func TestIndexTemplateHandler(t *testing.T) {
 
-	template, err := prepare.GetIndexTemplate(time.Now().Format(time.RFC3339Nano))
+	template, err := prepare.GetIndexTemplate(
+		strings.ReplaceAll(
+			time.Now().Format(consts.TimeFmtWithoutSeparator),
+			consts.Dot,
+			consts.Empty,
+		),
+	)
 	if err != nil {
 		t.Fatalf("prepare template fail: %s", err.Error())
 	}
