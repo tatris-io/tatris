@@ -17,7 +17,7 @@ type IndexTemplateTerm struct {
 
 type IndexTemplate struct {
 	// Name of the index template.
-	Name string `json:"-"`
+	Name string `json:"name"`
 	// Priority to determine index template precedence when a new data stream or index is created.
 	// The index template with the highest priority is chosen. If no priority is specified the
 	// template is treated as though it is of priority 0 (the lowest priority).

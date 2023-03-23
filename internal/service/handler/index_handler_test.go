@@ -10,8 +10,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/tatris-io/tatris/internal/common/consts"
 
 	"github.com/tatris-io/tatris/internal/core"
 
@@ -23,7 +26,13 @@ import (
 
 func TestIndexHandler(t *testing.T) {
 
-	index, err := prepare.GetIndex(time.Now().Format(time.RFC3339Nano))
+	index, err := prepare.GetIndex(
+		strings.ReplaceAll(
+			time.Now().Format(consts.TimeFmtWithoutSeparator),
+			consts.Dot,
+			consts.Empty,
+		),
+	)
 	if err != nil {
 		t.Fatalf("prepare index and docs fail: %s", err.Error())
 	}

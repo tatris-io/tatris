@@ -191,3 +191,17 @@ type InvalidBulkError struct {
 func (e *InvalidBulkError) Error() string {
 	return fmt.Sprintf("invalid bulk request: %s", e.Message)
 }
+
+type InvalidResourceNameError struct {
+	Name    string `json:"name"`
+	Message string `json:"message"`
+}
+
+func (e *InvalidResourceNameError) Error() string {
+	return fmt.Sprintf("invalid resource name: %s, %s", e.Name, e.Message)
+}
+
+func IsInvalidResourceNameError(err error) bool {
+	var invalidResourceNameErr *InvalidResourceNameError
+	return err != nil && errors.As(err, &invalidResourceNameErr)
+}

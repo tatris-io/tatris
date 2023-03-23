@@ -5,6 +5,7 @@ package indexlib_test
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
@@ -21,7 +22,13 @@ import (
 
 func TestIndexLib(t *testing.T) {
 	// prepare
-	index, err := prepare.CreateIndex(time.Now().Format(time.RFC3339Nano))
+	index, err := prepare.CreateIndex(
+		strings.ReplaceAll(
+			time.Now().Format(consts.TimeFmtWithoutSeparator),
+			consts.Dot,
+			consts.Empty,
+		),
+	)
 	if err != nil {
 		t.Fatalf("prepare index fail: %s", err.Error())
 	}

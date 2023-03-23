@@ -20,6 +20,9 @@ import (
 )
 
 func CreateIndexTemplate(template *protocol.IndexTemplate) error {
+	if err := utils.ValidateResourceName(template.Name); err != nil {
+		return err
+	}
 	FillTemplateAsDefault(template)
 	if err := CheckTemplateValid(template); err != nil {
 		return err

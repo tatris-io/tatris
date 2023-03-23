@@ -28,7 +28,13 @@ import (
 func TestQuerySingleIndex(t *testing.T) {
 
 	// prepare
-	index, _, err := prepare.CreateIndexAndDocs(time.Now().Format(time.RFC3339Nano))
+	index, _, err := prepare.CreateIndexAndDocs(
+		strings.ReplaceAll(
+			time.Now().Format(consts.TimeFmtWithoutSeparator),
+			consts.Dot,
+			consts.Empty,
+		),
+	)
 	if err != nil {
 		t.Fatalf("prepare index and docs fail: %s", err.Error())
 	}
@@ -68,7 +74,11 @@ func TestQueryMultipleIndexes(t *testing.T) {
 	count := 5
 	versions := make([]string, count)
 	for i := 0; i < count; i++ {
-		versions[i] = time.Now().Format(time.RFC3339Nano)
+		versions[i] = strings.ReplaceAll(
+			time.Now().Format(consts.TimeFmtWithoutSeparator),
+			consts.Dot,
+			consts.Empty,
+		)
 		time.Sleep(time.Nanosecond * 1000)
 	}
 	indexes := make([]*core.Index, count)
@@ -116,7 +126,11 @@ func TestAliasQuery(t *testing.T) {
 	count := 5
 	versions := make([]string, count)
 	for i := 0; i < count; i++ {
-		versions[i] = time.Now().Format(time.RFC3339Nano)
+		versions[i] = strings.ReplaceAll(
+			time.Now().Format(consts.TimeFmtWithoutSeparator),
+			consts.Dot,
+			consts.Empty,
+		)
 		time.Sleep(time.Nanosecond * 1000)
 	}
 	indexes := make([]*core.Index, count)
@@ -211,7 +225,11 @@ func TestWildcardQuery(t *testing.T) {
 	count := 5
 	versions := make([]string, count)
 	for i := 0; i < count; i++ {
-		versions[i] = time.Now().Format(time.RFC3339Nano)
+		versions[i] = strings.ReplaceAll(
+			time.Now().Format(consts.TimeFmtWithoutSeparator),
+			consts.Dot,
+			consts.Empty,
+		)
 		time.Sleep(time.Nanosecond * 1000)
 	}
 	indexes := make([]*core.Index, count)
