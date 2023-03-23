@@ -31,7 +31,7 @@ func (s *Settings) UnmarshalJSON(data []byte) error {
 
 func (q *QueryRequest) UnmarshalJSON(data []byte) error {
 	var err error
-	var tmp struct {
+	tmp := struct {
 		Index     string          `json:"index"`
 		Query     Query           `json:"query"`
 		Aggs      map[string]Aggs `json:"aggs"`
@@ -39,7 +39,7 @@ func (q *QueryRequest) UnmarshalJSON(data []byte) error {
 		Size      int64           `json:"size"`
 		From      int64           `json:"from"`
 		TypedKeys bool            `json:"typed_keys"`
-	}
+	}{}
 	if err = json.Unmarshal(data, &tmp); err != nil {
 		return err
 	}
@@ -49,6 +49,7 @@ func (q *QueryRequest) UnmarshalJSON(data []byte) error {
 		result := gjson.ParseBytes(data)
 		aggregations := result.Get("aggregations")
 		if aggregations.Exists() {
+			tmp.Aggs = make(map[string]Aggs)
 			err = json.Unmarshal([]byte(aggregations.Raw), &tmp.Aggs)
 		}
 	}
@@ -64,7 +65,7 @@ func (q *QueryRequest) UnmarshalJSON(data []byte) error {
 
 func (q *Aggs) UnmarshalJSON(data []byte) error {
 	var err error
-	var tmp struct {
+	tmp := struct {
 		Terms         *AggTerms         `json:"terms,omitempty"`
 		DateHistogram *AggDateHistogram `json:"date_histogram,omitempty"`
 		Histogram     *AggHistogram     `json:"histogram,omitempty"`
@@ -81,7 +82,7 @@ func (q *Aggs) UnmarshalJSON(data []byte) error {
 		Percentiles   *AggPercentiles   `json:"percentiles,omitempty"`
 		WeightedAvg   *AggWeightedAvg   `json:"weighted_avg,omitempty"`
 		Aggs          map[string]Aggs   `json:"aggs,omitempty"`
-	}
+	}{}
 	if err = json.Unmarshal(data, &tmp); err != nil {
 		return err
 	}
@@ -91,7 +92,8 @@ func (q *Aggs) UnmarshalJSON(data []byte) error {
 		result := gjson.ParseBytes(data)
 		aggregations := result.Get("aggregations")
 		if aggregations.Exists() {
-			err = json.Unmarshal([]byte(aggregations.Raw), tmp.Aggs)
+			tmp.Aggs = make(map[string]Aggs)
+			err = json.Unmarshal([]byte(aggregations.Raw), &tmp.Aggs)
 		}
 	}
 	q.Terms = tmp.Terms
@@ -114,38 +116,37 @@ func (q *Aggs) UnmarshalJSON(data []byte) error {
 }
 
 func (r *RangeVal) UnmarshalJSON(data []byte) error {
-	var err error
 	var tmp struct {
 		Gt  interface{} `json:"gt,omitempty"`
 		Gte interface{} `json:"gte,omitempty"`
 		Lt  interface{} `json:"lt,omitempty"`
 		Lte interface{} `json:"lte,omitempty"`
 	}
-	if err = json.Unmarshal(data, &tmp); err != nil {
+	if err := json.Unmarshal(data, &tmp); err != nil {
 		return err
 	}
 	// Range queries may be expressed in two ways:
 	// {gt, gte, lt, lte} OR
 	// {from, include_lower, to, include_upper}.
 	// This is for compatibility with elasticsearch's query protocol.
-	if r.Lte == nil && r.Lt == nil && r.Gte == nil && r.Gt == nil {
+	if tmp.Lte == nil && tmp.Lt == nil && tmp.Gte == nil && tmp.Gt == nil {
 		result := gjson.ParseBytes(data)
 		from := result.Get("from")
 		if from.Exists() {
 			includeLower := result.Get("include_lower")
 			if includeLower.Exists() && includeLower.Bool() {
-				err = json.Unmarshal([]byte(from.Raw), r.Gte)
+				tmp.Gte = from.Value()
 			} else {
-				err = json.Unmarshal([]byte(from.Raw), r.Gt)
+				tmp.Gt = from.Value()
 			}
 		}
 		to := result.Get("to")
 		if to.Exists() {
 			includeUpper := result.Get("include_upper")
 			if includeUpper.Exists() && includeUpper.Bool() {
-				err = json.Unmarshal([]byte(to.Raw), r.Lte)
+				tmp.Lte = to.Value()
 			} else {
-				err = json.Unmarshal([]byte(to.Raw), r.Lt)
+				tmp.Lt = to.Value()
 			}
 		}
 	}
@@ -153,5 +154,5 @@ func (r *RangeVal) UnmarshalJSON(data []byte) error {
 	r.Gte = tmp.Gte
 	r.Lt = tmp.Lt
 	r.Lte = tmp.Lte
-	return err
+	return nil
 }
