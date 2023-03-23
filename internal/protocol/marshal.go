@@ -129,24 +129,24 @@ func (r *RangeVal) UnmarshalJSON(data []byte) error {
 	// {gt, gte, lt, lte} OR
 	// {from, include_lower, to, include_upper}.
 	// This is for compatibility with elasticsearch's query protocol.
-	if r.Lte == nil && r.Lt == nil && r.Gte == nil && r.Gt == nil {
+	if tmp.Lte == nil && tmp.Lt == nil && tmp.Gte == nil && tmp.Gt == nil {
 		result := gjson.ParseBytes(data)
 		from := result.Get("from")
 		if from.Exists() {
 			includeLower := result.Get("include_lower")
 			if includeLower.Exists() && includeLower.Bool() {
-				r.Gte = from.Value()
+				tmp.Gte = from.Value()
 			} else {
-				r.Gt = from.Value()
+				tmp.Gt = from.Value()
 			}
 		}
 		to := result.Get("to")
 		if to.Exists() {
 			includeUpper := result.Get("include_upper")
 			if includeUpper.Exists() && includeUpper.Bool() {
-				r.Lte = to.Value()
+				tmp.Lte = to.Value()
 			} else {
-				r.Lt = to.Value()
+				tmp.Lt = to.Value()
 			}
 		}
 	}
