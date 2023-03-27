@@ -33,8 +33,7 @@ func GetIndexTemplateHandler(c *gin.Context) {
 	} else {
 		terms := make([]*protocol.IndexTemplateTerm, len(templates))
 		for i, template := range templates {
-			terms[i] = &protocol.IndexTemplateTerm{Name: template.Name, IndexTemplate: template}
-			template.Name = ""
+			terms[i] = &protocol.IndexTemplateTerm{Name: template.Name, IndexTemplate: &protocol.IndexTemplate{Priority: template.Priority, IndexPatterns: template.IndexPatterns, Template: template.Template}}
 		}
 		OK(c, protocol.IndexTemplateResponse{
 			IndexTemplates: terms,
