@@ -3,11 +3,12 @@
 package core_test
 
 import (
-	"github.com/tatris-io/tatris/internal/common/consts"
 	"math"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/tatris-io/tatris/internal/common/consts"
 
 	"github.com/tatris-io/tatris/internal/common/errs"
 
