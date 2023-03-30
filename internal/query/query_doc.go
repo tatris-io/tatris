@@ -49,7 +49,7 @@ func SearchDocs(
 	}
 	if len(allSegments) == 0 {
 		// no match any segments, returns an empty response
-		return emptyResponse(), nil
+		return emptyResult(), nil
 	}
 	reader, err := core.MergeSegmentReader(&indexlib.BaseConfig{
 		DataPath: config.Cfg.GetDataPath(),
@@ -68,7 +68,7 @@ func SearchDocs(
 		return nil, err
 	}
 	if libRequest == nil {
-		return emptyResponse(), nil
+		return emptyResult(), nil
 	}
 
 	var aggsNamePrefixDict map[string]string
@@ -133,7 +133,7 @@ func SearchDocs(
 	return &protocol.QueryResponse{Hits: hits, Aggregations: aggregations}, nil
 }
 
-func emptyResponse() *protocol.QueryResponse {
+func emptyResult() *protocol.QueryResponse {
 	return &protocol.QueryResponse{
 		Hits: protocol.Hits{
 			Hits:  []protocol.Hit{},
