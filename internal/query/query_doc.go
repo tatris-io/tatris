@@ -556,10 +556,26 @@ func transformQueryString(query protocol.Query) (indexlib.QueryRequest, error) {
 }
 
 func transformTerm(query protocol.Query) (indexlib.QueryRequest, error) {
-	terms := query.Term
-	if len(terms) > 1 {
+	term := query.Term
+	removeBoost(term)
+	if len(term) > 1 {
 		return nil, &errs.InvalidQueryError{
 			Message: "[term] query does not support multiple fields",
+			Query:   query,
+		}
+	}
+	for k, v := range term {
+		return transformTermVal(query, k, v)
+	}
+	return nil, nil
+}
+
+func transformTerms(query protocol.Query) (indexlib.QueryRequest, error) {
+	terms := query.Terms
+	removeBoost(terms)
+	if len(terms) > 1 {
+		return nil, &errs.InvalidQueryError{
+			Message: "[terms] query does not support multiple fields",
 			Query:   query,
 		}
 	}
@@ -569,22 +585,14 @@ func transformTerm(query protocol.Query) (indexlib.QueryRequest, error) {
 	return nil, nil
 }
 
-func transformTerms(query protocol.Query) (indexlib.QueryRequest, error) {
-	terms := query.Terms
-	if len(terms) > 1 {
-		return nil, &errs.InvalidQueryError{
-			Message: "[terms] query does not support multiple fields",
-			Query:   query,
+// removeBoost remove unsupported fields such as BOOST
+// TODO: support scoring mechanism
+func removeBoost(m map[string]interface{}) {
+	for k := range m {
+		if strings.EqualFold(k, "boost") {
+			delete(m, k)
 		}
 	}
-	for k, v := range terms {
-		if strings.ToLower(k) == "boost" {
-			// TODO
-			continue
-		}
-		return transformTermVal(query, k, v)
-	}
-	return nil, nil
 }
 
 // transformTermVal converts QueryRequest according to the actual type of term value.
