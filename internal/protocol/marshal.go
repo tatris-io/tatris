@@ -4,6 +4,7 @@ package protocol
 
 import (
 	"encoding/json"
+	"reflect"
 
 	"github.com/tidwall/gjson"
 )
@@ -53,13 +54,27 @@ func (q *QueryRequest) UnmarshalJSON(data []byte) error {
 			err = json.Unmarshal([]byte(aggregations.Raw), &tmp.Aggs)
 		}
 	}
-	q.Index = tmp.Index
-	q.Query = tmp.Query
-	q.Aggs = tmp.Aggs
-	q.Sort = tmp.Sort
-	q.Size = tmp.Size
-	q.From = tmp.From
-	q.TypedKeys = tmp.TypedKeys
+	if !reflect.ValueOf(tmp.Index).IsZero() {
+		q.Index = tmp.Index
+	}
+	if !reflect.ValueOf(tmp.Query).IsZero() {
+		q.Query = tmp.Query
+	}
+	if !reflect.ValueOf(tmp.Aggs).IsZero() {
+		q.Aggs = tmp.Aggs
+	}
+	if !reflect.ValueOf(tmp.Sort).IsZero() {
+		q.Sort = tmp.Sort
+	}
+	if !reflect.ValueOf(tmp.Size).IsZero() {
+		q.Size = tmp.Size
+	}
+	if !reflect.ValueOf(tmp.From).IsZero() {
+		q.From = tmp.From
+	}
+	if !reflect.ValueOf(tmp.TypedKeys).IsZero() {
+		q.TypedKeys = tmp.TypedKeys
+	}
 	return err
 }
 
