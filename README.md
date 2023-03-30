@@ -1,4 +1,7 @@
-# tatris
+<p align="center">
+  <img height="300" src="https://github.com/tatris-io/tatris/blob/main/docs/logo/png/logo-horizontal.png" alt="TATRIS">
+</p>
+
 [![Build Status](https://github.com/tatris-io/tatris/actions/workflows/build.yml/badge.svg)](https://github.com/tatris-io/tatris/actions/workflows/build.yml)
 ![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)
 
