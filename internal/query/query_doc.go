@@ -6,6 +6,7 @@ package query
 import (
 	"context"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -16,7 +17,7 @@ import (
 	"github.com/tatris-io/tatris/internal/core/config"
 
 	"github.com/tatris-io/tatris/internal/common/utils"
-	str2duration "github.com/xhit/go-str2duration/v2"
+	"github.com/xhit/go-str2duration/v2"
 
 	"github.com/tatris-io/tatris/internal/core"
 
@@ -47,13 +48,8 @@ func SearchDocs(
 		allSegments = append(allSegments, segments...)
 	}
 	if len(allSegments) == 0 {
-		// no match any segments, returns an appropriate response
-		return &protocol.QueryResponse{
-			Hits: protocol.Hits{
-				Hits:  []protocol.Hit{},
-				Total: protocol.Total{Value: 0, Relation: "eq"},
-			},
-		}, nil
+		// no match any segments, returns an empty response
+		return emptyResult(), nil
 	}
 	reader, err := core.MergeSegmentReader(&indexlib.BaseConfig{
 		DataPath: config.Cfg.GetDataPath(),
@@ -70,6 +66,9 @@ func SearchDocs(
 	libRequest, err := transform(request.Query, indexes[0].Mappings)
 	if err != nil {
 		return nil, err
+	}
+	if libRequest == nil {
+		return emptyResult(), nil
 	}
 
 	var aggsNamePrefixDict map[string]string
@@ -132,6 +131,15 @@ func SearchDocs(
 	hits.Total.Relation = respHits.Total.Relation
 	hits.MaxScore = respHits.MaxScore
 	return &protocol.QueryResponse{Hits: hits, Aggregations: aggregations}, nil
+}
+
+func emptyResult() *protocol.QueryResponse {
+	return &protocol.QueryResponse{
+		Hits: protocol.Hits{
+			Hits:  []protocol.Hit{},
+			Total: protocol.Total{Value: 0, Relation: "eq"},
+		},
+	}
 }
 
 func resolveTimeRange(index string, query protocol.Query) (int64, int64, error) {
@@ -548,26 +556,103 @@ func transformQueryString(query protocol.Query) (indexlib.QueryRequest, error) {
 }
 
 func transformTerm(query protocol.Query) (indexlib.QueryRequest, error) {
-	term := query.Term
-	if len(term) <= 0 {
-		return indexlib.NewTermQuery(), nil
-	}
-	termQ := indexlib.NewTermQuery()
-	for k, v := range term {
-		termQ.Field = k
-		switch v := v.(type) {
-		case string:
-			termQ.Term = v
-		case map[string]interface{}:
-			switch v["value"].(type) {
-			case string:
-				termQ.Term = v["value"].(string)
-			default:
-				return nil, &errs.InvalidQueryError{Query: query, Message: "term query field type must be string"}
-			}
+	terms := query.Term
+	if len(terms) > 1 {
+		return nil, &errs.InvalidQueryError{
+			Message: "[term] query does not support multiple fields",
+			Query:   query,
 		}
 	}
-	return termQ, nil
+	for k, v := range terms {
+		return transformTermVal(query, k, v)
+	}
+	return nil, nil
+}
+
+func transformTerms(query protocol.Query) (indexlib.QueryRequest, error) {
+	terms := query.Terms
+	if len(terms) > 1 {
+		return nil, &errs.InvalidQueryError{
+			Message: "[terms] query does not support multiple fields",
+			Query:   query,
+		}
+	}
+	for k, v := range terms {
+		if strings.ToLower(k) == "boost" {
+			// TODO
+			continue
+		}
+		return transformTermVal(query, k, v)
+	}
+	return nil, nil
+}
+
+// transformTermVal converts QueryRequest according to the actual type of term value.
+// This is because the index library Bluge only supports TermQuery with type string. For numeric
+// types, we have to convert it to a RangeQuery of [v, v+math.SmallestNonzeroFloat64].
+func transformTermVal(
+	query protocol.Query,
+	key string,
+	val interface{},
+) (indexlib.QueryRequest, error) {
+	switch value := val.(type) {
+	case string:
+		termQ := indexlib.NewTermQuery()
+		termQ.Field = key
+		termQ.Term = value
+		return termQ, nil
+	case int64, int32, int16, int8, int, byte, float64, float32:
+		return numericTermToRange(key, val), nil
+	case map[string]interface{}:
+		return transformTermVal(query, key, value["value"])
+	case []interface{}:
+		if len(value) == 0 {
+			return nil, nil
+		}
+		switch value[0].(type) {
+		case string:
+			termsQ := indexlib.NewTermsQuery()
+			termsQ.Terms = make(map[string]*indexlib.Terms)
+			termsQ.Terms[key] = &indexlib.Terms{}
+			for _, v := range value {
+				switch v := v.(type) {
+				case string:
+					termsQ.Terms[key].Fields = append(termsQ.Terms[key].Fields, v)
+				default:
+					return nil, &errs.InvalidQueryError{Message: fmt.Sprintf("inconsistent string terms: %s", v), Query: query}
+				}
+			}
+			return termsQ, nil
+		case int64, int32, int16, int8, int, byte, float64, float32:
+			boolQ := indexlib.NewBooleanQuery()
+			for _, v := range value {
+				switch v := v.(type) {
+				case int64, int32, int16, int8, int, byte, float64, float32:
+					rangeQ := numericTermToRange(key, v)
+					boolQ.Shoulds = append(boolQ.Shoulds, rangeQ)
+				default:
+					return nil, &errs.InvalidQueryError{Message: fmt.Sprintf("inconsistent numeric terms: %s", v), Query: query}
+				}
+			}
+			return boolQ, nil
+		default:
+			return nil, &errs.UnsupportedError{Desc: fmt.Sprintf("terms: %s", key), Value: val}
+		}
+	default:
+		return nil, &errs.UnsupportedError{Desc: fmt.Sprintf("terms: %s", key), Value: val}
+	}
+}
+
+func numericTermToRange(key string, val interface{}) *indexlib.RangeQuery {
+	rangeQ := indexlib.NewRangeQuery()
+	floatV, _ := utils.ToFloat64(val)
+	rangeQ.Range = map[string]*indexlib.RangeVal{
+		key: {
+			GTE: floatV,
+			LTE: floatV + math.SmallestNonzeroFloat64,
+		},
+	}
+	return rangeQ
 }
 
 func transformIds(query protocol.Query) (indexlib.QueryRequest, error) {
@@ -577,40 +662,6 @@ func transformIds(query protocol.Query) (indexlib.QueryRequest, error) {
 	}
 	termsQ := indexlib.NewTerms()
 	termsQ.Fields = append(termsQ.Fields, ids.Values...)
-	return termsQ, nil
-}
-
-func transformTerms(query protocol.Query) (indexlib.QueryRequest, error) {
-	terms := query.Terms
-	if len(terms) <= 0 {
-		return &indexlib.TermsQuery{}, nil
-	}
-	field := ""
-	values := []string{}
-	termsQ := indexlib.NewTermsQuery()
-	termsQ.Terms = make(map[string]*indexlib.Terms, len(terms))
-	for k, v := range terms {
-		if strings.ToLower(k) == "boost" {
-			// TODO
-			continue
-		}
-		field = k
-		switch v := v.(type) {
-		case []interface{}:
-			for _, vv := range v {
-				switch vv := vv.(type) {
-				case string:
-					values = append(values, vv)
-				default:
-					return nil, &errs.UnsupportedError{Desc: "term", Value: vv}
-				}
-			}
-		}
-
-		termsQ.Terms[field] = &indexlib.Terms{
-			Fields: values,
-		}
-	}
 	return termsQ, nil
 }
 
@@ -713,7 +764,7 @@ func transformBool(
 		q.Musts = make([]indexlib.QueryRequest, 0, len(query.Bool.Must))
 		for _, must := range query.Bool.Must {
 			queryRequest, err := transform(*must, mappings)
-			if err != nil {
+			if err != nil || queryRequest == nil {
 				return nil, err
 			}
 			q.Musts = append(q.Musts, queryRequest)
@@ -726,7 +777,9 @@ func transformBool(
 			if err != nil {
 				return nil, err
 			}
-			q.MustNots = append(q.MustNots, queryRequest)
+			if queryRequest != nil {
+				q.MustNots = append(q.MustNots, queryRequest)
+			}
 		}
 	}
 	if query.Bool.Should != nil {
@@ -736,14 +789,16 @@ func transformBool(
 			if err != nil {
 				return nil, err
 			}
-			q.Shoulds = append(q.Shoulds, queryRequest)
+			if queryRequest != nil {
+				q.Shoulds = append(q.Shoulds, queryRequest)
+			}
 		}
 	}
 	if query.Bool.Filter != nil {
 		q.Filters = make([]indexlib.QueryRequest, 0, len(query.Bool.Filter))
 		for _, filter := range query.Bool.Filter {
 			queryRequest, err := transform(*filter, mappings)
-			if err != nil {
+			if err != nil || queryRequest == nil {
 				return nil, err
 			}
 			q.Filters = append(q.Filters, queryRequest)
