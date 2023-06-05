@@ -201,10 +201,16 @@ func (d *OssDirectory) Remove(kind string, id uint64) error {
 	return nil
 }
 
+// Lock ensures this process has exclusive access to write in this directory.
+// We plan to restrict an OssDirectory to be accessed by at most one process at the same time
+// through the first-level shard strategy (shard).
 func (d *OssDirectory) Lock() error {
 	return nil
 }
 
+// Unlock releases the lock held on this directory.
+// We plan to restrict an OssDirectory to be accessed by at most one process at the same time
+// through the first-level shard strategy (shard).
 func (d *OssDirectory) Unlock() error {
 	return nil
 }
