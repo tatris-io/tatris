@@ -1,8 +1,7 @@
 // Copyright 2023 Tatris Project Authors. Licensed under Apache-2.0.
 
 // Package oss is used to implement the AliCloud-Object-Storage-Service storage medium for the
-// underlying data
-// and indexes.
+// underlying data and indexes.
 package oss
 
 import (
