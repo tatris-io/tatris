@@ -1,4 +1,12 @@
-data_path: /home/tatris/data
+directory:
+  type: fs
+  fs:
+    path: /home/tatris/data
+  oss:
+    endpoint:
+    bucket:
+    access_key_id:
+    secret_access_key:
 segment:
   mature_threshold: 20000
 wal:

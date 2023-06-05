@@ -4,6 +4,7 @@
 package manage
 
 import (
+	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/common/errs"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/indexlib"
@@ -25,14 +26,13 @@ var (
 // returned by this reader. This also means that this Reader is holding onto resources and MUST be
 // closed when it is no longer needed.
 func GetReader(
-	config *indexlib.BaseConfig,
+	config *indexlib.Config,
 	segments ...string,
 ) (indexlib.Reader, error) {
 	// TODO: when we support update mappings when an index running, segments(represented by 'index'
 	// var here) of the index may have different mappings
-	indexlib.SetDefaultConfig(config)
-	switch config.IndexLibType {
-	case indexlib.BlugeIndexLibType:
+	switch config.IndexLib {
+	case consts.IndexLibBluge:
 		blugeReader := bluge.NewBlugeReader(config, segments...)
 		err := blugeReader.OpenReader()
 		if err != nil {
@@ -46,7 +46,7 @@ func GetReader(
 }
 
 // GetReaderUsingCache tries to get reader from cache firstly, or open a new reader and cache it.
-func GetReaderUsingCache(config *indexlib.BaseConfig, index string) (indexlib.Reader, error) {
+func GetReaderUsingCache(config *indexlib.Config, index string) (indexlib.Reader, error) {
 	// TODO: Here we didn't lock across 'defaultReaderCache.Get()' and
 	// 'defaultReaderCache.PutIfAbsent()'
 	// Because 'GetReader' is a heavy operation, which takes long time.
@@ -76,16 +76,15 @@ func GetReaderUsingCache(config *indexlib.BaseConfig, index string) (indexlib.Re
 // are already open, and it does not prevent new Readers from being opened,
 // but it does mean care should be taken to close the Writer when your work done.
 func GetWriter(
-	config *indexlib.BaseConfig,
+	config *indexlib.Config,
 	mappings protocol.Mappings,
 	index string,
 	segment string,
 ) (indexlib.Writer, error) {
-	baseConfig := indexlib.SetDefaultConfig(config)
 
-	switch baseConfig.IndexLibType {
-	case indexlib.BlugeIndexLibType:
-		blugeWriter := bluge.NewBlugeWriter(baseConfig, mappings, index, segment)
+	switch config.IndexLib {
+	case consts.IndexLibBluge:
+		blugeWriter := bluge.NewBlugeWriter(config, mappings, index, segment)
 		err := blugeWriter.OpenWriter()
 		if err != nil {
 			logger.Error("bluge open writer failed", zap.Error(err))

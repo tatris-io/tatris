@@ -51,9 +51,9 @@ func SearchDocs(
 		// no match any segments, returns an empty response
 		return emptyResult(), nil
 	}
-	reader, err := core.MergeSegmentReader(&indexlib.BaseConfig{
-		DataPath: config.Cfg.GetDataPath(),
-	}, allSegments...)
+	reader, err := core.MergeSegmentReader(
+		indexlib.BuildConf(config.Cfg.Directory),
+		allSegments...)
 	if err != nil {
 		return nil, err
 	}

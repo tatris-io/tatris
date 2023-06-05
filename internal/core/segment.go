@@ -77,9 +77,7 @@ func (segment *Segment) GetWriter() (indexlib.Writer, error) {
 // openWriter open underlying writer
 func (segment *Segment) openWriter() (indexlib.Writer, error) {
 	// open a writer
-	config := &indexlib.BaseConfig{
-		DataPath: config.Cfg.GetDataPath(),
-	}
+	config := indexlib.BuildConf(config.Cfg.Directory)
 	writer, err := manage.GetWriter(
 		config,
 		*segment.Shard.Index.Mappings,
@@ -135,9 +133,7 @@ func (segment *Segment) GetReader() (indexlib.Reader, error) {
 		return segment.openReaderFromWriter()
 	}
 
-	config := &indexlib.BaseConfig{
-		DataPath: config.Cfg.GetDataPath(),
-	}
+	config := indexlib.BuildConf(config.Cfg.Directory)
 
 	// The segment is readonly, so we can cache the result and reuse it
 	if segment.status == SegmentStatusReadonly {
