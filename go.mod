@@ -2,6 +2,8 @@ module github.com/tatris-io/tatris
 
 go 1.18
 
+replace github.com/blugelabs/bluge v0.2.2 => github.com/tatris-io/bluge v0.1.0
+
 require (
 	github.com/AlekSi/gocov-xml v1.1.0
 	github.com/alecthomas/kong v0.7.1
@@ -12,6 +14,7 @@ require (
 	github.com/blugelabs/query_string v0.3.0
 	github.com/bobg/go-generics v1.7.2
 	github.com/caio/go-tdigest v3.1.0+incompatible
+	github.com/gin-contrib/pprof v1.4.0
 	github.com/gin-gonic/gin v1.8.2
 	github.com/google/uuid v1.3.0
 	github.com/jinzhu/now v1.1.5
