@@ -37,7 +37,7 @@ import (
 )
 
 type BlugeReader struct {
-	*indexlib.BaseConfig
+	*indexlib.Config
 	Segments []string
 	Readers  []*bluge.Reader
 	// closeHook will be called in 'Close' func of BlugeReader if it is not nil
@@ -54,13 +54,13 @@ var (
 )
 
 func NewBlugeReader(
-	config *indexlib.BaseConfig,
+	config *indexlib.Config,
 	segments ...string,
 ) *BlugeReader {
 	return &BlugeReader{
-		BaseConfig: config,
-		Segments:   segments,
-		Readers:    make([]*bluge.Reader, 0),
+		Config:   config,
+		Segments: segments,
+		Readers:  make([]*bluge.Reader, 0),
 	}
 }
 
@@ -73,11 +73,19 @@ func (b *BlugeReader) OpenReader() error {
 	var cfg bluge.Config
 
 	for _, segment := range b.Segments {
-		switch b.BaseConfig.StorageType {
-		case indexlib.FSStorageType:
-			cfg = config.GetFSConfig(b.BaseConfig.DataPath, segment)
+		switch b.Config.DirectoryType {
+		case consts.DirectoryFS:
+			cfg = config.GetFSConfig(b.Config.FS.Path, segment)
+		case consts.DirectoryOSS:
+			cfg = config.GetOSSConfig(
+				b.Config.OSS.Endpoint,
+				b.Config.OSS.Bucket,
+				b.Config.OSS.AccessKeyID,
+				b.Config.OSS.SecretAccessKey,
+				segment,
+			)
 		default:
-			cfg = config.GetFSConfig(b.BaseConfig.DataPath, segment)
+			cfg = config.GetFSConfig(b.Config.FS.Path, segment)
 		}
 
 		reader, err := bluge.OpenReader(cfg)
@@ -725,7 +733,11 @@ func (b *BlugeReader) Close() {
 
 // MergeReader multiple readers into one BlugeReader.
 // The readers(or their underlying readers) must be type of BlugeReader.
-func MergeReader(config *indexlib.BaseConfig, readers ...indexlib.Reader) (*BlugeReader, error) {
+func MergeReader(
+	config *indexlib.Config,
+	segments []string,
+	readers []indexlib.Reader,
+) (*BlugeReader, error) {
 	// 99% case readers has 1 index and 1 reader, so the slice capacity is set to len(readers)
 	blugeReaders := make([]*bluge.Reader, 0, len(readers))
 
@@ -742,8 +754,9 @@ func MergeReader(config *indexlib.BaseConfig, readers ...indexlib.Reader) (*Blug
 	}
 
 	return &BlugeReader{
-		BaseConfig: config,
-		Readers:    blugeReaders,
+		Config:   config,
+		Segments: segments,
+		Readers:  blugeReaders,
 		closeHook: func(_ *BlugeReader) {
 			for _, reader := range readers {
 				reader.Close()

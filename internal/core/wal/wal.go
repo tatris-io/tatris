@@ -58,7 +58,7 @@ func OpenWAL(shard *core.Shard) (log.WalLog, error) {
 	defer utils.Timerf("open wal finish, name:%s", name)()
 
 	options := config.Cfg.Wal
-	p := path.Join(config.Cfg.GetWALPath(), name)
+	p := path.Join(config.Cfg.GetFSPath(), consts.PathWAL, name)
 	logger.Info("open wal", zap.String("name", name), zap.Any("options", options))
 	twalLog := &tidwall.TWalLog{}
 	twalOptions := &wal.Options{}
@@ -144,9 +144,9 @@ func ConsumeWALs() {
 					wallog.Close()
 					var p string
 					if errs.IsIndexNotFound(err) {
-						p = path.Join(config.Cfg.GetWALPath(), i)
+						p = path.Join(config.Cfg.GetFSPath(), consts.PathWAL, i)
 					} else {
-						p = path.Join(config.Cfg.GetWALPath(), n)
+						p = path.Join(config.Cfg.GetFSPath(), consts.PathWAL, n)
 					}
 					err = os.RemoveAll(p)
 					if err != nil {

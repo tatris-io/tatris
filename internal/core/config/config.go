@@ -6,7 +6,6 @@ package config
 import (
 	"encoding/json"
 	"os"
-	"path"
 	"sync"
 
 	"github.com/tatris-io/tatris/internal/common/consts"
@@ -20,11 +19,17 @@ var Cfg *Config
 
 func init() {
 	Cfg = &Config{
-		DataPath: consts.DefaultPath,
-		Segment: Segment{
+		IndexLib: consts.IndexLibBluge,
+		Directory: &Directory{
+			Type: consts.DirectoryFS,
+			FS: &FS{
+				Path: consts.DefaultFSPath,
+			},
+		},
+		Segment: &Segment{
 			MatureThreshold: 20000,
 		},
-		Wal: Wal{
+		Wal: &Wal{
 			NoSync:           false,
 			SegmentSize:      20971520,
 			LogFormat:        0,
@@ -34,7 +39,7 @@ func init() {
 			FilePerms:        0640,
 			Parallel:         16,
 		},
-		Query: Query{
+		Query: &Query{
 			Parallel:                    16,
 			DefaultScanHours:            24 * 3,
 			DefaultAggregationShardSize: 5000,
@@ -43,13 +48,31 @@ func init() {
 }
 
 type Config struct {
-	DataPath string  `yaml:"data_path"`
-	Segment  Segment `yaml:"segment"`
-	Wal      Wal     `yaml:"wal"`
-	Query    Query   `yaml:"query"`
+	IndexLib  string     `yaml:"index_lib"`
+	Directory *Directory `yaml:"directory"`
+	Segment   *Segment   `yaml:"segment"`
+	Wal       *Wal       `yaml:"wal"`
+	Query     *Query     `yaml:"query"`
 
 	_once   sync.Once
 	_inited atomic.Bool
+}
+
+type Directory struct {
+	Type string `yaml:"type"`
+	FS   *FS    `yaml:"fs"`
+	OSS  *OSS   `yaml:"oss"`
+}
+
+type FS struct {
+	Path string `yaml:"path"`
+}
+
+type OSS struct {
+	Endpoint        string `yaml:"endpoint"`
+	Bucket          string `yaml:"bucket"`
+	AccessKeyID     string `yaml:"access_key_id"`
+	SecretAccessKey string `yaml:"secret_access_key"`
 }
 
 type Segment struct {
@@ -93,23 +116,38 @@ func (cfg *Config) IsVerified() bool {
 	return cfg._inited.Load()
 }
 
-func (cfg *Config) verifyPath() {
-	p := cfg.DataPath
-	if stat, err := os.Stat(cfg.DataPath); err != nil {
+func (dir *Directory) verify() {
+	dir.FS.verify()
+	if dir.Type == consts.DirectoryOSS {
+		dir.OSS.verify()
+	}
+}
+
+func (fs *FS) verify() {
+	if stat, err := os.Stat(fs.Path); err != nil {
 		if os.IsNotExist(err) {
 			// not exists, try to create
-			if err = os.MkdirAll(cfg.DataPath, 0755); err != nil {
-				logger.Panic("create data path failed", zap.String("path", p), zap.Error(err))
+			if err = os.MkdirAll(fs.Path, 0755); err != nil {
+				logger.Panic("create data path failed", zap.String("path", fs.Path), zap.Error(err))
 			}
-			logger.Info("create data path", zap.String("path", p))
+			logger.Info("create data path", zap.String("path", fs.Path))
 		} else {
-			logger.Panic("invalid data path", zap.String("path", p), zap.Error(err))
+			logger.Panic("invalid data path", zap.String("path", fs.Path), zap.Error(err))
 		}
 	} else {
 		// already exists, check if it is a DIRECTORY
 		if !stat.IsDir() {
-			logger.Panic("data path is not a directory", zap.String("path", p))
+			logger.Panic("data path is not a directory", zap.String("path", fs.Path))
 		}
+	}
+}
+
+func (oss *OSS) verify() {
+	if oss.Endpoint == "" || oss.Bucket == "" || oss.AccessKeyID == "" ||
+		oss.SecretAccessKey == "" {
+		logger.Panic(
+			"endpoint, bucket, access_key_id, secret_access_key must be specified when directory type is oss",
+		)
 	}
 }
 
@@ -142,22 +180,14 @@ func (q *Query) verify() {
 
 // doVerify verifies the control parameters of all modules
 func (cfg *Config) doVerify() {
-	cfg.verifyPath()
+	cfg.Directory.verify()
 	cfg.Segment.verify()
 	cfg.Wal.verify()
 	cfg.Query.verify()
 }
 
-func (cfg *Config) GetDataPath() string {
-	return path.Join(cfg.DataPath, consts.PathData)
-}
-
-func (cfg *Config) GetMetaPath() string {
-	return path.Join(cfg.DataPath, consts.PathMeta)
-}
-
-func (cfg *Config) GetWALPath() string {
-	return path.Join(cfg.DataPath, consts.PathWAL)
+func (cfg *Config) GetFSPath() string {
+	return cfg.Directory.FS.Path
 }
 
 func (cfg *Config) String() string {

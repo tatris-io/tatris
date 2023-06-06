@@ -4,6 +4,7 @@ package core
 
 import (
 	"github.com/pkg/errors"
+	"github.com/tatris-io/tatris/internal/common/consts"
 	"github.com/tatris-io/tatris/internal/common/errs"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"github.com/tatris-io/tatris/internal/indexlib"
@@ -13,11 +14,14 @@ import (
 
 // mergeReader merges opened readers into one indexlib.Reader instance. Now the provided reader must
 // be type of *bluge.BlugeReader.
-func mergeReader(config *indexlib.BaseConfig, readers ...indexlib.Reader) (indexlib.Reader, error) {
-	indexlib.SetDefaultConfig(config)
-	switch config.IndexLibType {
-	case indexlib.BlugeIndexLibType:
-		blugeReader, err := bluge.MergeReader(config, readers...)
+func mergeReader(
+	config *indexlib.Config,
+	segments []string,
+	readers []indexlib.Reader,
+) (indexlib.Reader, error) {
+	switch config.IndexLib {
+	case consts.IndexLibBluge:
+		blugeReader, err := bluge.MergeReader(config, segments, readers)
 		if err != nil {
 			logger.Error("bluge fail to merge readers", zap.Error(err))
 			return nil, err
@@ -36,13 +40,15 @@ func mergeReader(config *indexlib.BaseConfig, readers ...indexlib.Reader) (index
 // MergeSegmentReader merges segment readers into one indexlib.Reader instance. Now the provided
 // reader must be type of *bluge.BlugeReader.
 func MergeSegmentReader(
-	config *indexlib.BaseConfig,
+	config *indexlib.Config,
 	segments ...*Segment,
 ) (indexlib.Reader, error) {
+	segNames := make([]string, 0, len(segments))
 	readers := make([]indexlib.Reader, 0, len(segments))
 	var lastGetReaderErr error
 	for _, segment := range segments {
 		if reader, err := segment.GetReader(); err == nil {
+			segNames = append(segNames, segment.GetName())
 			readers = append(readers, reader)
 		} else {
 			lastGetReaderErr = err
@@ -53,7 +59,7 @@ func MergeSegmentReader(
 		return nil, errors.Wrap(lastGetReaderErr, "fail to open segment reader")
 	}
 
-	merged, err := mergeReader(config, readers...)
+	merged, err := mergeReader(config, segNames, readers)
 	if err != nil {
 		for _, reader := range readers {
 			reader.Close()

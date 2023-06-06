@@ -8,6 +8,8 @@ import (
 	"path"
 	"sync"
 
+	"github.com/tatris-io/tatris/internal/common/consts"
+
 	"github.com/tatris-io/tatris/internal/core/config"
 
 	"github.com/pkg/errors"
@@ -72,9 +74,7 @@ func (index *Index) GetReadersByTime(start, end int64) (indexlib.Reader, error) 
 	if len(segments) == 0 {
 		return nil, errs.ErrNoSegmentMatched
 	}
-	merged, err := MergeSegmentReader(&indexlib.BaseConfig{
-		DataPath: config.Cfg.GetDataPath(),
-	}, segments...)
+	merged, err := MergeSegmentReader(indexlib.BuildConf(config.Cfg.Directory), segments...)
 	if err != nil {
 		return nil, errors.Wrap(err, "fail to merge multiple segment readers")
 	}
@@ -105,6 +105,6 @@ func (index *Index) Close() error {
 		shard.Close()
 	}
 	// clear data
-	p := path.Join(config.Cfg.GetDataPath(), index.Name)
+	p := path.Join(config.Cfg.GetFSPath(), consts.PathData, index.Name)
 	return os.RemoveAll(p)
 }

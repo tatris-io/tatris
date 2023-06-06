@@ -23,7 +23,7 @@ import (
 )
 
 type BlugeWriter struct {
-	*indexlib.BaseConfig
+	*indexlib.Config
 	Mappings protocol.Mappings
 	Index    string
 	Segment  string
@@ -31,22 +31,30 @@ type BlugeWriter struct {
 }
 
 func NewBlugeWriter(
-	config *indexlib.BaseConfig,
+	config *indexlib.Config,
 	mappings protocol.Mappings,
 	index string,
 	segment string,
 ) *BlugeWriter {
-	return &BlugeWriter{BaseConfig: config, Mappings: mappings, Index: index, Segment: segment}
+	return &BlugeWriter{Config: config, Mappings: mappings, Index: index, Segment: segment}
 }
 
 func (b *BlugeWriter) OpenWriter() error {
 	var cfg bluge.Config
 
-	switch b.BaseConfig.StorageType {
-	case indexlib.FSStorageType:
-		cfg = config.GetFSConfig(b.BaseConfig.DataPath, b.Segment)
+	switch b.Config.DirectoryType {
+	case consts.DirectoryFS:
+		cfg = config.GetFSConfig(b.Config.FS.Path, b.Segment)
+	case consts.DirectoryOSS:
+		cfg = config.GetOSSConfig(
+			b.Config.OSS.Endpoint,
+			b.Config.OSS.Bucket,
+			b.Config.OSS.AccessKeyID,
+			b.Config.OSS.SecretAccessKey,
+			b.Segment,
+		)
 	default:
-		cfg = config.GetFSConfig(b.BaseConfig.DataPath, b.Segment)
+		cfg = config.GetFSConfig(b.Config.FS.Path, b.Segment)
 	}
 
 	writer, err := bluge.OpenWriter(cfg)
@@ -91,9 +99,9 @@ func (b *BlugeWriter) Reader() (indexlib.Reader, error) {
 		return nil, err
 	}
 	return &BlugeReader{
-		BaseConfig: b.BaseConfig,
-		Segments:   []string{b.Segment},
-		Readers:    []*bluge.Reader{reader},
+		Config:   b.Config,
+		Segments: []string{b.Segment},
+		Readers:  []*bluge.Reader{reader},
 	}, nil
 }
 

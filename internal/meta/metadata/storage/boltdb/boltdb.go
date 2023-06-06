@@ -8,6 +8,8 @@ import (
 	"os"
 	"path"
 
+	"github.com/tatris-io/tatris/internal/common/consts"
+
 	"github.com/tatris-io/tatris/internal/core/config"
 
 	"go.uber.org/zap"
@@ -23,8 +25,10 @@ type BoltMetaStore struct {
 	db *bbolt.DB
 }
 
+const SuffixBolt = ".bolt"
+
 func Open() (storage.MetaStore, error) {
-	p := config.Cfg.GetMetaPath() + ".bolt"
+	p := path.Join(config.Cfg.GetFSPath(), consts.PathMeta) + SuffixBolt
 	logger.Info("open boltdb", zap.String("path", p))
 	d := path.Dir(p)
 	// mkdir
