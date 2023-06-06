@@ -25,4 +25,4 @@ cd tatris && make
 Any contribution is welcome!
 
 ## Licensing
-CeresDB is under [Apache License 2.0](./LICENSE).
+Tatris is under [Apache License 2.0](./LICENSE).
