@@ -20,3 +20,9 @@ cd tatris && make
 #### Useful links for beginners
 * [How to build Tatris and its Docker image](/docs/dev_guides/build.md)
 * [How to configure Tatris](/docs/user_guides/configure.md)
+
+## Contributing
+Any contribution is welcome!
+
+## Licensing
+CeresDB is under [Apache License 2.0](./LICENSE).
