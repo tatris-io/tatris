@@ -92,7 +92,7 @@ func (d *FsDirectory) Stats() (numFilesOnDisk, numBytesUsedDisk uint64) {
 
 func (d *FsDirectory) Sync() error {
 	defer utils.Timerf(
-		"[directory] method:sync, type:fs, path:%s, filename:%s",
+		"[directory] method:sync, type:fs, path:%s",
 		d.path,
 	)()
 	return d.dir.Sync()
