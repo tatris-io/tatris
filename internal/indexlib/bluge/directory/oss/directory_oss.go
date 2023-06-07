@@ -45,7 +45,7 @@ func NewOssDirectory(endpoint, bucket, accessKeyID, secretAccessKey, index strin
 
 func (d *OssDirectory) Setup(readOnly bool) error {
 	defer utils.Timerf(
-		"oss dir setup finish, bucket:%s, index:%s, readOnly:%t",
+		"[directory] method:setup, type:oss, bucket:%s, index:%s, readOnly:%t",
 		d.bucket,
 		d.index,
 		readOnly,
@@ -66,7 +66,7 @@ func (d *OssDirectory) Setup(readOnly bool) error {
 func (d *OssDirectory) List(kind string) ([]uint64, error) {
 
 	defer utils.Timerf(
-		"oss dir list finish, bucket:%s, index:%s, kind:%s",
+		"[directory] method:list, type:oss, bucket:%s, index:%s, kind:%s",
 		d.bucket,
 		d.index,
 		kind,
@@ -89,7 +89,7 @@ func (d *OssDirectory) List(kind string) ([]uint64, error) {
 		epoch, err := strconv.ParseUint(base[:len(base)-len(kind)], 16, 64)
 		if err != nil {
 			logger.Error(
-				"oss dir parse object fail",
+				"oss list parse object fail",
 				zap.String("index", d.index),
 				zap.String("bucket", d.bucket),
 				zap.String("key", dirEntry.Key),
@@ -114,7 +114,7 @@ func (d *OssDirectory) Persist(
 
 	filename := d.fileName(kind, id)
 	defer utils.Timerf(
-		"oss dir persist finish, bucket:%s, index:%s, filename:%s",
+		"[directory] method:persist, type:oss, bucket:%s, index:%s, filename:%s",
 		d.bucket,
 		d.index,
 		filename,
@@ -127,7 +127,7 @@ func (d *OssDirectory) Persist(
 	_, err := w.WriteTo(&buf, closeCh)
 	if err != nil {
 		logger.Error(
-			"oss dir write buffer fail",
+			"oss persist write buffer fail",
 			zap.String("index", d.index),
 			zap.String("bucket", d.bucket),
 			zap.String("filename", filename),
@@ -147,7 +147,7 @@ func (d *OssDirectory) Load(kind string, id uint64) (*segment.Data, io.Closer, e
 
 	filename := d.fileName(kind, id)
 	defer utils.Timerf(
-		"oss dir load finish, bucket:%s, index:%s, filename:%s",
+		"[directory] method:load, type:oss, bucket:%s, index:%s, filename:%s",
 		d.bucket,
 		d.index,
 		filename,
@@ -165,7 +165,7 @@ func (d *OssDirectory) Load(kind string, id uint64) (*segment.Data, io.Closer, e
 		err := object.Close()
 		if err != nil {
 			logger.Error(
-				"oss dir close object fail",
+				"oss load close object fail",
 				zap.String("index", d.index),
 				zap.String("bucket", d.bucket),
 				zap.String("path", path),
@@ -184,7 +184,7 @@ func (d *OssDirectory) Remove(kind string, id uint64) error {
 
 	filename := d.fileName(kind, id)
 	defer utils.Timerf(
-		"oss dir remove finish, bucket:%s, index:%s, filename:%s",
+		"[directory] method:remove, type:oss, bucket:%s, index:%s, filename:%s",
 		d.bucket,
 		d.index,
 		filename,
@@ -217,7 +217,11 @@ func (d *OssDirectory) Unlock() error {
 
 func (d *OssDirectory) Stats() (numFilesOnDisk, numBytesUsedDisk uint64) {
 
-	defer utils.Timerf("oss dir stats finish, bucket:%s, index:%s", d.bucket, d.index)()
+	defer utils.Timerf(
+		"[directory] method:stats, type:oss, bucket:%s, index:%s",
+		d.bucket,
+		d.index,
+	)()
 
 	d.lock.RLock()
 	defer d.lock.RUnlock()
@@ -236,6 +240,11 @@ func (d *OssDirectory) Stats() (numFilesOnDisk, numBytesUsedDisk uint64) {
 }
 
 func (d *OssDirectory) Sync() error {
+	defer utils.Timerf(
+		"[directory] method:sync, type:oss, bucket:%s, index:%s",
+		d.bucket,
+		d.index,
+	)()
 	return nil
 }
 

@@ -6,6 +6,8 @@ package config
 import (
 	"path"
 
+	"github.com/tatris-io/tatris/internal/indexlib/bluge/directory/fs"
+
 	"github.com/tatris-io/tatris/internal/indexlib/bluge/directory/oss"
 
 	"github.com/blugelabs/bluge"
@@ -13,7 +15,9 @@ import (
 )
 
 func GetFSConfig(filepath string, filename string) bluge.Config {
-	return bluge.DefaultConfig(path.Join(filepath, filename))
+	return bluge.DefaultConfigWithDirectory(func() index.Directory {
+		return fs.NewFsDirectory(path.Join(filepath, filename))
+	})
 }
 
 func GetOSSConfig(endpoint, bucket, accessKeyID, secretAccessKey, filename string) bluge.Config {
