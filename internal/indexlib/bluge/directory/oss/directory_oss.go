@@ -75,7 +75,7 @@ func (d *OssDirectory) List(kind string) ([]uint64, error) {
 	d.lock.RLock()
 	defer d.lock.RUnlock()
 
-	dirEntries, err := ListObjects(d.client, d.bucket, d.index)
+	dirEntries, err := ListObjects(d.client, d.bucket, ossPath(d.index))
 	if err != nil {
 		return nil, err
 	}
@@ -135,8 +135,7 @@ func (d *OssDirectory) Persist(
 		)
 		return err
 	}
-	path := ossKey(d.index, filename)
-	err = PutObject(d.client, d.bucket, path, &buf)
+	err = PutObject(d.client, d.bucket, ossKey(d.index, filename), &buf)
 	if err != nil {
 		return err
 	}
@@ -156,8 +155,8 @@ func (d *OssDirectory) Load(kind string, id uint64) (*segment.Data, io.Closer, e
 	d.lock.RLock()
 	defer d.lock.RUnlock()
 
-	path := ossKey(d.index, filename)
-	object, err := GetObject(d.client, d.bucket, path)
+	key := ossKey(d.index, filename)
+	object, err := GetObject(d.client, d.bucket, key)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -168,7 +167,7 @@ func (d *OssDirectory) Load(kind string, id uint64) (*segment.Data, io.Closer, e
 				"oss load close object fail",
 				zap.String("index", d.index),
 				zap.String("bucket", d.bucket),
-				zap.String("path", path),
+				zap.String("key", key),
 				zap.Error(err),
 			)
 		}
@@ -193,8 +192,7 @@ func (d *OssDirectory) Remove(kind string, id uint64) error {
 	d.lock.Lock()
 	defer d.lock.Unlock()
 
-	path := ossKey(d.index, filename)
-	err := DeleteObject(d.client, d.bucket, path)
+	err := DeleteObject(d.client, d.bucket, ossKey(d.index, filename))
 	if err != nil {
 		return err
 	}
@@ -226,7 +224,7 @@ func (d *OssDirectory) Stats() (numFilesOnDisk, numBytesUsedDisk uint64) {
 	d.lock.RLock()
 	defer d.lock.RUnlock()
 
-	dirEntries, err := ListObjects(d.client, d.bucket, d.index)
+	dirEntries, err := ListObjects(d.client, d.bucket, ossPath(d.index))
 	if err != nil {
 		return 0, 0
 	}
@@ -250,6 +248,10 @@ func (d *OssDirectory) Sync() error {
 
 func (d *OssDirectory) fileName(kind string, id uint64) string {
 	return fmt.Sprintf("%012x", id) + kind
+}
+
+func ossPath(index string) string {
+	return fmt.Sprintf("%s/", index)
 }
 
 func ossKey(index, filename string) string {
