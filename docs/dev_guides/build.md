@@ -47,5 +47,10 @@ A more practical example:
 make docker-image TAG=tatris:0.1.0 TARGETPLATFORM=linux/amd64
 ```
 
+Users in China can use GOPROXY to speed up building:
+```shell
+GOPROXY=https://goproxy.cn,direct make docker-image
+```
+
 ## Configure and launch Tatris
 Get the details in [configuring guide](/docs/user_guides/configure.md)
