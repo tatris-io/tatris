@@ -1,0 +1,14 @@
+set -e
+
+seconds=$1
+if [ -z "$seconds" ]; then
+  seconds=60
+fi
+
+curl localhost:6060/debug/pprof/profile?seconds=$seconds > /tmp/tatris_profile
+echo
+
+echo Use the following command to copy the profile to the local, and browse the profile visually.
+
+echo kubectl -n $POD_NAMESPACE cp $POD_NAME:/tmp/tatris_profile tatris_profile
+echo go tool pprof -http=":$RANDOM" tatris_profile
