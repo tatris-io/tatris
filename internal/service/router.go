@@ -5,6 +5,8 @@ package service
 import (
 	"fmt"
 
+	"github.com/gin-contrib/pprof"
+
 	"github.com/tatris-io/tatris/internal/service/handler"
 
 	"go.uber.org/zap"
@@ -19,6 +21,8 @@ func StartHTTPServer(roles ...string) {
 	}
 
 	router := gin.New()
+
+	pprof.Register(router)
 
 	router.NoRoute(func(context *gin.Context) {
 		msg := fmt.Sprintf("route not found: %v", context.Request.RequestURI)
