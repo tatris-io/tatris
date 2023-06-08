@@ -33,6 +33,9 @@ endif
 ifdef TAG
 DOCKER_BUILD_ARGS := -t $(TAG)  $(DOCKER_BUILD_ARGS)
 endif
+ifdef GOPROXY
+DOCKER_BUILD_ARGS := --build-arg GOPROXY=$(GOPROXY) $(DOCKER_BUILD_ARGS)
+endif
 
 check: install-tools
 	@ echo "do checks ..."
