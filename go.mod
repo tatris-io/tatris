@@ -2,8 +2,6 @@ module github.com/tatris-io/tatris
 
 go 1.18
 
-replace github.com/blugelabs/bluge v0.2.2 => github.com/tatris-io/bluge v0.1.0
-
 require (
 	github.com/AlekSi/gocov-xml v1.1.0
 	github.com/alecthomas/kong v0.7.1
@@ -14,6 +12,7 @@ require (
 	github.com/blugelabs/query_string v0.3.0
 	github.com/bobg/go-generics v1.7.2
 	github.com/caio/go-tdigest v3.1.0+incompatible
+	github.com/gin-contrib/pprof v1.4.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/google/uuid v1.3.0
 	github.com/jinzhu/now v1.1.5
@@ -116,6 +115,5 @@ require (
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6 // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
