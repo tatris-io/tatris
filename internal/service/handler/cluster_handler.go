@@ -10,7 +10,8 @@ import (
 )
 
 // ClusterStatusHandler is used to view the status of the cluster.
-// Right now this is a pseudo-implementation that the started cluster is always considered healthy until we support cluster mode.
+// Right now this is a pseudo-implementation that the started cluster is always considered healthy
+// until we support cluster mode.
 func ClusterStatusHandler(c *gin.Context) {
 	OK(c, protocol.ClusterStatus{
 		ClusterName:                 "docker-cluster",
