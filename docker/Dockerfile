@@ -3,7 +3,14 @@ FROM --platform=$TARGETPLATFORM golang:1.19 AS build
 ARG TARGETPLATFORM
 ARG GOLANG_LDFLAGS
 
+ARG GOPROXY=direct
+# You can use GOPROXY to speed up building.
+# ARG GOPROXY=https://...,direct
+
+# use docker cache to speed up building
 RUN --mount=target=/go/src,type=bind \
+  --mount=type=cache,target=/root/.cache/go-build \
+  --mount=type=cache,target=/root/go/pkg \
   echo "building for $TARGETPLATFORM" && \
   cd /go/src && \
   go build -ldflags="$GOLANG_LDFLAGS" -o /go/bin/tatris-server ./cmd/server/...
