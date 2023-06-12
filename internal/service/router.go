@@ -83,6 +83,8 @@ func registerQuery(group *gin.RouterGroup) {
 func registerMeta(group *gin.RouterGroup) {
 	logger.Info("meta APIs registering")
 
+	group.GET("/_cluster/health", handler.ClusterStatusHandler)
+
 	group.PUT("/:index", handler.CreateIndexHandler)
 	group.POST("/:index", handler.CreateIndexHandler)
 	group.GET("/:index", handler.GetIndexHandler)
