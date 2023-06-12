@@ -73,6 +73,8 @@ type OSS struct {
 	Bucket          string `yaml:"bucket"`
 	AccessKeyID     string `yaml:"access_key_id"`
 	SecretAccessKey string `yaml:"secret_access_key"`
+	// CacheDir is the local cache dir for OSS. If it is empty, caching is disabled.
+	CacheDir string `yaml:"cache_dir"`
 }
 
 type Segment struct {

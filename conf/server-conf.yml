@@ -7,6 +7,7 @@ directory:
     bucket:
     access_key_id:
     secret_access_key:
+    cache_dir: /home/tatris/data/oss_cache
 segment:
   mature_threshold: 20000
 wal:
