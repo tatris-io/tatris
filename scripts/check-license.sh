@@ -15,7 +15,7 @@ fi
 
 project_root=`dirname $0 | xargs -I{} realpath {}/..`
 
-for i in $(find $project_root -type f -not -path '*/\.*' | grep '\.go$'); do
+for i in $(find $project_root -type f -not -path '*/\.*' | grep '\.go$' | grep -v 'dependencies'); do
     # first line -> match -> print line -> quit
     matches=$($sed_bin -n "1{/Copyright [0-9]\{4\} Tatris Project Authors. Licensed under Apache-2.0./p;};q;" $i)
     if [ -z "${matches}" ]; then
