@@ -26,6 +26,7 @@ type ObjectStorageService struct {
 	Bucket          string
 	AccessKeyID     string
 	SecretAccessKey string
+	CacheDir        string
 }
 
 func BuildConf(directory *config.Directory) *Config {
@@ -42,6 +43,7 @@ func BuildConf(directory *config.Directory) *Config {
 			Bucket:          directory.OSS.Bucket,
 			AccessKeyID:     directory.OSS.AccessKeyID,
 			SecretAccessKey: directory.OSS.SecretAccessKey,
+			CacheDir:        directory.OSS.CacheDir,
 		}
 	}
 	return cfg
