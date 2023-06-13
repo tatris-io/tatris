@@ -34,20 +34,20 @@ const (
 )
 
 type Segment struct {
-	Shard     *Shard `json:"-"`
-	SegmentID int
-	Stat      Stat
-	lock      sync.Mutex
-	writer    indexlib.Writer
-	readerRef int
-	status    uint8
+	Shard         *Shard `json:"-"`
+	SegmentID     int
+	Stat          Stat
+	SegmentStatus uint8
+	lock          sync.Mutex
+	writer        indexlib.Writer
+	readerRef     int
 }
 
 func (segment *Segment) Status() uint8 {
 	segment.lock.Lock()
 	defer segment.lock.Unlock()
 
-	return segment.status
+	return segment.SegmentStatus
 }
 
 func (segment *Segment) GetName() string {
@@ -115,8 +115,7 @@ func (segment *Segment) onReaderClose() {
 	defer segment.lock.Unlock()
 
 	segment.readerRef--
-
-	if segment.status == SegmentStatusReadonly && segment.readerRef == 0 {
+	if segment.SegmentStatus == SegmentStatusReadonly && segment.readerRef == 0 {
 		segment.writer.Close()
 		segment.writer = nil
 	}
@@ -129,14 +128,14 @@ func (segment *Segment) GetReader() (indexlib.Reader, error) {
 	segment.lock.Lock()
 	defer segment.lock.Unlock()
 
-	if segment.status == SegmentStatusWritable && reflect.ValueOf(segment.writer).IsValid() {
+	if segment.SegmentStatus == SegmentStatusWritable && reflect.ValueOf(segment.writer).IsValid() {
 		return segment.openReaderFromWriter()
 	}
 
 	config := indexlib.BuildConf(config.Cfg.Directory)
 
 	// The segment is readonly, so we can cache the result and reuse it
-	if segment.status == SegmentStatusReadonly {
+	if segment.SegmentStatus == SegmentStatusReadonly {
 		return manage.GetReaderUsingCache(config, segment.GetName())
 	}
 
@@ -153,7 +152,7 @@ func (segment *Segment) IsMature() bool {
 }
 
 func (segment *Segment) Readonly() bool {
-	return segment.status != SegmentStatusWritable
+	return segment.SegmentStatus != SegmentStatusWritable
 }
 
 func (segment *Segment) MatchTime(start, end int64) bool {
@@ -193,7 +192,7 @@ func (segment *Segment) onMature() {
 	segment.lock.Lock()
 	defer segment.lock.Unlock()
 
-	segment.status = SegmentStatusReadonly
+	segment.SegmentStatus = SegmentStatusReadonly
 
 	// close only when readerRef is 0
 	if reflect.ValueOf(segment.writer).IsValid() && segment.readerRef == 0 {
@@ -205,5 +204,5 @@ func (segment *Segment) onMature() {
 func (segment *Segment) Close() {
 	// set the status to SegmentStatusReadonly,
 	// so immature segment can also close its writer after the last reader is closed
-	segment.status = SegmentStatusReadonly
+	segment.SegmentStatus = SegmentStatusReadonly
 }
