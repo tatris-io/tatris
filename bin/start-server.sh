@@ -48,4 +48,9 @@ fi
 
 echo "Starting Tatris Server: " $BINARY $BOOTSTRAP_ARGS
 
+# Prints goroutine when panic
+export GOTRACEBACK=all
+# Enable Goalng GC logs
+export GODEBUG=gctrace=1
+
 $BINARY $BOOTSTRAP_ARGS
