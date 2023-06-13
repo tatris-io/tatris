@@ -132,6 +132,11 @@ func (shard *Shard) Close() {
 func (shard *Shard) addSegment(segmentID int) {
 	shard.Segments = append(
 		shard.Segments,
-		&Segment{Shard: shard, SegmentID: segmentID, Stat: Stat{}},
+		&Segment{
+			Shard:         shard,
+			SegmentID:     segmentID,
+			Stat:          Stat{},
+			SegmentStatus: SegmentStatusWritable,
+		},
 	)
 }

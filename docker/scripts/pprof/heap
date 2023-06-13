@@ -1,0 +1,11 @@
+set -e
+
+url=localhost:6060/debug/pprof/heap
+echo curl $url
+curl $url > /tmp/tatris_heap
+echo
+
+echo Use the following command to copy the heap to the local, and browse the heap visually.
+
+echo kubectl -n $POD_NAMESPACE cp $POD_NAME:/tmp/tatris_heap tatris_heap
+echo go tool pprof -http=":$RANDOM" tatris_heap
