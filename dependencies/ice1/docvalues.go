@@ -276,7 +276,7 @@ func (s *Segment) visitDocumentFieldTerms(localDocNum uint64, fields []string,
 	visitor segment.DocumentValueVisitor, dvs *docVisitState) (
 	*docVisitState, error) {
 	if dvs == nil {
-		dvs = &docVisitState{}
+		dvs = &docVisitState{segment: s}
 	} else if dvs.segment != s {
 		dvs.segment = s
 		dvs.dvrs = nil
