@@ -22,11 +22,12 @@ type FileSystem struct {
 }
 
 type ObjectStorageService struct {
-	Endpoint        string
-	Bucket          string
-	AccessKeyID     string
-	SecretAccessKey string
-	CacheDir        string
+	Endpoint                   string
+	Bucket                     string
+	AccessKeyID                string
+	SecretAccessKey            string
+	CacheDir                   string
+	MinimumConcurrencyLoadSize int
 }
 
 func BuildConf(directory *config.Directory) *Config {
@@ -39,11 +40,12 @@ func BuildConf(directory *config.Directory) *Config {
 	}
 	if directory.OSS != nil {
 		cfg.OSS = &ObjectStorageService{
-			Endpoint:        directory.OSS.Endpoint,
-			Bucket:          directory.OSS.Bucket,
-			AccessKeyID:     directory.OSS.AccessKeyID,
-			SecretAccessKey: directory.OSS.SecretAccessKey,
-			CacheDir:        directory.OSS.CacheDir,
+			Endpoint:                   directory.OSS.Endpoint,
+			Bucket:                     directory.OSS.Bucket,
+			AccessKeyID:                directory.OSS.AccessKeyID,
+			SecretAccessKey:            directory.OSS.SecretAccessKey,
+			CacheDir:                   directory.OSS.CacheDir,
+			MinimumConcurrencyLoadSize: directory.OSS.MinimumConcurrencyLoadSize,
 		}
 	}
 	return cfg

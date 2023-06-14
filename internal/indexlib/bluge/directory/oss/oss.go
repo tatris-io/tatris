@@ -4,6 +4,7 @@ package oss
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"go.uber.org/zap"
@@ -98,7 +99,7 @@ func ListObjects(
 	return objects, nil
 }
 
-func GetObject(client *oss.Client, bucketName, path string) ([]byte, error) {
+func GetObject(client *oss.Client, bucketName, path string, minimumConcurrencyLoadSize int) ([]byte, error) {
 	bucket, err := GetBucket(client, bucketName)
 	if err != nil {
 		return nil, err
@@ -114,6 +115,44 @@ func GetObject(client *oss.Client, bucketName, path string) ([]byte, error) {
 		return nil, err
 	}
 
+	var content []byte
+	if size >= minimumConcurrencyLoadSize {
+		content, err = GetObjectConcurrency(bucket, size, path)
+	} else {
+		content, err = GetObjectOrdinary(bucket, path)
+	}
+
+	return content, nil
+}
+
+func GetObjectOrdinary(bucket *oss.Bucket, path string) ([]byte, error) {
+	reader, err := bucket.GetObject(path)
+	if err != nil {
+		logger.Error(
+			"[oss] get object fail",
+			zap.String("bucket", bucket.BucketName),
+			zap.String("path", path),
+			zap.Error(err),
+		)
+		return nil, err
+	}
+	defer func() {
+		err := reader.Close()
+		if err != nil {
+			logger.Error(
+				"oss load close object fail",
+				zap.Error(err),
+			)
+		}
+	}()
+	content, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, err
+	}
+	return content, nil
+}
+
+func GetObjectConcurrency(bucket *oss.Bucket, size int, path string) ([]byte, error) {
 	var content []byte
 	content = make([]byte, size)
 	gCount := int(math.Min(float64(runtime.GOMAXPROCS(0)), float64(size)))
@@ -134,6 +173,7 @@ func GetObject(client *oss.Client, bucketName, path string) ([]byte, error) {
 					"[oss] get object fail",
 					zap.String("bucket", bucket.BucketName),
 					zap.String("path", path),
+					zap.String("range", fmt.Sprintf("%d-%d", start, end-1)),
 					zap.Error(err),
 				)
 				return err
@@ -147,6 +187,7 @@ func GetObject(client *oss.Client, bucketName, path string) ([]byte, error) {
 					"[oss] io read part object fail",
 					zap.String("bucket", bucket.BucketName),
 					zap.String("path", path),
+					zap.String("range", fmt.Sprintf("%d-%d", start, end-1)),
 					zap.Error(err),
 				)
 				return err
@@ -156,9 +197,9 @@ func GetObject(client *oss.Client, bucketName, path string) ([]byte, error) {
 			return nil
 		})
 	}
-	err = eg.Wait()
+	err := eg.Wait()
 
-	return content, nil
+	return content, err
 }
 
 func PutObject(client *oss.Client, bucketName, path string, buf *bytes.Buffer) error {
@@ -166,6 +207,7 @@ func PutObject(client *oss.Client, bucketName, path string, buf *bytes.Buffer) e
 	if err != nil {
 		return err
 	}
+
 	err = bucket.PutObject(path, buf)
 	if err != nil {
 		logger.Error(

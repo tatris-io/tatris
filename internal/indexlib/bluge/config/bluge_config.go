@@ -22,6 +22,7 @@ func GetFSConfig(filepath string, filename string) bluge.Config {
 
 func GetOSSConfig(
 	endpoint, bucket, accessKeyID, secretAccessKey, filename, cacheDir string,
+	minimumConcurrencyLoadSize int,
 ) bluge.Config {
 	return bluge.DefaultConfigWithDirectory(func() index.Directory {
 		return oss.NewOssDirectory(
@@ -31,6 +32,7 @@ func GetOSSConfig(
 			secretAccessKey,
 			filename,
 			cacheDir,
+			minimumConcurrencyLoadSize,
 		)
 	})
 }
