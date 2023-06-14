@@ -37,21 +37,26 @@ type (
 		cacheDir  string
 		lock      sync.RWMutex
 		bucketObj *oss.Bucket
+		// minimumConcurrencyLoadSize is the minimum file size to enable concurrent query.
+		// When the file size to be loaded is greater than this value, oss will be queried concurrently
+		minimumConcurrencyLoadSize int
 	}
 )
 
 func NewOssDirectory(
 	endpoint, bucket, accessKeyID, secretAccessKey, index, cacheDir string,
+	minimumConcurrencyLoadSize int,
 ) *OssDirectory {
 	client, err := NewClient(endpoint, accessKeyID, secretAccessKey)
 	if err != nil {
 		return nil
 	}
 	return &OssDirectory{
-		client:   client,
-		bucket:   bucket,
-		index:    index,
-		cacheDir: cacheDir,
+		client:                     client,
+		bucket:                     bucket,
+		index:                      index,
+		cacheDir:                   cacheDir,
+		minimumConcurrencyLoadSize: minimumConcurrencyLoadSize,
 	}
 }
 
@@ -202,28 +207,12 @@ func (d *OssDirectory) Load(kind string, id uint64) (*segment.Data, io.Closer, e
 		return mmapFileToSegmentData(tempFile.Name())
 	}
 
-	object, err := GetObject(d.client, d.bucket, key)
-	if err != nil {
-		return nil, nil, err
-	}
-	defer func() {
-		err := object.Close()
-		if err != nil {
-			logger.Error(
-				"oss load close object fail",
-				zap.String("index", d.index),
-				zap.String("bucket", d.bucket),
-				zap.String("key", key),
-				zap.Error(err),
-			)
-		}
-	}()
-	objBytes, err := io.ReadAll(object)
+	object, err := GetObject(d.client, d.bucket, key, d.minimumConcurrencyLoadSize)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return segment.NewDataBytes(objBytes), nil, nil
+	return segment.NewDataBytes(object), nil, nil
 }
 
 func (d *OssDirectory) Remove(kind string, id uint64) error {

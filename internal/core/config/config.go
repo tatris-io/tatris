@@ -75,6 +75,9 @@ type OSS struct {
 	SecretAccessKey string `yaml:"secret_access_key"`
 	// CacheDir is the local cache dir for OSS. If it is empty, caching is disabled.
 	CacheDir string `yaml:"cache_dir"`
+	// MinimumConcurrencyLoadSize is the minimum file size to enable concurrent query.
+	// When the file size to be loaded is greater than this value, oss will be queried concurrently
+	MinimumConcurrencyLoadSize int `yaml:"minimum_concurrency_load_size"`
 }
 
 type Segment struct {
