@@ -206,24 +206,8 @@ func (d *OssDirectory) Load(kind string, id uint64) (*segment.Data, io.Closer, e
 	if err != nil {
 		return nil, nil, err
 	}
-	defer func() {
-		err := object.Close()
-		if err != nil {
-			logger.Error(
-				"oss load close object fail",
-				zap.String("index", d.index),
-				zap.String("bucket", d.bucket),
-				zap.String("key", key),
-				zap.Error(err),
-			)
-		}
-	}()
-	objBytes, err := io.ReadAll(object)
-	if err != nil {
-		return nil, nil, err
-	}
 
-	return segment.NewDataBytes(objBytes), nil, nil
+	return segment.NewDataBytes(object), nil, nil
 }
 
 func (d *OssDirectory) Remove(kind string, id uint64) error {
