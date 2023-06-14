@@ -1,0 +1,8 @@
+index=$1
+
+if [ -z "$index" ]; then
+  echo 'usage: delete <index>'
+  exit 1
+fi
+
+curl -XDELETE localhost:6060/_indices/$index
