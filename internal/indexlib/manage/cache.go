@@ -6,8 +6,10 @@ import (
 	"sync"
 	"time"
 
-	cache "github.com/patrickmn/go-cache"
+	"github.com/patrickmn/go-cache"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
+	"go.uber.org/zap"
+
 	"github.com/tatris-io/tatris/internal/indexlib"
 )
 
@@ -58,6 +60,7 @@ func (c *readerCache) PutIfAbsent(key string, reader indexlib.Reader) (indexlib.
 	}
 
 	c.cache.SetDefault(key, entry)
+	logger.Debug("[readerCache] put", zap.String("key", key))
 	return entry, true
 }
 
@@ -67,6 +70,7 @@ func (c *readerCache) Get(key string) (indexlib.Reader, bool) {
 	defer c.mutex.RUnlock()
 
 	if cached, ok := c.cache.Get(key); ok {
+		logger.Debug("[readerCache] hit", zap.String("key", key))
 		return cached.(*indexlib.HookReader), true
 	}
 
@@ -74,9 +78,11 @@ func (c *readerCache) Get(key string) (indexlib.Reader, bool) {
 }
 
 func (c *readerCache) onItemEvicted(key string, i interface{}) {
+	logger.Debug("[readerCache] onItemEvicted", zap.String("key", key))
 	reader := i.(*indexlib.HookReader)
+
 	time.AfterFunc(c.closeDelay, func() {
+		logger.Debug("[readerCache] close reader", zap.String("key", key))
 		reader.Reader.Close()
-		logger.Infof("close cached reader %s", key)
 	})
 }

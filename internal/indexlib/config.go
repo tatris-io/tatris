@@ -26,7 +26,6 @@ type ObjectStorageService struct {
 	Bucket                     string
 	AccessKeyID                string
 	SecretAccessKey            string
-	CacheDir                   string
 	MinimumConcurrencyLoadSize int
 }
 
@@ -44,7 +43,6 @@ func BuildConf(directory *config.Directory) *Config {
 			Bucket:                     directory.OSS.Bucket,
 			AccessKeyID:                directory.OSS.AccessKeyID,
 			SecretAccessKey:            directory.OSS.SecretAccessKey,
-			CacheDir:                   directory.OSS.CacheDir,
 			MinimumConcurrencyLoadSize: directory.OSS.MinimumConcurrencyLoadSize,
 		}
 	}

@@ -83,7 +83,6 @@ func (b *BlugeReader) OpenReader() error {
 				b.Config.OSS.AccessKeyID,
 				b.Config.OSS.SecretAccessKey,
 				segment,
-				b.Config.OSS.CacheDir,
 				b.Config.OSS.MinimumConcurrencyLoadSize,
 			)
 		default:
@@ -92,6 +91,10 @@ func (b *BlugeReader) OpenReader() error {
 
 		reader, err := bluge.OpenReader(cfg)
 		if err != nil {
+			for _, r := range b.Readers {
+				r.Close()
+			}
+			b.Readers = nil
 			return err
 		}
 		b.Readers = append(b.Readers, reader)
