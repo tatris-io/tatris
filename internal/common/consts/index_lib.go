@@ -8,6 +8,7 @@ const (
 	DirectoryFS   = "fs"
 	DefaultFSPath = "/tmp/tatris/data"
 	PathData      = "_data"
+	PathCache     = "_cache"
 	PathMeta      = "_meta"
 	PathWAL       = "_wal"
 

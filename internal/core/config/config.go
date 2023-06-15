@@ -73,8 +73,9 @@ type OSS struct {
 	Bucket          string `yaml:"bucket"`
 	AccessKeyID     string `yaml:"access_key_id"`
 	SecretAccessKey string `yaml:"secret_access_key"`
-	// CacheDir is the local cache dir for OSS. If it is empty, caching is disabled.
-	CacheDir string `yaml:"cache_dir"`
+	// UseCache is used to indicate whether the oss data needs to be cached through the local file
+	// system and mmap.
+	UseCache bool `yaml:"use_cache"`
 	// MinimumConcurrencyLoadSize is the minimum file size to enable concurrent query.
 	// When the file size to be loaded is greater than this value, oss will be queried concurrently
 	MinimumConcurrencyLoadSize int `yaml:"minimum_concurrency_load_size"`

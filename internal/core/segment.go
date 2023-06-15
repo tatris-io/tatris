@@ -146,7 +146,8 @@ func (segment *Segment) GetReader() (indexlib.Reader, error) {
 }
 
 func (segment *Segment) IsMature() bool {
-	return segment.Stat.DocNum > config.Cfg.Segment.MatureThreshold || segment.SegmentStatus == SegmentStatusReadonly
+	return segment.Stat.DocNum > config.Cfg.Segment.MatureThreshold ||
+		segment.SegmentStatus == SegmentStatusReadonly
 }
 
 func (segment *Segment) Readonly() bool {

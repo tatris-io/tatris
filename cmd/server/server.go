@@ -5,6 +5,7 @@ package main
 
 import (
 	"os"
+	"path"
 
 	yaml "gopkg.in/yaml.v2"
 
@@ -65,6 +66,15 @@ func initServer(confPath string) {
 	logger.Info("server initialized successfully", zap.String("config", serverConf.String()))
 }
 
+func cleanHistory() {
+	// clear cache files
+	p := path.Join(config.Cfg.GetFSPath(), consts.PathCache)
+	err := os.RemoveAll(p)
+	if err != nil {
+		logger.Error("fail to clean history cache files", zap.Error(err))
+	}
+}
+
 func main() {
 	kong.Parse(&cli, kong.Name("tatris-server"),
 		kong.Description("The Server of TATRIS project"),
@@ -83,6 +93,8 @@ func main() {
 	if len(cli.Conf.Server) != 0 {
 		initServer(cli.Conf.Server)
 	}
+
+	cleanHistory()
 
 	if cli.Debug {
 		gin.SetMode(gin.DebugMode)
