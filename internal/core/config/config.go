@@ -21,16 +21,9 @@ func init() {
 	Cfg = &Config{
 		IndexLib: consts.IndexLibBluge,
 		Directory: &Directory{
-			Type: consts.DirectoryOSS,
+			Type: consts.DirectoryFS,
 			FS: &FS{
 				Path: consts.DefaultFSPath,
-			},
-			OSS: &OSS{
-				Endpoint:        "oss-cn-shanghai.aliyuncs.com",
-				Bucket:          "holoinsight-tatris",
-				AccessKeyID:     "LTAI5tAdzABH3qhRCTd4DTNC",
-				SecretAccessKey: "47M3E2j71Me6QXCGx1yVXMURqByChp",
-				UseCache:        true,
 			},
 		},
 		Segment: &Segment{
