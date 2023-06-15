@@ -45,6 +45,9 @@ func BuildConf(directory *config.Directory) *Config {
 			SecretAccessKey:            directory.OSS.SecretAccessKey,
 			MinimumConcurrencyLoadSize: directory.OSS.MinimumConcurrencyLoadSize,
 		}
+		if directory.OSS.UseCache {
+			cfg.OSS.CacheDir = path.Join(directory.FS.Path, consts.PathCache)
+		}
 	}
 	return cfg
 }
