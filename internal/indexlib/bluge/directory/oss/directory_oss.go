@@ -39,7 +39,8 @@ type (
 		lock      sync.RWMutex
 		bucketObj *oss.Bucket
 		// minimumConcurrencyLoadSize is the minimum file size to enable concurrent query.
-		// When the file size to be loaded is greater than this value, oss will be queried concurrently
+		// When the file size to be loaded is greater than this value, oss will be queried
+		// concurrently
 		minimumConcurrencyLoadSize int
 		readOnly                   bool
 		subCacheDir                string
@@ -150,12 +151,14 @@ func (d *OssDirectory) Persist(
 	size := 0
 	defer func() {
 		cost := time.Since(begin).Milliseconds()
-		logger.Infof("[directory] method:persist, type:oss, bucket:%s, index:%s, filename:%s size:%d, cost(ms)=%d",
+		logger.Infof(
+			"[directory] method:persist, type:oss, bucket:%s, index:%s, filename:%s size:%d, cost(ms)=%d",
 			d.bucket,
 			d.index,
 			filename,
 			size,
-			cost)
+			cost,
+		)
 	}()
 
 	d.lock.Lock()
@@ -181,7 +184,10 @@ func (d *OssDirectory) Persist(
 	return nil
 }
 
-func (d *OssDirectory) Load(kind string, id uint64) (ret *segment.Data, closer io.Closer, err error) {
+func (d *OssDirectory) Load(
+	kind string,
+	id uint64,
+) (ret *segment.Data, closer io.Closer, err error) {
 	filename := d.fileName(kind, id)
 	begin := time.Now()
 	defer func() {
@@ -190,7 +196,14 @@ func (d *OssDirectory) Load(kind string, id uint64) (ret *segment.Data, closer i
 			size = ret.Len()
 		}
 		milli := time.Since(begin).Milliseconds()
-		logger.Infof("[directory] method:load, type:oss, bucket:%s, index:%s, filename:%s, size:%dKB, cost(ms)=%d", d.bucket, d.index, filename, size/1024, milli)
+		logger.Infof(
+			"[directory] method:load, type:oss, bucket:%s, index:%s, filename:%s, size:%dKB, cost(ms)=%d",
+			d.bucket,
+			d.index,
+			filename,
+			size/1024,
+			milli,
+		)
 	}()
 
 	d.lock.Lock()
@@ -216,7 +229,12 @@ func (d *OssDirectory) Load(kind string, id uint64) (ret *segment.Data, closer i
 
 	object, err := GetObject(d.client, d.bucket, key, d.minimumConcurrencyLoadSize)
 	if err != nil {
-		logger.Error("[directory] [oss] get object error", zap.String("index", d.index), zap.String("key", key), zap.Error(err))
+		logger.Error(
+			"[directory] [oss] get object error",
+			zap.String("index", d.index),
+			zap.String("key", key),
+			zap.Error(err),
+		)
 		return nil, nil, err
 	}
 

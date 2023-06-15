@@ -3,11 +3,12 @@
 package manage
 
 import (
+	"sync"
+	"time"
+
 	"github.com/patrickmn/go-cache"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"go.uber.org/zap"
-	"sync"
-	"time"
 
 	"github.com/tatris-io/tatris/internal/indexlib"
 )

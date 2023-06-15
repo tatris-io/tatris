@@ -4,10 +4,11 @@
 package config
 
 import (
-	"github.com/tatris-io/tatris/internal/common/consts"
-	"github.com/tatris-io/tatris/internal/core/config"
 	"path"
 	"path/filepath"
+
+	"github.com/tatris-io/tatris/internal/common/consts"
+	"github.com/tatris-io/tatris/internal/core/config"
 
 	"github.com/tatris-io/tatris/internal/indexlib/bluge/directory/fs"
 

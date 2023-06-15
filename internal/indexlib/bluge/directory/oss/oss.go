@@ -6,14 +6,15 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-	"github.com/tatris-io/tatris/internal/common/log/logger"
-	"go.uber.org/zap"
-	"golang.org/x/sync/errgroup"
 	"io"
 	"math"
 	"runtime"
 	"strconv"
+
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/tatris-io/tatris/internal/common/log/logger"
+	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 )
 
 func NewClient(endpoint, accessKeyID, secretAccessKey string) (*oss.Client, error) {
@@ -100,7 +101,11 @@ func ListObjects(
 	return objects, nil
 }
 
-func GetObject(client *oss.Client, bucketName, path string, minimumConcurrencyLoadSize int) ([]byte, error) {
+func GetObject(
+	client *oss.Client,
+	bucketName, path string,
+	minimumConcurrencyLoadSize int,
+) ([]byte, error) {
 	bucket, err := GetBucket(client, bucketName)
 	if err != nil {
 		return nil, err
