@@ -61,6 +61,10 @@ func (m *Metadata) initMetadata() {
 	if err := m.loadIndexTemplates(); err != nil {
 		logger.Panic("load index templates failed", zap.Error(err))
 	}
+
+	if err := m.initialRevise(); err != nil {
+		logger.Panic("revise meta failed", zap.Error(err))
+	}
 }
 
 func (m *Metadata) loadIndexes() error {
@@ -90,6 +94,51 @@ func (m *Metadata) loadIndexes() error {
 			}
 		}
 		m.IndexCache.Set(index.Name, index, cache.NoExpiration)
+	}
+	return nil
+}
+
+// initialRevise is used to perform some necessary revision actions, such as:
+// 1. marking the core.SegmentStatusWritable segment during the last process run as
+// core.SegmentStatusReadonly, so that the writer can generate a new segment later.
+func (m *Metadata) initialRevise() error {
+	for _, item := range m.IndexCache.Items() {
+		index := item.Object.(*core.Index)
+		shards := index.Shards
+		revised := false
+		if len(shards) > 0 {
+			for _, shard := range shards {
+				shard.Index = index
+				segments := shard.Segments
+				if len(segments) > 0 {
+					for _, segment := range segments {
+						segment.Shard = shard
+						// revise writable segments to read-only (mature)
+						if segment.SegmentStatus != core.SegmentStatusReadonly {
+							logger.Info(
+								"revise segment status",
+								zap.String("segment", segment.GetName()),
+								zap.Uint8("from", segment.SegmentStatus),
+								zap.Uint8("to", core.SegmentStatusReadonly),
+							)
+							segment.SegmentStatus = core.SegmentStatusReadonly
+							revised = true
+						}
+					}
+				}
+			}
+		}
+		if revised {
+			json, err := json.Marshal(index)
+			if err != nil {
+				return err
+			}
+			err = m.MStore.Set(indexPrefix(index.Name), json)
+			if err != nil {
+				return err
+			}
+			m.IndexCache.Set(index.Name, index, cache.NoExpiration)
+		}
 	}
 	return nil
 }

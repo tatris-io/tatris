@@ -104,7 +104,16 @@ func (index *Index) Close() error {
 	for _, shard := range index.Shards {
 		shard.Close()
 	}
-	// clear data
-	p := path.Join(config.Cfg.GetFSPath(), consts.PathData, index.Name)
-	return os.RemoveAll(p)
+	// clear data files
+	dp := path.Join(config.Cfg.GetFSPath(), consts.PathData, index.Name)
+	err1 := os.RemoveAll(dp)
+
+	// clear cache files
+	cp := path.Join(config.Cfg.GetFSPath(), consts.PathCache, index.Name)
+	err2 := os.RemoveAll(cp)
+
+	if err1 == nil {
+		err1 = err2
+	}
+	return err1
 }

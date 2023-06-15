@@ -38,7 +38,8 @@ type (
 		lock      sync.RWMutex
 		bucketObj *oss.Bucket
 		// minimumConcurrencyLoadSize is the minimum file size to enable concurrent query.
-		// When the file size to be loaded is greater than this value, oss will be queried concurrently
+		// When the file size to be loaded is greater than this value, oss will be queried
+		// concurrently
 		minimumConcurrencyLoadSize int
 	}
 )
