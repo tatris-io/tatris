@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -31,11 +30,9 @@ import (
 
 type (
 	OssDirectory struct {
-		client *oss.Client
-		bucket string
-		index  string
-		// cacheDir is the local cache dir for OSS. If it is empty, caching is disabled.
-		cacheDir  string
+		client    *oss.Client
+		bucket    string
+		index     string
 		lock      sync.RWMutex
 		bucketObj *oss.Bucket
 		// minimumConcurrencyLoadSize is the minimum file size to enable concurrent query.
@@ -43,7 +40,8 @@ type (
 		// concurrently
 		minimumConcurrencyLoadSize int
 		readOnly                   bool
-		subCacheDir                string
+		// cacheDir is the local cache dir for OSS. If it is empty, caching is disabled.
+		cacheDir string
 	}
 )
 
@@ -90,8 +88,7 @@ func (d *OssDirectory) Setup(readOnly bool) error {
 
 	if d.readOnly {
 		// Every index writes cache to its own dir
-		d.subCacheDir = filepath.Join(d.cacheDir, strings.ReplaceAll(d.index, "/", "_"))
-		return os.MkdirAll(d.subCacheDir, 0755)
+		return os.MkdirAll(d.cacheDir, 0755)
 	}
 
 	return nil
@@ -214,7 +211,7 @@ func (d *OssDirectory) Load(
 	if d.readOnly {
 		// Close the temp right now, because the file is created with O_EXCL option, which will
 		// cause 'GetObjectToFile' to fail to write.
-		tempFile, err := os.CreateTemp(d.subCacheDir, fmt.Sprintf("%s-%d-*", kind[1:], id))
+		tempFile, err := os.CreateTemp(d.cacheDir, fmt.Sprintf("%s-%d-*", kind[1:], id))
 		if err != nil {
 			return nil, nil, err
 		}

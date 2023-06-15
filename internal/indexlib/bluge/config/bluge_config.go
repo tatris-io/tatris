@@ -29,7 +29,12 @@ func GetOSSConfig(
 	minimumConcurrencyLoadSize int,
 ) bluge.Config {
 	return bluge.DefaultConfigWithDirectory(func() index.Directory {
-		cacheDir := filepath.Join(config.Cfg.GetFSPath(), consts.PathOssCacheDir)
+		cacheDir := filepath.Join(
+			config.Cfg.GetFSPath(),
+			consts.PathCache,
+			filename,
+			consts.PathOss,
+		)
 		return oss.NewOssDirectory(
 			endpoint,
 			bucket,
