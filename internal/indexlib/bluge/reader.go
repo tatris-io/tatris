@@ -83,6 +83,8 @@ func (b *BlugeReader) OpenReader() error {
 				b.Config.OSS.AccessKeyID,
 				b.Config.OSS.SecretAccessKey,
 				segment,
+				b.Config.OSS.CacheDir,
+				b.Config.OSS.MinimumConcurrencyLoadSize,
 			)
 		default:
 			cfg = config.GetFSConfig(b.Config.FS.Path, segment)

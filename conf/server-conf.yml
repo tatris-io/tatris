@@ -7,8 +7,10 @@ directory:
     bucket:
     access_key_id:
     secret_access_key:
+    cache_dir: /home/tatris/data/oss_cache
+    minimum_concurrency_load_size: 134217728
 segment:
-  mature_threshold: 20000
+  mature_threshold: 300000
 wal:
   no_sync: false
   segment_size: 20971520

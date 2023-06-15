@@ -116,8 +116,7 @@ func (segment *Segment) onReaderClose() {
 
 	segment.readerRef--
 	if segment.SegmentStatus == SegmentStatusReadonly && segment.readerRef == 0 {
-		segment.writer.Close()
-		segment.writer = nil
+		segment.closeWriter()
 	}
 }
 
@@ -132,10 +131,9 @@ func (segment *Segment) GetReader() (indexlib.Reader, error) {
 		return segment.openReaderFromWriter()
 	}
 
-	config := indexlib.BuildConf(config.Cfg.Directory)
-
 	// The segment is readonly, so we can cache the result and reuse it
 	if segment.SegmentStatus == SegmentStatusReadonly {
+		config := indexlib.BuildConf(config.Cfg.Directory)
 		return manage.GetReaderUsingCache(config, segment.GetName())
 	}
 
@@ -148,7 +146,7 @@ func (segment *Segment) GetReader() (indexlib.Reader, error) {
 }
 
 func (segment *Segment) IsMature() bool {
-	return segment.Stat.DocNum > config.Cfg.Segment.MatureThreshold
+	return segment.Stat.DocNum > config.Cfg.Segment.MatureThreshold || segment.SegmentStatus == SegmentStatusReadonly
 }
 
 func (segment *Segment) Readonly() bool {
@@ -196,9 +194,13 @@ func (segment *Segment) onMature() {
 
 	// close only when readerRef is 0
 	if reflect.ValueOf(segment.writer).IsValid() && segment.readerRef == 0 {
-		segment.writer.Close()
-		segment.writer = nil
+		segment.closeWriter()
 	}
+}
+
+func (segment *Segment) closeWriter() {
+	segment.writer.Close()
+	segment.writer = nil
 }
 
 func (segment *Segment) Close() {

@@ -8,10 +8,14 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
+
+	"github.com/blevesearch/mmap-go"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 
@@ -24,22 +28,35 @@ import (
 	segment "github.com/blugelabs/bluge_segment_api"
 )
 
-type OssDirectory struct {
-	client *oss.Client
-	bucket string
-	index  string
-	lock   sync.RWMutex
-}
+type (
+	OssDirectory struct {
+		client *oss.Client
+		bucket string
+		index  string
+		// cacheDir is the local cache dir for OSS. If it is empty, caching is disabled.
+		cacheDir  string
+		lock      sync.RWMutex
+		bucketObj *oss.Bucket
+		// minimumConcurrencyLoadSize is the minimum file size to enable concurrent query.
+		// When the file size to be loaded is greater than this value, oss will be queried concurrently
+		minimumConcurrencyLoadSize int
+	}
+)
 
-func NewOssDirectory(endpoint, bucket, accessKeyID, secretAccessKey, index string) *OssDirectory {
+func NewOssDirectory(
+	endpoint, bucket, accessKeyID, secretAccessKey, index, cacheDir string,
+	minimumConcurrencyLoadSize int,
+) *OssDirectory {
 	client, err := NewClient(endpoint, accessKeyID, secretAccessKey)
 	if err != nil {
 		return nil
 	}
 	return &OssDirectory{
-		client: client,
-		bucket: bucket,
-		index:  index,
+		client:                     client,
+		bucket:                     bucket,
+		index:                      index,
+		cacheDir:                   cacheDir,
+		minimumConcurrencyLoadSize: minimumConcurrencyLoadSize,
 	}
 }
 
@@ -60,6 +77,16 @@ func (d *OssDirectory) Setup(readOnly bool) error {
 			return err
 		}
 	}
+	bucketObj, err := GetBucket(d.client, d.bucket)
+	if err != nil {
+		return err
+	}
+	d.bucketObj = bucketObj
+
+	if d.cacheDir != "" {
+		return os.MkdirAll(d.cacheDir, 0755)
+	}
+
 	return nil
 }
 
@@ -156,27 +183,36 @@ func (d *OssDirectory) Load(kind string, id uint64) (*segment.Data, io.Closer, e
 	defer d.lock.RUnlock()
 
 	key := ossKey(d.index, filename)
-	object, err := GetObject(d.client, d.bucket, key)
-	if err != nil {
-		return nil, nil, err
-	}
-	defer func() {
-		err := object.Close()
+
+	if d.cacheDir != "" {
+		// index may include '/', we replace '/' with '_'
+		// TODO We need to manage the cacheDir directory, such as deleting old files.
+		tempFile, err := os.CreateTemp(
+			d.cacheDir,
+			fmt.Sprintf("%s-%s-%d-*", strings.ReplaceAll(d.index, "/", "_"), kind, id),
+		)
 		if err != nil {
-			logger.Error(
-				"oss load close object fail",
-				zap.String("index", d.index),
-				zap.String("bucket", d.bucket),
-				zap.String("key", key),
-				zap.Error(err),
-			)
+			return nil, nil, err
 		}
-	}()
-	objBytes, err := io.ReadAll(object)
+		// Close the temp right now, because the file is created with O_EXCL option, which will
+		// cause 'GetObjectToFile' to fail to write.
+		tempFile.Close()
+
+		// Download oss object to file and mmap it.
+		// This can use less memory than keeping the data entirely in memory.
+		if err := d.bucketObj.GetObjectToFile(key, tempFile.Name()); err != nil {
+			os.Remove(tempFile.Name())
+			return nil, nil, err
+		}
+		return mmapFileToSegmentData(tempFile.Name())
+	}
+
+	object, err := GetObject(d.client, d.bucket, key, d.minimumConcurrencyLoadSize)
 	if err != nil {
 		return nil, nil, err
 	}
-	return segment.NewDataBytes(objBytes), nil, nil
+
+	return segment.NewDataBytes(object), nil, nil
 }
 
 func (d *OssDirectory) Remove(kind string, id uint64) error {
@@ -263,3 +299,42 @@ type uint64Slice []uint64
 func (e uint64Slice) Len() int           { return len(e) }
 func (e uint64Slice) Swap(i, j int)      { e[i], e[j] = e[j], e[i] }
 func (e uint64Slice) Less(i, j int) bool { return e[i] < e[j] }
+
+type closerFunc func() error
+
+func (c closerFunc) Close() error {
+	return c()
+}
+
+func mmapFileToSegmentData(tempPath string) (*segment.Data, io.Closer, error) {
+	file, err := os.Open(tempPath)
+	if err != nil {
+		os.Remove(tempPath)
+		return nil, nil, err
+	}
+	mm, err := mmap.Map(file, mmap.RDONLY, 0)
+	if err != nil {
+		file.Close()
+		os.Remove(tempPath)
+		return nil, nil, err
+	}
+
+	closer := func() error {
+		err1 := mm.Unmap()
+
+		err2 := file.Close()
+
+		err3 := os.Remove(tempPath)
+
+		if err1 == nil {
+			err1 = err2
+		}
+		if err1 == nil {
+			err1 = err3
+		}
+
+		return err1
+	}
+
+	return segment.NewDataBytes(mm), closerFunc(closer), nil
+}

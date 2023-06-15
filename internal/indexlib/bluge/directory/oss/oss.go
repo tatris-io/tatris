@@ -4,11 +4,15 @@ package oss
 
 import (
 	"bytes"
-	"io"
-
+	"fmt"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
+	"io"
+	"math"
+	"runtime"
+	"strconv"
 )
 
 func NewClient(endpoint, accessKeyID, secretAccessKey string) (*oss.Client, error) {
@@ -95,11 +99,33 @@ func ListObjects(
 	return objects, nil
 }
 
-func GetObject(client *oss.Client, bucketName, path string) (io.ReadCloser, error) {
+func GetObject(client *oss.Client, bucketName, path string, minimumConcurrencyLoadSize int) ([]byte, error) {
 	bucket, err := GetBucket(client, bucketName)
 	if err != nil {
 		return nil, err
 	}
+
+	objMeta, err := bucket.GetObjectMeta(path)
+	if err != nil {
+		return nil, err
+	}
+	contentLength := objMeta.Get("Content-Length")
+	size, err := strconv.Atoi(contentLength)
+	if err != nil {
+		return nil, err
+	}
+
+	var content []byte
+	if size >= minimumConcurrencyLoadSize {
+		content, err = GetObjectConcurrency(bucket, size, path)
+	} else {
+		content, err = GetObjectOrdinary(bucket, path)
+	}
+
+	return content, nil
+}
+
+func GetObjectOrdinary(bucket *oss.Bucket, path string) ([]byte, error) {
 	reader, err := bucket.GetObject(path)
 	if err != nil {
 		logger.Error(
@@ -110,7 +136,70 @@ func GetObject(client *oss.Client, bucketName, path string) (io.ReadCloser, erro
 		)
 		return nil, err
 	}
-	return reader, nil
+	defer func() {
+		err := reader.Close()
+		if err != nil {
+			logger.Error(
+				"oss load close object fail",
+				zap.Error(err),
+			)
+		}
+	}()
+	content, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, err
+	}
+	return content, nil
+}
+
+func GetObjectConcurrency(bucket *oss.Bucket, size int, path string) ([]byte, error) {
+	var content []byte
+	content = make([]byte, size)
+	gCount := int(math.Min(float64(runtime.GOMAXPROCS(0)), float64(size)))
+	partSize := math.Ceil(float64(size) / float64(gCount))
+
+	var eg errgroup.Group
+	eg.SetLimit(gCount)
+	for i := 0; i < gCount; i++ {
+		start := int64(partSize) * int64(i)
+		end := int64(math.Min(partSize*(float64(i)+1), float64(size)))
+		if start >= int64(size) {
+			break
+		}
+		eg.Go(func() error {
+			object, err := bucket.GetObject(path, oss.Range(start, end-1))
+			if err != nil {
+				logger.Error(
+					"[oss] get object fail",
+					zap.String("bucket", bucket.BucketName),
+					zap.String("path", path),
+					zap.String("range", fmt.Sprintf("%d-%d", start, end-1)),
+					zap.Error(err),
+				)
+				return err
+			}
+
+			defer object.Close()
+
+			partContent, err := io.ReadAll(object)
+			if err != nil {
+				logger.Error(
+					"[oss] io read part object fail",
+					zap.String("bucket", bucket.BucketName),
+					zap.String("path", path),
+					zap.String("range", fmt.Sprintf("%d-%d", start, end-1)),
+					zap.Error(err),
+				)
+				return err
+			}
+
+			copy(content[start:end], partContent)
+			return nil
+		})
+	}
+	err := eg.Wait()
+
+	return content, err
 }
 
 func PutObject(client *oss.Client, bucketName, path string, buf *bytes.Buffer) error {
@@ -118,6 +207,7 @@ func PutObject(client *oss.Client, bucketName, path string, buf *bytes.Buffer) e
 	if err != nil {
 		return err
 	}
+
 	err = bucket.PutObject(path, buf)
 	if err != nil {
 		logger.Error(
@@ -128,6 +218,7 @@ func PutObject(client *oss.Client, bucketName, path string, buf *bytes.Buffer) e
 		)
 		return err
 	}
+
 	return nil
 }
 

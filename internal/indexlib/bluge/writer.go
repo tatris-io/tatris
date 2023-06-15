@@ -52,6 +52,9 @@ func (b *BlugeWriter) OpenWriter() error {
 			b.Config.OSS.AccessKeyID,
 			b.Config.OSS.SecretAccessKey,
 			b.Segment,
+			// Using file cache optimization when writing has little effect, so it is not used.
+			"",
+			b.Config.OSS.MinimumConcurrencyLoadSize,
 		)
 	default:
 		cfg = config.GetFSConfig(b.Config.FS.Path, b.Segment)
