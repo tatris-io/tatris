@@ -37,6 +37,7 @@ RUN echo 'PS1="\n\e[1;37m[\e[m\e[1;32m\u\e[m\e[1;33m@\e[m\e[1;35m\h\e[m \e[1;35m
   echo '[ -e "/home/tatris/bin/init_bashrc.sh" ] && source /home/tatris/bin/init_bashrc.sh' >> /home/tatris/.bashrc
 
 COPY docker/scripts /home/tatris/scripts
+COPY docker/sc /usr/local/bin/sc
 COPY supervisor/* /tmp/
 
 RUN mv /tmp/start_supervisorctl.sh /usr/local/bin/start_supervisorctl.sh && \
