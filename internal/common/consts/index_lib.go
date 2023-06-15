@@ -5,12 +5,13 @@ package consts
 const (
 	IndexLibBluge = "bluge"
 
-	DirectoryFS     = "fs"
-	DefaultFSPath   = "/tmp/tatris/data"
-	PathData        = "_data"
-	PathMeta        = "_meta"
-	PathWAL         = "_wal"
-	PathOssCacheDir = "_oss_cache"
+	DirectoryFS   = "fs"
+	DefaultFSPath = "/tmp/tatris/data"
+	PathData      = "_data"
+	PathMeta      = "_meta"
+	PathWAL       = "_wal"
+	PathCache     = "_cache"
 
 	DirectoryOSS = "oss"
+	PathOss      = "oss"
 )
