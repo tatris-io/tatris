@@ -18,7 +18,7 @@ RUN --mount=target=/go/src,type=bind \
 FROM centos:centos7
 
 RUN yum -y install epel-release && \
-  yum install -y sudo which supervisor less && \
+  yum install -y sudo which supervisor less jq lsof net-tools dstat stress wget telnet && \
   yum -y clean all && \
   rm -rf /var/cache/yum
 

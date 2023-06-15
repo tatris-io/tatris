@@ -1,0 +1,8 @@
+index=$1
+
+if [ -z "$index" ]; then
+  echo 'usage: get <index>'
+  exit 1
+fi
+
+curl -XGET localhost:6060/_indices/$index
