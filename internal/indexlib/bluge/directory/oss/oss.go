@@ -4,6 +4,7 @@ package oss
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
@@ -122,7 +123,7 @@ func GetObject(client *oss.Client, bucketName, path string, minimumConcurrencyLo
 		content, err = GetObjectOrdinary(bucket, path)
 	}
 
-	return content, nil
+	return content, err
 }
 
 func GetObjectOrdinary(bucket *oss.Bucket, path string) ([]byte, error) {
@@ -160,6 +161,7 @@ func GetObjectConcurrency(bucket *oss.Bucket, size int, path string) ([]byte, er
 
 	var eg errgroup.Group
 	eg.SetLimit(gCount)
+
 	for i := 0; i < gCount; i++ {
 		start := int64(partSize) * int64(i)
 		end := int64(math.Min(partSize*(float64(i)+1), float64(size)))
@@ -181,7 +183,10 @@ func GetObjectConcurrency(bucket *oss.Bucket, size int, path string) ([]byte, er
 
 			defer object.Close()
 
-			partContent, err := io.ReadAll(object)
+			n, err := io.ReadFull(object, content[start:end])
+			if err == nil && int64(n) != end-start {
+				err = errors.New("read not enough")
+			}
 			if err != nil {
 				logger.Error(
 					"[oss] io read part object fail",
@@ -192,8 +197,6 @@ func GetObjectConcurrency(bucket *oss.Bucket, size int, path string) ([]byte, er
 				)
 				return err
 			}
-
-			copy(content[start:end], partContent)
 			return nil
 		})
 	}

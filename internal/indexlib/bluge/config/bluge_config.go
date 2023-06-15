@@ -4,7 +4,10 @@
 package config
 
 import (
+	"github.com/tatris-io/tatris/internal/common/consts"
+	"github.com/tatris-io/tatris/internal/core/config"
 	"path"
+	"path/filepath"
 
 	"github.com/tatris-io/tatris/internal/indexlib/bluge/directory/fs"
 
@@ -21,10 +24,11 @@ func GetFSConfig(filepath string, filename string) bluge.Config {
 }
 
 func GetOSSConfig(
-	endpoint, bucket, accessKeyID, secretAccessKey, filename, cacheDir string,
+	endpoint, bucket, accessKeyID, secretAccessKey, filename string,
 	minimumConcurrencyLoadSize int,
 ) bluge.Config {
 	return bluge.DefaultConfigWithDirectory(func() index.Directory {
+		cacheDir := filepath.Join(config.Cfg.GetFSPath(), consts.PathOssCacheDir)
 		return oss.NewOssDirectory(
 			endpoint,
 			bucket,

@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/blevesearch/mmap-go"
 
@@ -40,6 +41,8 @@ type (
 		// minimumConcurrencyLoadSize is the minimum file size to enable concurrent query.
 		// When the file size to be loaded is greater than this value, oss will be queried concurrently
 		minimumConcurrencyLoadSize int
+		readOnly                   bool
+		subCacheDir                string
 	}
 )
 
@@ -61,6 +64,7 @@ func NewOssDirectory(
 }
 
 func (d *OssDirectory) Setup(readOnly bool) error {
+	d.readOnly = readOnly
 	defer utils.Timerf(
 		"[directory] method:setup, type:oss, bucket:%s, index:%s, readOnly:%t",
 		d.bucket,
@@ -83,8 +87,10 @@ func (d *OssDirectory) Setup(readOnly bool) error {
 	}
 	d.bucketObj = bucketObj
 
-	if d.cacheDir != "" {
-		return os.MkdirAll(d.cacheDir, 0755)
+	if d.readOnly {
+		// Every index writes cache to its own dir
+		d.subCacheDir = filepath.Join(d.cacheDir, strings.ReplaceAll(d.index, "/", "_"))
+		return os.MkdirAll(d.subCacheDir, 0755)
 	}
 
 	return nil
@@ -140,12 +146,17 @@ func (d *OssDirectory) Persist(
 ) error {
 
 	filename := d.fileName(kind, id)
-	defer utils.Timerf(
-		"[directory] method:persist, type:oss, bucket:%s, index:%s, filename:%s",
-		d.bucket,
-		d.index,
-		filename,
-	)()
+	begin := time.Now()
+	size := 0
+	defer func() {
+		cost := time.Since(begin).Milliseconds()
+		logger.Infof("[directory] method:persist, type:oss, bucket:%s, index:%s, filename:%s size:%d, cost(ms)=%d",
+			d.bucket,
+			d.index,
+			filename,
+			size,
+			cost)
+	}()
 
 	d.lock.Lock()
 	defer d.lock.Unlock()
@@ -162,6 +173,7 @@ func (d *OssDirectory) Persist(
 		)
 		return err
 	}
+	size = buf.Len()
 	err = PutObject(d.client, d.bucket, ossKey(d.index, filename), &buf)
 	if err != nil {
 		return err
@@ -169,46 +181,42 @@ func (d *OssDirectory) Persist(
 	return nil
 }
 
-func (d *OssDirectory) Load(kind string, id uint64) (*segment.Data, io.Closer, error) {
-
+func (d *OssDirectory) Load(kind string, id uint64) (ret *segment.Data, closer io.Closer, err error) {
 	filename := d.fileName(kind, id)
-	defer utils.Timerf(
-		"[directory] method:load, type:oss, bucket:%s, index:%s, filename:%s",
-		d.bucket,
-		d.index,
-		filename,
-	)()
+	begin := time.Now()
+	defer func() {
+		size := 0
+		if ret != nil {
+			size = ret.Len()
+		}
+		milli := time.Since(begin).Milliseconds()
+		logger.Infof("[directory] method:load, type:oss, bucket:%s, index:%s, filename:%s, size:%dKB, cost(ms)=%d", d.bucket, d.index, filename, size/1024, milli)
+	}()
 
-	d.lock.RLock()
-	defer d.lock.RUnlock()
+	d.lock.Lock()
+	defer d.lock.Unlock()
 
 	key := ossKey(d.index, filename)
 
-	if d.cacheDir != "" {
-		// index may include '/', we replace '/' with '_'
-		// TODO We need to manage the cacheDir directory, such as deleting old files.
-		tempFile, err := os.CreateTemp(
-			d.cacheDir,
-			fmt.Sprintf("%s-%s-%d-*", strings.ReplaceAll(d.index, "/", "_"), kind, id),
-		)
+	if d.readOnly {
+		// Close the temp right now, because the file is created with O_EXCL option, which will
+		// cause 'GetObjectToFile' to fail to write.
+		tempFile, err := os.CreateTemp(d.subCacheDir, fmt.Sprintf("%s-%d-*", kind[1:], id))
 		if err != nil {
 			return nil, nil, err
 		}
-		// Close the temp right now, because the file is created with O_EXCL option, which will
-		// cause 'GetObjectToFile' to fail to write.
 		tempFile.Close()
 
-		// Download oss object to file and mmap it.
-		// This can use less memory than keeping the data entirely in memory.
 		if err := d.bucketObj.GetObjectToFile(key, tempFile.Name()); err != nil {
-			os.Remove(tempFile.Name())
 			return nil, nil, err
 		}
-		return mmapFileToSegmentData(tempFile.Name())
+
+		return d.mmapFileToSegmentData(tempFile.Name())
 	}
 
 	object, err := GetObject(d.client, d.bucket, key, d.minimumConcurrencyLoadSize)
 	if err != nil {
+		logger.Error("[directory] [oss] get object error", zap.String("index", d.index), zap.String("key", key), zap.Error(err))
 		return nil, nil, err
 	}
 
@@ -306,7 +314,7 @@ func (c closerFunc) Close() error {
 	return c()
 }
 
-func mmapFileToSegmentData(tempPath string) (*segment.Data, io.Closer, error) {
+func (d *OssDirectory) mmapFileToSegmentData(tempPath string) (*segment.Data, io.Closer, error) {
 	file, err := os.Open(tempPath)
 	if err != nil {
 		os.Remove(tempPath)
