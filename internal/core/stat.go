@@ -4,9 +4,11 @@ package core
 
 // Stat records the statistics of an index split
 type Stat struct {
-	MinTime int64
-	MaxTime int64
-	DocNum  int64
+	CreateTime int64
+	MinTime    int64
+	MaxTime    int64
+	DocNum     int64
+	MatureTime int64
 }
 
 type ShardStat struct {

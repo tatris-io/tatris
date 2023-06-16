@@ -121,7 +121,7 @@ func (m *Metadata) initialRevise() error {
 								zap.Uint8("from", segment.SegmentStatus),
 								zap.Uint8("to", core.SegmentStatusReadonly),
 							)
-							segment.SegmentStatus = core.SegmentStatusReadonly
+							segment.OnMature()
 							revised = true
 						}
 					}

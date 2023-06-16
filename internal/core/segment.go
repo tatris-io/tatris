@@ -185,9 +185,9 @@ func (segment *Segment) UpdateStat(min, max time.Time, docs int64) {
 	)
 }
 
-// onMature is called when segment becomes mature.
+// OnMature is called when segment becomes mature.
 // It marks segment readonly and closes the underlying writer.
-func (segment *Segment) onMature() {
+func (segment *Segment) OnMature() {
 	segment.lock.Lock()
 	defer segment.lock.Unlock()
 
@@ -198,11 +198,14 @@ func (segment *Segment) onMature() {
 		segment.closeWriter()
 	}
 
+	segment.Stat.MatureTime = time.Now().UnixMilli()
+
 	logger.Info(
 		"segment is mature",
 		zap.String("segment", segment.GetName()),
 		zap.Int64("docNum", segment.Stat.DocNum),
-		zap.Int64("duration", segment.Stat.MaxTime-segment.Stat.MinTime),
+		zap.Int64("timeRange", segment.Stat.MaxTime-segment.Stat.MinTime),
+		zap.Int64("duration", segment.Stat.MatureTime-segment.Stat.CreateTime),
 	)
 }
 
