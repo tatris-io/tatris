@@ -43,6 +43,7 @@ func init() {
 			Parallel:                    16,
 			DefaultScanHours:            24 * 3,
 			DefaultAggregationShardSize: 5000,
+			MaxDocNum:                   1000000,
 		},
 	}
 }
@@ -104,6 +105,9 @@ type Query struct {
 	// to better account for these disparate doc counts and improve the accuracy
 	// of the selection of top terms
 	DefaultAggregationShardSize int `yaml:"default_aggregation_shard_size"`
+	// The maximum number of documents that a query is allowed to hit, an errs.QueryLoadExceedError
+	// will be returned if this limit is exceeded.
+	MaxDocNum int64 `yaml:"max_doc_num"`
 }
 
 // Verify wraps doVerify with a `sync.Once`

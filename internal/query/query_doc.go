@@ -42,14 +42,33 @@ func SearchDocs(
 	if err != nil {
 		return nil, err
 	}
+	indexNames := make([]string, len(indexes))
 	var allSegments []*core.Segment
-	for _, index := range indexes {
+	for i, index := range indexes {
+		indexNames[i] = index.GetName()
 		segments := index.GetSegmentsByTime(start, end)
 		allSegments = append(allSegments, segments...)
 	}
 	if len(allSegments) == 0 {
 		// no match any segments, returns an empty response
 		return emptyResult(), nil
+	}
+	var docNum int64
+	for _, segment := range allSegments {
+		docNum += segment.Stat.DocNum
+	}
+	var docNumLimit = config.Cfg.Query.MaxDocNum
+	if docNum > docNumLimit {
+		return nil, &errs.QueryLoadExceedError{
+			Indexes: indexNames,
+			Query:   request.Query,
+			Message: fmt.Sprintf(
+				"hit %d segments with total %d docs (limit %d)",
+				len(allSegments),
+				docNum,
+				docNumLimit,
+			),
+		}
 	}
 	reader, err := core.MergeSegmentReader(
 		indexlib.BuildConf(config.Cfg.Directory),
