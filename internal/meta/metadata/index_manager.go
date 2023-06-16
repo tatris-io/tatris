@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/bobg/go-generics/set"
 	"github.com/tatris-io/tatris/internal/common/utils"
@@ -235,7 +236,11 @@ func BuildIndex(index *core.Index, template *protocol.IndexTemplate) {
 		shards[i] = &core.Shard{}
 		shards[i].ShardID = i
 		shards[i].Index = index
-		shards[i].Stat = core.ShardStat{}
+		shards[i].Stat = core.ShardStat{
+			Stat: core.Stat{
+				CreateTime: time.Now().UnixMilli(),
+			},
+		}
 	}
 	index.Shards = shards
 }

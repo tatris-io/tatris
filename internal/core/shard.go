@@ -61,7 +61,7 @@ func (shard *Shard) CheckSegments() {
 			newID := shard.GetSegmentNum()
 			shard.addSegment(newID)
 			if lastedSegment != nil {
-				lastedSegment.onMature()
+				lastedSegment.OnMature()
 			}
 			logger.Info(
 				"add segment",
@@ -82,7 +82,7 @@ func (shard *Shard) ForceAddSegment() {
 	newID := shard.GetSegmentNum()
 	shard.addSegment(newID)
 	if lastedSegment != nil {
-		lastedSegment.onMature()
+		lastedSegment.OnMature()
 	}
 	logger.Info(
 		"add segment",
@@ -133,9 +133,13 @@ func (shard *Shard) addSegment(segmentID int) {
 	shard.Segments = append(
 		shard.Segments,
 		&Segment{
-			Shard:         shard,
-			SegmentID:     segmentID,
-			Stat:          Stat{},
+			Shard:     shard,
+			SegmentID: segmentID,
+			Stat: SegmentStat{
+				Stat: Stat{
+					CreateTime: time.Now().UnixMilli(),
+				},
+			},
 			SegmentStatus: SegmentStatusWritable,
 		},
 	)
