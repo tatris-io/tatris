@@ -197,6 +197,13 @@ func (segment *Segment) onMature() {
 	if reflect.ValueOf(segment.writer).IsValid() && segment.readerRef == 0 {
 		segment.closeWriter()
 	}
+
+	logger.Info(
+		"segment is mature",
+		zap.String("segment", segment.GetName()),
+		zap.Int64("docNum", segment.Stat.DocNum),
+		zap.Int64("duration", segment.Stat.MaxTime-segment.Stat.MinTime),
+	)
 }
 
 func (segment *Segment) closeWriter() {
