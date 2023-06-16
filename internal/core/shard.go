@@ -133,9 +133,13 @@ func (shard *Shard) addSegment(segmentID int) {
 	shard.Segments = append(
 		shard.Segments,
 		&Segment{
-			Shard:         shard,
-			SegmentID:     segmentID,
-			Stat:          Stat{CreateTime: time.Now().UnixMilli()},
+			Shard:     shard,
+			SegmentID: segmentID,
+			Stat: SegmentStat{
+				Stat: Stat{
+					CreateTime: time.Now().UnixMilli(),
+				},
+			},
 			SegmentStatus: SegmentStatusWritable,
 		},
 	)

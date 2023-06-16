@@ -8,11 +8,15 @@ type Stat struct {
 	MinTime    int64
 	MaxTime    int64
 	DocNum     int64
-	MatureTime int64
 }
 
 type ShardStat struct {
 	Stat
 	// WalIndex is the last consumed wal index
 	WalIndex uint64
+}
+
+type SegmentStat struct {
+	Stat
+	MatureTime int64
 }

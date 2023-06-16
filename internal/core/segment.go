@@ -36,7 +36,7 @@ const (
 type Segment struct {
 	Shard         *Shard `json:"-"`
 	SegmentID     int
-	Stat          Stat
+	Stat          SegmentStat
 	SegmentStatus uint8
 	lock          sync.Mutex
 	writer        indexlib.Writer
