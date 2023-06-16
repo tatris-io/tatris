@@ -205,3 +205,13 @@ func IsInvalidResourceNameError(err error) bool {
 	var invalidResourceNameErr *InvalidResourceNameError
 	return err != nil && errors.As(err, &invalidResourceNameErr)
 }
+
+type QueryLoadExceedError struct {
+	Indexes []string `json:"indexes"`
+	Message string   `json:"message"`
+	Query   any      `json:"query"`
+}
+
+func (e *QueryLoadExceedError) Error() string {
+	return fmt.Sprintf("query load exceeded: %v, %s: %v", e.Indexes, e.Message, e.Query)
+}
