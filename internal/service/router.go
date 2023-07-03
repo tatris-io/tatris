@@ -36,6 +36,7 @@ func StartHTTPServer(roles ...string) {
 	})
 	router.Use(AccessLog())
 	router.Use(gin.Recovery())
+	router.Use(addResponseHeader())
 
 	routerGroup := router.Group("")
 
@@ -78,10 +79,15 @@ func registerQuery(group *gin.RouterGroup) {
 	logger.Info("query APIs registering")
 
 	group.POST("/:index/_search", handler.QueryHandler)
+	group.GET("/:index/_search", handler.QueryHandler)
 }
 
 func registerMeta(group *gin.RouterGroup) {
 	logger.Info("meta APIs registering")
+
+	group.GET("/", handler.ClusterInfoHandler)
+	group.GET("/_nodes", handler.ClusterNodesInfoHandler)
+	group.GET("/_nodes/_all", handler.ClusterNodesInfoHandler)
 
 	group.GET("/_cluster/health", handler.ClusterStatusHandler)
 
@@ -116,4 +122,12 @@ func registerMeta(group *gin.RouterGroup) {
 	group.GET("/_index_template/:template", handler.GetIndexTemplateHandler)
 	group.DELETE("/_index_template/:template", handler.DeleteIndexTemplateHandler)
 	group.HEAD("/_index_template/:template", handler.IndexTemplateExistHandler)
+}
+
+func addResponseHeader() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// The client validating if the response has X-Elastic-Product=Elasticsearch header
+		c.Writer.Header().Set("X-elastic-product", "Elasticsearch")
+		c.Next()
+	}
 }

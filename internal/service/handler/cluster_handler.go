@@ -5,7 +5,9 @@ package handler
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/tatris-io/tatris/internal/common/consts"
+	"github.com/tatris-io/tatris/internal/common/utils"
 	"github.com/tatris-io/tatris/internal/protocol"
 )
 
@@ -30,4 +32,40 @@ func ClusterStatusHandler(c *gin.Context) {
 		TaskMaxWaitingInQueueMills:  0,
 		ActiveShardsPercentAsNumber: 100,
 	})
+}
+
+func ClusterInfoHandler(c *gin.Context) {
+	id, _ := uuid.NewUUID()
+	OK(c, protocol.ClusterInfo{
+		Name:        "tatris",
+		ClusterName: "docker-cluster",
+		ClusterUUID: id.String(),
+		Version: protocol.VersionInfo{
+			Number: consts.ESVersion,
+		},
+		TatrisVersion: protocol.VersionInfo{
+			Number: consts.Version(),
+		},
+		Tagline: "You Know, for Search",
+	})
+}
+
+func ClusterNodesInfoHandler(c *gin.Context) {
+	id, _ := uuid.NewUUID()
+	ip, err := utils.GetLocalIP()
+	if err != nil {
+		BadRequest(c, err.Error())
+	} else {
+		OK(c, protocol.ClusterNodesInfo{
+			Nodes: protocol.ClusterNodes{
+				id.String(): protocol.ClusterNode{
+					Name:          "tatris",
+					IP:            ip,
+					Host:          ip,
+					Version:       consts.ESVersion,
+					TatrisVersion: consts.Version(),
+				},
+			},
+		})
+	}
 }
