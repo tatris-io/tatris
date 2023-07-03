@@ -11,11 +11,19 @@ import (
 	"runtime"
 	"strconv"
 
+	"github.com/tatris-io/tatris/internal/core/config"
+
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
+
+func DefaultClient() (*oss.Client, error) {
+	return NewClient(config.Cfg.Directory.OSS.Endpoint,
+		config.Cfg.Directory.OSS.AccessKeyID,
+		config.Cfg.Directory.OSS.SecretAccessKey)
+}
 
 func NewClient(endpoint, accessKeyID, secretAccessKey string) (*oss.Client, error) {
 	client, err := oss.New(

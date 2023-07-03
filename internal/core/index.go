@@ -6,7 +6,10 @@ package core
 import (
 	"os"
 	"path"
+	"strings"
 	"sync"
+
+	"github.com/tatris-io/tatris/internal/indexlib/bluge/directory/oss"
 
 	"github.com/tatris-io/tatris/internal/common/consts"
 
@@ -104,16 +107,56 @@ func (index *Index) Close() error {
 	for _, shard := range index.Shards {
 		shard.Close()
 	}
-	// clear data files
+
+	// clear fs data files
 	dp := path.Join(config.Cfg.GetFSPath(), consts.PathData, index.Name)
 	err1 := os.RemoveAll(dp)
 
-	// clear cache files
+	// clear fs cache files
 	cp := path.Join(config.Cfg.GetFSPath(), consts.PathCache, index.Name)
 	err2 := os.RemoveAll(cp)
 
-	if err1 == nil {
-		err1 = err2
+	if err1 != nil {
+		logger.Error(
+			"clear fs data files fail",
+			zap.String("index", index.GetName()),
+			zap.Error(err1),
+		)
+		return err1
 	}
-	return err1
+
+	if err2 != nil {
+		logger.Error(
+			"clear fs cache files fail",
+			zap.String("index", index.GetName()),
+			zap.Error(err2),
+		)
+		return err2
+	}
+
+	// clear oss data objects
+	if strings.EqualFold(consts.DirectoryOSS, config.Cfg.Directory.Type) {
+		defaultCli, err3 := oss.DefaultClient()
+		if err3 != nil {
+			return err3
+		}
+		objs, err4 := oss.ListObjects(
+			defaultCli,
+			config.Cfg.Directory.OSS.Bucket,
+			oss.OssPath(index.GetName()),
+		)
+		if err4 != nil {
+			return err4
+		}
+		if len(objs) > 0 {
+			for _, obj := range objs {
+				err5 := oss.DeleteObject(defaultCli, config.Cfg.Directory.OSS.Bucket, obj.Key)
+				if err5 != nil {
+					return err5
+				}
+			}
+		}
+	}
+
+	return nil
 }
