@@ -19,6 +19,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+const MaxKeySize = 1000
+
 func DefaultClient() (*oss.Client, error) {
 	return NewClient(config.Cfg.Directory.OSS.Endpoint,
 		config.Cfg.Directory.OSS.AccessKeyID,
@@ -90,22 +92,40 @@ func ListObjects(
 	if err != nil {
 		return nil, err
 	}
-	var objectsResult oss.ListObjectsResultV2
-	if prefix != "" {
-		objectsResult, err = bucket.ListObjectsV2(oss.Prefix(prefix))
-	} else {
-		objectsResult, err = bucket.ListObjectsV2()
+
+	objects := make([]oss.ObjectProperties, 0)
+
+	requested := false
+	nextContinuationToken := ""
+
+	for !requested || nextContinuationToken != "" {
+		requested = true
+
+		options := make([]oss.Option, 0)
+		options = append(options, oss.MaxKeys(MaxKeySize))
+		if prefix != "" {
+			options = append(options, oss.Prefix(prefix))
+		}
+		if nextContinuationToken != "" {
+			options = append(options, oss.ContinuationToken(nextContinuationToken))
+		}
+		objectsResult, err := bucket.ListObjectsV2(options...)
+
+		if err != nil {
+			logger.Error(
+				"[oss] list objects fail",
+				zap.String("bucket", bucket.BucketName),
+				zap.String("prefix", prefix),
+				zap.Error(err),
+			)
+			return nil, err
+		}
+
+		objects = append(objects, objectsResult.Objects...)
+
+		nextContinuationToken = objectsResult.NextContinuationToken
 	}
-	if err != nil {
-		logger.Error(
-			"[oss] list objects fail",
-			zap.String("bucket", bucket.BucketName),
-			zap.String("prefix", prefix),
-			zap.Error(err),
-		)
-		return nil, err
-	}
-	objects := objectsResult.Objects
+
 	return objects, nil
 }
 
@@ -238,17 +258,35 @@ func PutObject(client *oss.Client, bucketName, path string, buf *bytes.Buffer) e
 	return nil
 }
 
-func DeleteObject(client *oss.Client, bucketName, path string) error {
+func DeleteObject(client *oss.Client, bucketName, object string) error {
 	bucket, err := GetBucket(client, bucketName)
 	if err != nil {
 		return err
 	}
-	err = bucket.DeleteObject(path)
+	err = bucket.DeleteObject(object)
 	if err != nil {
 		logger.Error(
 			"[oss] delete object fail",
 			zap.String("bucket", bucket.BucketName),
-			zap.String("path", path),
+			zap.String("object", object),
+			zap.Error(err),
+		)
+		return err
+	}
+	return nil
+}
+
+func DeleteObjects(client *oss.Client, bucketName string, objects []string) error {
+	bucket, err := GetBucket(client, bucketName)
+	if err != nil {
+		return err
+	}
+	_, err = bucket.DeleteObjects(objects, oss.DeleteObjectsQuiet(true))
+	if err != nil {
+		logger.Error(
+			"[oss] delete objects fail",
+			zap.String("bucket", bucket.BucketName),
+			zap.Any("objects", objects),
 			zap.Error(err),
 		)
 		return err

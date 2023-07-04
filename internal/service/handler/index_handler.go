@@ -69,18 +69,20 @@ func IndexExistHandler(c *gin.Context) {
 
 func DeleteIndexHandler(c *gin.Context) {
 	name := c.Param("index")
-	if indexes, err := metadata.ResolveIndexes(name); err != nil {
+	var indexes []*core.Index
+	var err error
+	if indexes, err = metadata.ResolveIndexes(name); err != nil {
 		if ok, infErr := errs.IndexNotFound(err); ok {
 			NotFound(c, "index", infErr.Index)
-		} else {
-			InternalServerError(c, err.Error())
+			return
 		}
-	} else {
-		for _, index := range indexes {
-			if err := metadata.DeleteIndex(index.Name); err != nil {
-				InternalServerError(c, err.Error())
-				return
-			}
+		InternalServerError(c, err.Error())
+		return
+	}
+	for _, index := range indexes {
+		if err := metadata.DeleteIndex(index.Name); err != nil {
+			InternalServerError(c, err.Error())
+			return
 		}
 	}
 	ACK(c)

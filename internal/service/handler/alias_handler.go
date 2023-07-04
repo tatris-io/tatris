@@ -23,34 +23,34 @@ func ManageAliasHandler(c *gin.Context) {
 		for _, action := range actions {
 			if len(action) > 1 {
 				BadRequest(c, "Too many operations declared on operation entry")
-			} else {
-				for name, term := range action {
-					if term.Index == "" || term.Alias == "" {
-						if term.Index == "" {
-							BadRequest(c, "index is required")
-						} else {
-							BadRequest(c, "alias is required")
-						}
-						return
-					}
-					if strings.EqualFold(name, "add") {
-						if err := metadata.AddAlias(term); err != nil {
-							if errs.IsInvalidResourceNameError(err) {
-								BadRequest(c, err.Error())
-							} else {
-								InternalServerError(c, err.Error())
-							}
-							return
-						}
-					} else if strings.EqualFold(name, "remove") {
-						if err := metadata.RemoveAlias(term); err != nil {
-							InternalServerError(c, err.Error())
-							return
-						}
+				return
+			}
+			for name, term := range action {
+				if term.Index == "" || term.Alias == "" {
+					if term.Index == "" {
+						BadRequest(c, "index is required")
 					} else {
-						BadRequest(c, fmt.Sprintf("[alias_action] unknown field [%s]", name))
+						BadRequest(c, "alias is required")
+					}
+					return
+				}
+				if strings.EqualFold(name, "add") {
+					if err := metadata.AddAlias(term); err != nil {
+						if errs.IsInvalidResourceNameError(err) {
+							BadRequest(c, err.Error())
+						} else {
+							InternalServerError(c, err.Error())
+						}
 						return
 					}
+				} else if strings.EqualFold(name, "remove") {
+					if err := metadata.RemoveAlias(term); err != nil {
+						InternalServerError(c, err.Error())
+						return
+					}
+				} else {
+					BadRequest(c, fmt.Sprintf("[alias_action] unknown field [%s]", name))
+					return
 				}
 			}
 		}
