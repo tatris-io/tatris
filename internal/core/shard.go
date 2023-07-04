@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/tatris-io/tatris/internal/common/utils"
 	"github.com/tatris-io/tatris/internal/core/wal/log"
 	"go.uber.org/zap"
 
@@ -123,10 +124,15 @@ func (shard *Shard) UpdateStat(min, max time.Time, docs int64, wals uint64) {
 	)
 }
 
-func (shard *Shard) Close() {
+func (shard *Shard) Destroy() error {
+
+	defer utils.Timerf("close shard finish, name:%s", shard.GetName())()
+
 	for _, segment := range shard.Segments {
-		segment.Close()
+		segment.Destroy()
 	}
+
+	return nil
 }
 
 func (shard *Shard) addSegment(segmentID int) {

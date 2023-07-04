@@ -6,9 +6,16 @@ package core
 import (
 	"os"
 	"path"
+	"strings"
 	"sync"
 
+	"github.com/tatris-io/tatris/internal/indexlib/bluge/directory/oss"
+
 	"github.com/tatris-io/tatris/internal/common/consts"
+
+	"github.com/sourcegraph/conc/pool"
+
+	"github.com/tatris-io/tatris/internal/common/utils"
 
 	"github.com/tatris-io/tatris/internal/core/config"
 
@@ -100,20 +107,102 @@ func (index *Index) GetSegmentsByTime(start, end int64) []*Segment {
 	return segments
 }
 
-func (index *Index) Close() error {
+func (index *Index) Destroy() error {
+
+	defer utils.Timerf("close index finish, name:%s", index.GetName())()
+
+	// destroy shards
+
 	for _, shard := range index.Shards {
-		shard.Close()
+		if err := shard.Destroy(); err != nil {
+			return err
+		}
 	}
-	// clear data files
-	dp := path.Join(config.Cfg.GetFSPath(), consts.PathData, index.Name)
+
+	// clear fs data dir
+	dp := path.Join(config.Cfg.GetFSPath(), consts.PathData, index.GetName())
 	err1 := os.RemoveAll(dp)
 
-	// clear cache files
-	cp := path.Join(config.Cfg.GetFSPath(), consts.PathCache, index.Name)
+	// clear fs cache dir
+	cp := path.Join(config.Cfg.GetFSPath(), consts.PathCache, index.GetName())
 	err2 := os.RemoveAll(cp)
 
-	if err1 == nil {
-		err1 = err2
+	// clear fs wal dir
+	wp := path.Join(config.Cfg.GetFSPath(), consts.PathWAL, index.GetName())
+	err3 := os.RemoveAll(wp)
+
+	if err1 != nil {
+		logger.Error(
+			"clear fs data dir fail",
+			zap.String("index", index.GetName()),
+			zap.Error(err1),
+		)
+		return err1
 	}
-	return err1
+
+	if err2 != nil {
+		logger.Error(
+			"clear fs cache dir fail",
+			zap.String("index", index.GetName()),
+			zap.Error(err2),
+		)
+		return err2
+	}
+
+	if err3 != nil {
+		logger.Error(
+			"clear fs wal dir fail",
+			zap.String("index", index.GetName()),
+			zap.Error(err3),
+		)
+		return err3
+	}
+
+	// clear oss data objects
+	if strings.EqualFold(consts.DirectoryOSS, config.Cfg.Directory.Type) {
+		var err error
+		defaultCli, err := oss.DefaultClient()
+		if err == nil {
+			objs, err := oss.ListObjects(
+				defaultCli,
+				config.Cfg.Directory.OSS.Bucket,
+				oss.OssPath(index.GetName()),
+			)
+			if err == nil {
+				if len(objs) > 0 {
+					n := (len(objs) + oss.MaxKeySize - 1) / oss.MaxKeySize
+					objGroups := make([][]string, n)
+					for i, obj := range objs {
+						group := i / oss.MaxKeySize
+						objGroups[group] = append(objGroups[group], obj.Key)
+					}
+
+					p := pool.New().WithErrors().WithMaxGoroutines(n)
+
+					for _, objGroup := range objGroups {
+						og := objGroup
+						p.Go(func() error {
+							return oss.DeleteObjects(
+								defaultCli,
+								config.Cfg.Directory.OSS.Bucket,
+								og,
+							)
+						})
+					}
+
+					err = p.Wait()
+				}
+			}
+		}
+		if err != nil {
+			logger.Error(
+				"clear oss objects fail",
+				zap.String("index", index.GetName()),
+				zap.Error(err),
+			)
+			return err
+		}
+	}
+
+	return nil
 }

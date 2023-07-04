@@ -143,8 +143,8 @@ func DeleteIndex(indexName string) error {
 	}
 	// first set the cache disable, then all requests for this index will get a 404
 	Instance().IndexCache.Delete(indexName)
-	// close the index and its components (shards, segments, wals ...)
-	err = index.Close()
+	// destroy the index and its components (shards, segments, wals ...)
+	err = index.Destroy()
 	if err != nil {
 		return err
 	}

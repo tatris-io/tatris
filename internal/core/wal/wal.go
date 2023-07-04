@@ -5,6 +5,7 @@ package wal
 
 import (
 	"encoding/json"
+	"fmt"
 	"math"
 	"os"
 	"path"
@@ -175,6 +176,14 @@ func ConsumeWAL(shard *core.Shard, wal log.WalLog) error {
 	name := shard.GetName()
 	defer utils.Timerf("consume wal finish, name:%s", name)()
 
+	var err error
+
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("consume wal panic: %v", r)
+		}
+	}()
+
 	lastIndex, err := wal.LastIndex()
 	if err != nil {
 		return err
@@ -262,7 +271,7 @@ func ConsumeWAL(shard *core.Shard, wal log.WalLog) error {
 		zap.Uint64("to", to),
 		zap.Uint64("size", to-from+1),
 	)
-	return nil
+	return err
 }
 
 func persistDocuments(shard *core.Shard,

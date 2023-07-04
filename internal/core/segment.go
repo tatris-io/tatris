@@ -214,7 +214,7 @@ func (segment *Segment) closeWriter() {
 	segment.writer = nil
 }
 
-func (segment *Segment) Close() {
+func (segment *Segment) Destroy() {
 	// set the status to SegmentStatusReadonly,
 	// so immature segment can also close its writer after the last reader is closed
 	segment.SegmentStatus = SegmentStatusReadonly

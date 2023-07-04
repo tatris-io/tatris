@@ -106,7 +106,7 @@ func (d *OssDirectory) List(kind string) ([]uint64, error) {
 	d.lock.RLock()
 	defer d.lock.RUnlock()
 
-	dirEntries, err := ListObjects(d.client, d.bucket, ossPath(d.index))
+	dirEntries, err := ListObjects(d.client, d.bucket, OssPath(d.index))
 	if err != nil {
 		return nil, err
 	}
@@ -283,7 +283,7 @@ func (d *OssDirectory) Stats() (numFilesOnDisk, numBytesUsedDisk uint64) {
 	d.lock.RLock()
 	defer d.lock.RUnlock()
 
-	dirEntries, err := ListObjects(d.client, d.bucket, ossPath(d.index))
+	dirEntries, err := ListObjects(d.client, d.bucket, OssPath(d.index))
 	if err != nil {
 		return 0, 0
 	}
@@ -309,7 +309,7 @@ func (d *OssDirectory) fileName(kind string, id uint64) string {
 	return fmt.Sprintf("%012x", id) + kind
 }
 
-func ossPath(index string) string {
+func OssPath(index string) string {
 	return fmt.Sprintf("%s/", index)
 }
 
