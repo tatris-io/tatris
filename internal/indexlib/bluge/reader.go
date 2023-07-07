@@ -4,6 +4,7 @@
 package bluge
 
 import (
+	"container/heap"
 	"context"
 	"encoding/json"
 	"errors"
@@ -12,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/tatris-io/tatris/internal/common/errs"
@@ -44,14 +46,29 @@ type BlugeReader struct {
 	closeHook func(*BlugeReader)
 }
 
-type BlugeSearchResult struct {
-	docs    []*search.DocumentMatch
-	buckets []*search.Bucket
+type ReaderResult struct {
+	docs   []*search.DocumentMatch
+	bucket *search.Bucket
 }
 
 var (
 	errNotBlugeReader = errors.New("not a bluge reader")
+
+	tokens chan struct{}
 )
+
+func init() {
+	tokens = make(chan struct{}, cfg.Cfg.Query.GlobalReadersLimit)
+	go func() {
+		ticker := time.NewTicker(time.Second)
+		for range ticker.C {
+			logger.Info(
+				"global available tokens",
+				zap.Int("count", cfg.Cfg.Query.GlobalReadersLimit-len(tokens)),
+			)
+		}
+	}()
+}
 
 func NewBlugeReader(
 	config *indexlib.Config,
@@ -108,6 +125,7 @@ func (b *BlugeReader) Search(
 	query indexlib.QueryRequest,
 	limit, from int,
 ) (*indexlib.QueryResponse, error) {
+
 	defer utils.Timerf(
 		"bluge search docs finish, segments:%+v, query:%+v, limit:%d, from:%d",
 		b.Segments,
@@ -115,111 +133,147 @@ func (b *BlugeReader) Search(
 		limit,
 		from,
 	)()
-	p := pool.NewWithResults[*BlugeSearchResult]().WithErrors().
-		WithMaxGoroutines(cfg.Cfg.Query.Parallel)
+
+	documents := &DocHeap{docs: make([]*search.DocumentMatch, 0), sort: genSort(query)}
+	heap.Init(documents)
+	aggregation := search.NewBucket("aggregation", nil)
+
+	resultChan := make(chan *ReaderResult, len(b.Readers))
+	errChan := make(chan error, len(b.Readers))
+
+	p := pool.New().WithMaxGoroutines(cfg.Cfg.Query.Parallel)
+	var loading, merging sync.WaitGroup
+
+	// load data from multiple readers in parallel, which is limited by global tokens
 	for _, reader := range b.Readers {
+		loading.Add(1)
 		r := reader
-		p.Go(func() (*BlugeSearchResult, error) {
-			result := &BlugeSearchResult{
-				docs:    make([]*search.DocumentMatch, 0),
-				buckets: make([]*search.Bucket, 0),
-			}
-			searchRequest, err := b.generateSearchRequest(query, limit, from)
-			if err != nil {
-				return nil, err
-			}
-			dmi, err := r.Search(ctx, searchRequest)
-			if err != nil {
+		p.Go(func() {
+			if err := b.load(ctx, r, query, resultChan, &loading, limit, from); err != nil {
+				errChan <- err
 				logger.Error(
 					"bluge search failed",
-					zap.Any("request", searchRequest),
+					zap.Any("query", query),
 					zap.Error(err),
 				)
-				return result, err
 			}
-			next, err := dmi.Next()
-			for err == nil && next != nil {
-				result.docs = append(result.docs, next)
-				next, err = dmi.Next()
-			}
-			result.buckets = append(result.buckets, dmi.Aggregations())
-			return result, nil
 		})
 	}
 
-	results, err := p.Wait()
-	if err != nil {
-		return nil, err
-	}
-	// TODO: stream process the documents returned by multiple readers instead of loading them all
-	// into memory instantaneously
-	docs, bucket := b.dealMultiResults(results, generateSort(query), limit, from)
+	// control channel closure
+	go func() {
+		loading.Wait()
+		close(resultChan)
+	}()
 
-	// get buckets limit (map[aggName]size)
+	// stream merge data loaded from multiple readers above
+	merging.Add(1)
+	go b.merge(documents, aggregation, resultChan, &merging)
+
+	merging.Wait()
+
+	if len(errChan) > 0 {
+		return nil, <-errChan
+	}
+
+	// collate the documents
+	collatedDocs := b.collate(documents, limit, from)
+
 	bucketLimitDoc := make(map[string]int)
 	if aggs := query.GetAggs(); aggs != nil {
 		b.getBucketAggregationsLimit(aggs, bucketLimitDoc)
 	}
 
-	return b.generateResponse(docs, bucket, bucketLimitDoc)
+	return b.response(collatedDocs, aggregation, bucketLimitDoc)
 }
 
-func (b *BlugeReader) dealMultiResults(
-	results []*BlugeSearchResult,
-	sortOrder search.SortOrder,
+func (b *BlugeReader) load(
+	ctx context.Context,
+	r *bluge.Reader,
+	query indexlib.QueryRequest,
+	resultChan chan *ReaderResult,
+	wg *sync.WaitGroup,
 	limit, from int,
-) ([]*search.DocumentMatch, *search.Bucket) {
+) error {
+	defer wg.Done()
+	tokens <- struct{}{}
+	req, err := b.request(query, limit, from)
+	if err != nil {
+		return err
+	}
+	dmi, err := r.Search(ctx, req)
+	if err != nil {
+		return err
+	}
 	docs := make([]*search.DocumentMatch, 0)
-	var bucket *search.Bucket
-	for _, result := range results {
-		docs = append(docs, result.docs...)
-		// merge bucket
-		for _, b := range result.buckets {
-			if bucket == nil {
-				bucket = b
-			} else {
-				bucket.Merge(b)
-			}
-		}
+	next, err := dmi.Next()
+	for err == nil && next != nil {
+		docs = append(docs, next)
+		next, err = dmi.Next()
 	}
-	// sort docs
-	if sortOrder != nil && len(docs) > 1 {
-		sort.SliceStable(docs, func(i, j int) bool {
-			return sortOrder.Compare(docs[i], docs[j]) < 0
-		})
-	}
-
-	// skip docs
-	if from > 0 {
-		if len(docs) <= from {
-			docs = docs[:0]
-		} else {
-			docs = docs[from:]
-		}
-	}
-	// limit docs
-	if len(docs) > limit {
-		docs = docs[:limit]
-	}
-	return docs, bucket
+	searchResult := &ReaderResult{docs: docs, bucket: dmi.Aggregations()}
+	resultChan <- searchResult
+	return nil
 }
 
-func (b *BlugeReader) generateSearchRequest(
+func (b *BlugeReader) merge(
+	docs *DocHeap,
+	bucket *search.Bucket,
+	resultChan chan *ReaderResult,
+	wg *sync.WaitGroup,
+) {
+	defer wg.Done()
+	for searchResult := range resultChan {
+		for _, doc := range searchResult.docs {
+			heap.Push(docs, doc)
+		}
+		bucket.Merge(searchResult.bucket)
+		<-tokens
+	}
+}
+
+func (b *BlugeReader) collate(
+	docs *DocHeap,
+	limit, from int,
+) []*search.DocumentMatch {
+	docsRes := make([]*search.DocumentMatch, 0)
+	if from >= 0 {
+		// skip docs
+		for from > 0 && docs.Len() > 0 {
+			heap.Pop(docs)
+			from--
+		}
+		// limit docs
+		for limit > 0 && docs.Len() > 0 {
+			docsRes = append(docsRes, heap.Pop(docs).(*search.DocumentMatch))
+			limit--
+		}
+		// sort docs
+		if docs.sort != nil {
+			sort.SliceStable(docsRes, func(i, j int) bool {
+				return docs.sort.Compare(docsRes[i], docsRes[j]) < 0
+			})
+		}
+	}
+	return docsRes
+}
+
+func (b *BlugeReader) request(
 	query indexlib.QueryRequest,
 	limit, from int,
 ) (bluge.SearchRequest, error) {
-	blugeQuery, err := b.generateQuery(query)
+	blugeQuery, err := b.genQuery(query)
 	if err != nil {
 		return nil, err
 	}
 	size := limit + from
 	searchRequest := bluge.NewTopNSearch(size, blugeQuery).WithStandardAggregations()
-	sorts := generateSort(query)
+	sorts := genSort(query)
 	if sorts != nil {
 		searchRequest.SortByCustom(sorts)
 	}
 	if aggs := query.GetAggs(); aggs != nil {
-		blugeAggs, err := b.generateAggregations(aggs)
+		blugeAggs, err := b.genAggregations(aggs)
 		if err != nil {
 			return nil, err
 		}
@@ -230,7 +284,7 @@ func (b *BlugeReader) generateSearchRequest(
 	return searchRequest, nil
 }
 
-func generateSort(query indexlib.QueryRequest) []*search.Sort {
+func genSort(query indexlib.QueryRequest) []*search.Sort {
 	if querySorts := query.GetSort(); querySorts != nil {
 		sorts := make([]*search.Sort, 0, len(querySorts))
 		for _, querySort := range querySorts {
@@ -250,7 +304,7 @@ func generateSort(query indexlib.QueryRequest) []*search.Sort {
 	return nil
 }
 
-func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) (bluge.Query, error) {
+func (b *BlugeReader) genQuery(query indexlib.QueryRequest) (bluge.Query, error) {
 	var blugeQuery bluge.Query
 
 	switch query := query.(type) {
@@ -258,19 +312,19 @@ func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) (bluge.Query, e
 		q := bluge.NewMatchAllQuery()
 		blugeQuery = q
 	case *indexlib.MatchQuery:
-		q, err := b.generateMatchQuery(query)
+		q, err := b.genMatchQuery(query)
 		if err != nil {
 			return nil, err
 		}
 		blugeQuery = q
 	case *indexlib.MatchPhraseQuery:
-		q, err := b.generateMatchPhraseQuery(query)
+		q, err := b.genMatchPhraseQuery(query)
 		if err != nil {
 			return nil, err
 		}
 		blugeQuery = q
 	case *indexlib.QueryString:
-		q, err := b.generateQueryString(query)
+		q, err := b.genQueryString(query)
 		if err != nil {
 			return nil, err
 		}
@@ -282,7 +336,7 @@ func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) (bluge.Query, e
 		}
 		blugeQuery = q
 	case *indexlib.BooleanQuery:
-		q, err := b.generateBoolQuery(query)
+		q, err := b.genBoolQuery(query)
 		if err != nil {
 			return nil, err
 		}
@@ -310,7 +364,7 @@ func (b *BlugeReader) generateQuery(query indexlib.QueryRequest) (bluge.Query, e
 	return blugeQuery, nil
 }
 
-func (b *BlugeReader) generateResponse(
+func (b *BlugeReader) response(
 	docs []*search.DocumentMatch,
 	bucket *search.Bucket,
 	bucketLimitDoc map[string]int,
@@ -358,7 +412,7 @@ func (b *BlugeReader) generateResponse(
 
 	bucket.Aggregation("duration").Finish()
 
-	aggsResponse, err := b.generateAggsResponse(bucket, bucketLimitDoc)
+	aggsResponse, err := b.genAggsResponse(bucket, bucketLimitDoc)
 	if err != nil {
 		return nil, err
 	}
@@ -376,7 +430,7 @@ func (b *BlugeReader) generateResponse(
 	return resp, nil
 }
 
-func (b *BlugeReader) generateMatchQuery(query *indexlib.MatchQuery) (bluge.Query, error) {
+func (b *BlugeReader) genMatchQuery(query *indexlib.MatchQuery) (bluge.Query, error) {
 	q := bluge.NewMatchQuery(query.Match)
 	if query.Field != "" {
 		q.SetField(query.Field)
@@ -395,7 +449,7 @@ func (b *BlugeReader) generateMatchQuery(query *indexlib.MatchQuery) (bluge.Quer
 			q.SetOperator(bluge.MatchQueryOperatorAnd)
 		}
 	}
-	analyzer := generateAnalyzer(query.Analyzer)
+	analyzer := genAnalyzer(query.Analyzer)
 	if analyzer != nil {
 		q.SetAnalyzer(analyzer)
 	}
@@ -403,7 +457,7 @@ func (b *BlugeReader) generateMatchQuery(query *indexlib.MatchQuery) (bluge.Quer
 	return q, nil
 }
 
-func (b *BlugeReader) generateMatchPhraseQuery(
+func (b *BlugeReader) genMatchPhraseQuery(
 	query *indexlib.MatchPhraseQuery,
 ) (bluge.Query, error) {
 	q := bluge.NewMatchPhraseQuery(query.MatchPhrase)
@@ -417,9 +471,9 @@ func (b *BlugeReader) generateMatchPhraseQuery(
 	return q, nil
 }
 
-func (b *BlugeReader) generateQueryString(query *indexlib.QueryString) (bluge.Query, error) {
+func (b *BlugeReader) genQueryString(query *indexlib.QueryString) (bluge.Query, error) {
 	options := qs.DefaultOptions()
-	analyzer := generateAnalyzer(query.Analyzer)
+	analyzer := genAnalyzer(query.Analyzer)
 	if analyzer != nil {
 		options.WithDefaultAnalyzer(analyzer)
 	}
@@ -427,11 +481,11 @@ func (b *BlugeReader) generateQueryString(query *indexlib.QueryString) (bluge.Qu
 	return qs.ParseQueryString(query.Query, options)
 }
 
-func (b *BlugeReader) generateBoolQuery(query *indexlib.BooleanQuery) (bluge.Query, error) {
+func (b *BlugeReader) genBoolQuery(query *indexlib.BooleanQuery) (bluge.Query, error) {
 	q := bluge.NewBooleanQuery()
 	if query.Musts != nil {
 		for _, must := range query.Musts {
-			tmpQuery, err := b.generateQuery(must)
+			tmpQuery, err := b.genQuery(must)
 			if err != nil {
 				return nil, err
 			}
@@ -440,7 +494,7 @@ func (b *BlugeReader) generateBoolQuery(query *indexlib.BooleanQuery) (bluge.Que
 	}
 	if query.MustNots != nil {
 		for _, mustNot := range query.MustNots {
-			tmpQuery, err := b.generateQuery(mustNot)
+			tmpQuery, err := b.genQuery(mustNot)
 			if err != nil {
 				return nil, err
 			}
@@ -449,7 +503,7 @@ func (b *BlugeReader) generateBoolQuery(query *indexlib.BooleanQuery) (bluge.Que
 	}
 	if query.Shoulds != nil {
 		for _, should := range query.Shoulds {
-			tmpQuery, err := b.generateQuery(should)
+			tmpQuery, err := b.genQuery(should)
 			if err != nil {
 				return nil, err
 			}
@@ -459,7 +513,7 @@ func (b *BlugeReader) generateBoolQuery(query *indexlib.BooleanQuery) (bluge.Que
 	if query.Filters != nil {
 		filter := bluge.NewBooleanQuery().SetBoost(0)
 		for _, fliter := range query.Filters {
-			tmpQuery, err := b.generateQuery(fliter)
+			tmpQuery, err := b.genQuery(fliter)
 			if err != nil {
 				return nil, err
 			}
@@ -482,7 +536,7 @@ func (b *BlugeReader) getBucketAggregationsLimit(
 	}
 }
 
-func (b *BlugeReader) generateAggregations(
+func (b *BlugeReader) genAggregations(
 	aggs map[string]indexlib.Aggs,
 ) (map[string]search.Aggregation, error) {
 	result := make(map[string]search.Aggregation, len(aggs))
@@ -494,7 +548,7 @@ func (b *BlugeReader) generateAggregations(
 			)
 			// sub-aggregations (bucket aggregation need support)
 			if len(agg.Aggs) > 0 {
-				subAggs, err := b.generateAggregations(agg.Aggs)
+				subAggs, err := b.genAggregations(agg.Aggs)
 				if err != nil {
 					return nil, err
 				}
@@ -504,7 +558,7 @@ func (b *BlugeReader) generateAggregations(
 			}
 			result[name] = termsAggregation
 		} else if agg.Filter != nil {
-			filter, err := b.generateAggsFilter(agg.Filter.FilterQuery, agg.Aggs)
+			filter, err := b.genAggsFilter(agg.Filter.FilterQuery, agg.Aggs)
 			if err != nil {
 				return nil, err
 			}
@@ -517,7 +571,7 @@ func (b *BlugeReader) generateAggregations(
 			)
 			// sub-aggregations (bucket aggregation need support)
 			if len(agg.Aggs) > 0 {
-				subAggs, err := b.generateAggregations(agg.Aggs)
+				subAggs, err := b.genAggregations(agg.Aggs)
 				if err != nil {
 					return nil, err
 				}
@@ -545,7 +599,7 @@ func (b *BlugeReader) generateAggregations(
 			}
 			// sub-aggregations (bucket aggregation need support)
 			if len(agg.Aggs) > 0 {
-				subAggs, err := b.generateAggregations(agg.Aggs)
+				subAggs, err := b.genAggregations(agg.Aggs)
 				if err != nil {
 					return nil, err
 				}
@@ -586,7 +640,7 @@ func (b *BlugeReader) generateAggregations(
 			}
 			// sub-aggregations (bucket aggregation need support)
 			if len(agg.Aggs) > 0 {
-				subAggs, err := b.generateAggregations(agg.Aggs)
+				subAggs, err := b.genAggregations(agg.Aggs)
 				if err != nil {
 					return nil, err
 				}
@@ -617,7 +671,7 @@ func (b *BlugeReader) generateAggregations(
 	return result, nil
 }
 
-func (b *BlugeReader) generateAggsFilter(
+func (b *BlugeReader) genAggsFilter(
 	query indexlib.QueryRequest,
 	aggs map[string]indexlib.Aggs,
 ) (search.Aggregation, error) {
@@ -645,7 +699,7 @@ func (b *BlugeReader) generateAggsFilter(
 
 	// sub-aggregations
 	if len(aggs) > 0 {
-		subAggs, err := b.generateAggregations(aggs)
+		subAggs, err := b.genAggregations(aggs)
 		if err != nil {
 			return nil, err
 		}
@@ -666,7 +720,7 @@ func (b *BlugeReader) generateAggsFilter(
 	return filterAggs, nil
 }
 
-func (b *BlugeReader) generateAggsResponse(
+func (b *BlugeReader) genAggsResponse(
 	bucket *search.Bucket,
 	bucketLimitDoc map[string]int,
 ) (map[string]indexlib.Aggregation, error) {
@@ -694,7 +748,7 @@ func (b *BlugeReader) generateAggsResponse(
 				aggsBucket["doc_count"] = buckets[i].Count()
 
 				if buckets[i].Aggregations() != nil {
-					aggsResponse, err := b.generateAggsResponse(buckets[i], bucketLimitDoc)
+					aggsResponse, err := b.genAggsResponse(buckets[i], bucketLimitDoc)
 					if err != nil {
 						return aggsResponse, err
 					}
