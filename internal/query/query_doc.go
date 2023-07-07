@@ -57,7 +57,7 @@ func SearchDocs(
 	for _, segment := range allSegments {
 		docNum += segment.Stat.DocNum
 	}
-	var docNumLimit = config.Cfg.Query.MaxDocNum
+	var docNumLimit = config.Cfg.Query.DocNumLimit
 	if docNum > docNumLimit {
 		return nil, &errs.QueryLoadExceedError{
 			Indexes: indexNames,

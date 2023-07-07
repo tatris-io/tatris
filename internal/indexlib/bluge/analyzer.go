@@ -9,7 +9,7 @@ import (
 	"github.com/blugelabs/bluge/analysis/analyzer"
 )
 
-func generateAnalyzer(analyzerStr string) *analysis.Analyzer {
+func genAnalyzer(analyzerStr string) *analysis.Analyzer {
 	switch strings.ToUpper(analyzerStr) {
 	case "KEYWORD":
 		return analyzer.NewKeywordAnalyzer()

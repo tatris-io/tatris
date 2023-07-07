@@ -43,7 +43,8 @@ func init() {
 			Parallel:                    16,
 			DefaultScanHours:            24 * 3,
 			DefaultAggregationShardSize: 5000,
-			MaxDocNum:                   1000000,
+			DocNumLimit:                 1000000,
+			GlobalReadersLimit:          200,
 		},
 	}
 }
@@ -107,7 +108,10 @@ type Query struct {
 	DefaultAggregationShardSize int `yaml:"default_aggregation_shard_size"`
 	// The maximum number of documents that a query is allowed to hit, an errs.QueryLoadExceedError
 	// will be returned if this limit is exceeded.
-	MaxDocNum int64 `yaml:"max_doc_num"`
+	DocNumLimit int64 `yaml:"doc_num_limit"`
+	// The maximum number of readers allowed to load data at the same time, which is a threshold
+	// used to limit the global instantaneous resource usage.
+	GlobalReadersLimit int `yaml:"global_readers_limit"`
 }
 
 // Verify wraps doVerify with a `sync.Once`
