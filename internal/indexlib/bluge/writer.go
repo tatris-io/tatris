@@ -148,7 +148,6 @@ func (b *BlugeWriter) generateBlugeDoc(
 	bdoc.AddField(bluge.NewStoredOnlyField(consts.SourceField, source))
 	bdoc.AddField(
 		bluge.NewDateTimeField(consts.TimestampField, time.Now()).
-			StoreValue().
 			Sortable().
 			Aggregatable(),
 	)
@@ -220,7 +219,10 @@ func (b *BlugeWriter) addFieldByMappingType(
 			}
 			bfield = bluge.NewDateTimeField(key, date)
 		}
+
+		if lType.Type != consts.LibFieldTypeText {
+			bfield.Sortable().Aggregatable()
+		}
 	}
-	// TODO Sortable、StoreValue、Aggregatable needs to be configured
-	return bfield.Sortable().StoreValue().Aggregatable(), err
+	return bfield, err
 }
