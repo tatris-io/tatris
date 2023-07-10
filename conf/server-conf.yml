@@ -20,7 +20,7 @@ wal:
   file_perms: 0640
 query:
   parallel: 10
-  default_scan_hours: 72
+  default_scan_hours: 12
   default_aggregation_shard_size: 5000
   doc_num_limit: 1000000
   global_readers_limit: 200
