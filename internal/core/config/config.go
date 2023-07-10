@@ -40,8 +40,7 @@ func init() {
 			Parallel:         16,
 		},
 		Query: &Query{
-			Parallel:                    16,
-			DefaultScanHours:            24 * 3,
+			DefaultScanHours:            12,
 			DefaultAggregationShardSize: 5000,
 			DocNumLimit:                 1000000,
 			GlobalReadersLimit:          200,
@@ -98,8 +97,6 @@ type Wal struct {
 }
 
 type Query struct {
-	// the number of Goroutines used to retrieve multiple segments per query
-	Parallel int `yaml:"parallel"`
 	// the default number of hours to scan when no time range is explicitly passed in
 	DefaultScanHours int `yaml:"default_scan_hours"`
 	// acts on terms aggregation, increase default_aggregation_shard_size
@@ -184,9 +181,6 @@ func (w *Wal) verify() {
 }
 
 func (q *Query) verify() {
-	if q.Parallel <= 0 {
-		panic("query.parallel should be positive")
-	}
 }
 
 // doVerify verifies the control parameters of all modules

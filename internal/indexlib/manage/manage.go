@@ -33,7 +33,7 @@ func GetReader(
 	// var here) of the index may have different mappings
 	switch config.IndexLib {
 	case consts.IndexLibBluge:
-		blugeReader := bluge.NewBlugeReader(config, segments...)
+		blugeReader := bluge.NewBlugeReader(config, segments, nil, nil)
 		err := blugeReader.OpenReader()
 		if err != nil {
 			logger.Error("bluge open reader failed", zap.Error(err))

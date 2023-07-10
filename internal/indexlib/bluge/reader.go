@@ -53,10 +53,11 @@ type ReaderResult struct {
 var (
 	errNotBlugeReader = errors.New("not a bluge reader")
 
+	_once  sync.Once
 	tokens chan struct{}
 )
 
-func init() {
+func initialize() {
 	tokenLimit := cfg.Cfg.Query.GlobalReadersLimit
 	tokens = make(chan struct{}, tokenLimit)
 	go func() {
@@ -72,18 +73,22 @@ func init() {
 
 func NewBlugeReader(
 	config *indexlib.Config,
-	segments ...string,
+	segments []string,
+	readers []*bluge.Reader,
+	closeHook func(*BlugeReader),
 ) *BlugeReader {
+	_once.Do(initialize)
 	return &BlugeReader{
-		Config:   config,
-		Segments: segments,
-		Readers:  make([]*bluge.Reader, 0),
+		Config:    config,
+		Segments:  segments,
+		Readers:   readers,
+		closeHook: closeHook,
 	}
 }
 
 func (b *BlugeReader) OpenReader() error {
 	if len(b.Readers) > 0 {
-		// opened
+		// already opened
 		return nil
 	}
 
@@ -819,14 +824,9 @@ func MergeReader(
 		blugeReaders = append(blugeReaders, converted.Readers...)
 	}
 
-	return &BlugeReader{
-		Config:   config,
-		Segments: segments,
-		Readers:  blugeReaders,
-		closeHook: func(_ *BlugeReader) {
-			for _, reader := range readers {
-				reader.Close()
-			}
-		},
-	}, nil
+	return NewBlugeReader(config, segments, blugeReaders, func(_ *BlugeReader) {
+		for _, reader := range readers {
+			reader.Close()
+		}
+	}), nil
 }

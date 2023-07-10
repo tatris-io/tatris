@@ -99,11 +99,7 @@ func (b *BlugeWriter) Reader() (indexlib.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &BlugeReader{
-		Config:   b.Config,
-		Segments: []string{b.Segment},
-		Readers:  []*bluge.Reader{reader},
-	}, nil
+	return NewBlugeReader(b.Config, []string{b.Segment}, []*bluge.Reader{reader}, nil), nil
 }
 
 func (b *BlugeWriter) Close() {
