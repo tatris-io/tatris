@@ -23,7 +23,6 @@ import (
 	cfg "github.com/tatris-io/tatris/internal/core/config"
 
 	"github.com/blugelabs/bluge/search/aggregations"
-	"github.com/sourcegraph/conc/pool"
 	"github.com/tatris-io/tatris/internal/common/log/logger"
 	"go.uber.org/zap"
 
@@ -58,13 +57,14 @@ var (
 )
 
 func init() {
-	tokens = make(chan struct{}, cfg.Cfg.Query.GlobalReadersLimit)
+	tokenLimit := cfg.Cfg.Query.GlobalReadersLimit
+	tokens = make(chan struct{}, tokenLimit)
 	go func() {
 		ticker := time.NewTicker(time.Second)
 		for range ticker.C {
 			logger.Info(
 				"global available tokens",
-				zap.Int("count", cfg.Cfg.Query.GlobalReadersLimit-len(tokens)),
+				zap.Int("count", tokenLimit-len(tokens)),
 			)
 		}
 	}()
@@ -141,29 +141,30 @@ func (b *BlugeReader) Search(
 	resultChan := make(chan *ReaderResult, len(b.Readers))
 	errChan := make(chan error, len(b.Readers))
 
-	p := pool.New().WithMaxGoroutines(cfg.Cfg.Query.Parallel)
 	var loading, merging sync.WaitGroup
 
 	// load data from multiple readers in parallel, which is limited by global tokens
 	for _, reader := range b.Readers {
 		loading.Add(1)
 		r := reader
-		p.Go(func() {
+		go func() {
 			if err := b.load(ctx, r, query, resultChan, &loading, limit, from); err != nil {
-				errChan <- err
 				logger.Error(
 					"bluge search failed",
 					zap.Any("query", query),
 					zap.Error(err),
 				)
+				<-tokens
+				errChan <- err
 			}
-		})
+		}()
 	}
 
 	// control channel closure
 	go func() {
 		loading.Wait()
 		close(resultChan)
+		close(errChan)
 	}()
 
 	// stream merge data loaded from multiple readers above
@@ -172,8 +173,8 @@ func (b *BlugeReader) Search(
 
 	merging.Wait()
 
-	if len(errChan) > 0 {
-		return nil, <-errChan
+	for err := range errChan {
+		return nil, err
 	}
 
 	// collate the documents
@@ -223,13 +224,19 @@ func (b *BlugeReader) merge(
 	wg *sync.WaitGroup,
 ) {
 	defer wg.Done()
-	for searchResult := range resultChan {
-		for _, doc := range searchResult.docs {
-			heap.Push(docs, doc)
-		}
-		bucket.Merge(searchResult.bucket)
-		<-tokens
+	for result := range resultChan {
+		doMerge(docs, bucket, result)
 	}
+}
+
+func doMerge(docs *DocHeap, bucket *search.Bucket, result *ReaderResult) {
+	defer func() {
+		<-tokens
+	}()
+	for _, doc := range result.docs {
+		heap.Push(docs, doc)
+	}
+	bucket.Merge(result.bucket)
 }
 
 func (b *BlugeReader) collate(
