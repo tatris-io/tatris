@@ -66,7 +66,7 @@ func (q *QueryRequest) UnmarshalJSON(data []byte) error {
 	if !reflect.ValueOf(tmp.Sort).IsZero() {
 		q.Sort = tmp.Sort
 	}
-	if !reflect.ValueOf(tmp.Size).IsZero() {
+	if reflect.ValueOf(tmp.Size).Int() >= 0 {
 		q.Size = tmp.Size
 	}
 	if !reflect.ValueOf(tmp.From).IsZero() {
