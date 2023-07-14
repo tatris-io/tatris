@@ -116,6 +116,7 @@ func (b *BlugeWriter) generateBlugeDoc(
 	doc protocol.Document,
 	mappings protocol.Mappings,
 ) (segment.Document, error) {
+	ts, _ := utils.ParseTime(doc[consts.TimestampField])
 	bdoc := bluge.NewDocument(docID)
 	for key, value := range doc {
 		if value == nil {
@@ -147,7 +148,7 @@ func (b *BlugeWriter) generateBlugeDoc(
 	bdoc.AddField(bluge.NewStoredOnlyField(consts.IndexField, []byte(b.Index)))
 	bdoc.AddField(bluge.NewStoredOnlyField(consts.SourceField, source))
 	bdoc.AddField(
-		bluge.NewDateTimeField(consts.TimestampField, time.Now()).
+		bluge.NewDateTimeField(consts.TimestampField, ts).
 			Sortable().
 			Aggregatable(),
 	)
