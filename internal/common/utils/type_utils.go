@@ -20,9 +20,9 @@ func IsDateType(value interface{}) bool {
 		_, err := now.Parse(value)
 		return err == nil
 	case int64:
-		return value > 1e12
+		return value >= 0
 	case float64:
-		return value > 1e12
+		return value >= 0
 	default:
 		return false
 	}

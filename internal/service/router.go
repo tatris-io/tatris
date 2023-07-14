@@ -90,6 +90,7 @@ func registerMeta(group *gin.RouterGroup) {
 	group.GET("/_nodes/_all", handler.ClusterNodesInfoHandler)
 
 	group.GET("/_cluster/health", handler.ClusterStatusHandler)
+	group.GET("/_cluster/health/:index", handler.ClusterStatusHandler)
 
 	group.PUT("/:index", handler.CreateIndexHandler)
 	group.POST("/:index", handler.CreateIndexHandler)
