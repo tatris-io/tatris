@@ -247,12 +247,6 @@ func TestCheckDocuments(t *testing.T) {
 									Type: consts.MappingFieldTypeKeyword,
 								},
 							}},
-							{"date_as_keyword": &protocol.DynamicTemplate{
-								MatchMappingType: consts.JSONFieldTypeDate,
-								Mapping: &protocol.DynamicTemplateMapping{
-									Type: consts.MappingFieldTypeKeyword,
-								},
-							}},
 							{"long_as_integer": &protocol.DynamicTemplate{
 								MatchMappingType: consts.JSONFieldTypeLong,
 								Mapping: &protocol.DynamicTemplateMapping{
@@ -263,6 +257,12 @@ func TestCheckDocuments(t *testing.T) {
 								MatchMappingType: consts.JSONFieldTypeDouble,
 								Mapping: &protocol.DynamicTemplateMapping{
 									Type: consts.MappingFieldTypeDouble,
+								},
+							}},
+							{"date_as_keyword": &protocol.DynamicTemplate{
+								MatchMappingType: consts.JSONFieldTypeDate,
+								Mapping: &protocol.DynamicTemplateMapping{
+									Type: consts.MappingFieldTypeKeyword,
 								},
 							}},
 						},
