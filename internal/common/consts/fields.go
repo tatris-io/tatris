@@ -4,7 +4,7 @@
 package consts
 
 const (
-	TimestampField = "_timestamp"
+	TimestampField = "@timestamp"
 	IDField        = "_id"
 	SourceField    = "_source"
 	IndexField     = "_index"

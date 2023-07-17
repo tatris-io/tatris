@@ -176,7 +176,12 @@ func resolveTimeRange(index string, query protocol.Query) (int64, int64, error) 
 		end = now
 	}
 	if start == 0 || start > end {
-		start = end - (time.Hour.Milliseconds() * int64(config.Cfg.Query.DefaultScanHours))
+		start = int64(
+			math.Max(
+				0,
+				float64(end-(time.Hour.Milliseconds()*int64(config.Cfg.Query.DefaultScanHours))),
+			),
+		)
 	}
 	logger.Info(
 		"unable to resolve time range from request, set to default",
