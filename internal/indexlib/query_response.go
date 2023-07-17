@@ -29,7 +29,7 @@ type Hit struct {
 	Index     string            `json:"_index"`
 	ID        string            `json:"_id"`
 	Source    protocol.Document `json:"_source"`
-	Timestamp time.Time         `json:"_timestamp"`
+	Timestamp time.Time         `json:"@timestamp"`
 	Score     float64           `json:"_score"`
 	Type      string            `json:"_type"`
 }
