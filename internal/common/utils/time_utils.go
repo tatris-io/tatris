@@ -3,6 +3,7 @@
 package utils
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/jinzhu/now"
@@ -19,7 +20,11 @@ func ParseTime(value any) (time.Time, error) {
 	case int64:
 		t = UnixToTime(v)
 	case string:
-		t, err = now.Parse(v)
+		if unix, err := strconv.ParseInt(v, 10, 64); err == nil {
+			t = UnixToTime(unix)
+		} else {
+			t, err = now.Parse(v)
+		}
 	}
 	return t, err
 }
