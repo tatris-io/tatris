@@ -32,7 +32,7 @@ func SearchDocs(
 	indexes []*core.Index,
 	request protocol.QueryRequest,
 ) (*protocol.QueryResponse, error) {
-	if request.Size < 0 {
+	if request.Size <= 0 {
 		request.Size = 10
 	}
 	if request.From < 0 {

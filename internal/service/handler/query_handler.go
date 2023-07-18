@@ -22,7 +22,7 @@ func QueryHandler(c *gin.Context) {
 	index := c.Param("index")
 	names := strings.Split(strings.TrimSpace(index), consts.Comma)
 	queryRequest := protocol.QueryRequest{Index: index, Size: 10}
-	if err := c.ShouldBind(&queryRequest); err != nil || len(names) == 0 {
+	if err := c.ShouldBindJSON(&queryRequest); err != nil || len(names) == 0 {
 		BadRequest(c, err.Error())
 	} else if indexes, err := metadata.ResolveIndexes(index); err != nil {
 		if ok, infErr := errs.IndexNotFound(err); ok {
