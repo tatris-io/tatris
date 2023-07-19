@@ -4,6 +4,8 @@ package service
 
 import (
 	"bytes"
+	"io"
+	"net/http"
 	"time"
 
 	"go.uber.org/zap"
@@ -44,5 +46,21 @@ func AccessLog() gin.HandlerFunc {
 			zap.Int64("cost", end-start),
 			zap.String("user-agent", c.Request.Header.Get("User-Agent")),
 		)
+
+		if bodyWriter.ResponseWriter.Status() != http.StatusOK {
+			body, _ := io.ReadAll(bodyWriter.body)
+			logger.Error(
+				"error processing request",
+				zap.String("remote", c.RemoteIP()),
+				zap.String("method", c.Request.Method),
+				zap.String("url", c.Request.RequestURI),
+				zap.String("proto", c.Request.Proto),
+				zap.Int("status", bodyWriter.ResponseWriter.Status()),
+				zap.Int("length", bodyWriter.body.Len()),
+				zap.Int64("cost", end-start),
+				zap.String("user-agent", c.Request.Header.Get("User-Agent")),
+				zap.String("result", string(body)),
+			)
+		}
 	}
 }
