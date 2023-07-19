@@ -9,6 +9,11 @@ import (
 	"github.com/jinzhu/now"
 )
 
+const (
+	// 1990-01-01 00:00:00
+	unixMilli1990 = 631152000000
+)
+
 func ParseTime(value any) (time.Time, error) {
 	var t time.Time
 	var err error
@@ -30,13 +35,13 @@ func ParseTime(value any) (time.Time, error) {
 }
 
 func UnixToTime(n int64) time.Time {
-	if n > 1e18 {
+	if n > unixMilli1990*1000000 {
 		return time.Unix(0, n)
 	}
-	if n > 1e15 {
+	if n > unixMilli1990*1000 {
 		return time.UnixMicro(n)
 	}
-	if n > 1e12 {
+	if n > unixMilli1990 {
 		return time.UnixMilli(n)
 	}
 	return time.Unix(n, 0)
